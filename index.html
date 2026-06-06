@@ -797,6 +797,13 @@
         function checkRemoteSignMode() {
             let params = new URLSearchParams(window.location.search);
             if (params.has('sign')) {
+const urlParams = new URLSearchParams(window.location.search);
+const signParam = urlParams.get('sign');
+
+if (signParam) {
+    const base64Clean = signParam.replace(/ /g, '+'); 
+    const decodedText = decodeURIComponent(escape(atob(base64Clean))); 
+    const Data = JSON.parse(decodedText); 
                 try {
                     let encodedData = params.get('sign');
                     let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
