@@ -2,9 +2,8 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pracovní Hodiny / Arbeitsstunden</title>
-    <!-- Načtení knihovny pro generování PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -62,6 +61,32 @@
         
         .action-toolbar { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .btn-sec { background: #e0e0e0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+
+        /* CSS PRO RÁMEČEK PODPISU */
+        .signature-wrapper {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            background-color: #fafafa;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        canvas#sig-canvas {
+            width: 100%;
+            height: 150px;
+            display: block;
+            touch-action: none; /* Zabrání posouvání stránky při kreslení prstem na iPhonu */
+        }
+        .sig-clear-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            float: right;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -77,7 +102,6 @@
 
     <div class="container">
         
-        <!-- SEKCE 1: KALKULAČKA -->
         <div id="view-kalkulacka" class="tab-content">
             <div class="card">
                 <div class="stats-box">
@@ -132,7 +156,6 @@
             </div>
         </div>
 
-        <!-- SEKCE 2: SEZNAM ZÁZNAMŮ -->
         <div id="view-zaznamy" class="tab-content hidden">
             <div class="action-toolbar">
                 <button class="btn-sec" onclick="selectAllZaznamy()" id="btn-all">Vše</button>
@@ -141,7 +164,7 @@
                 <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openAbnahmeModal()">Abnahme PDF</button>
             </div>
 
-            <!-- DOPLŇUJÍCÍ DATA PRO ABNAHME PROTOKOL (Zobrazeno dynamicky) -->
+            <!-- ABNAHME FORMULÁŘ + PLÁTNO NA PODPIS -->
             <div id="abnahme-form-card" class="card hidden" style="border: 2px solid #3498db;">
                 <div class="card-title" style="color:#3498db;">Detaily pro Abnahme Protokoll</div>
                 <div class="form-group inline">
@@ -167,8 +190,17 @@
                         <input type="text" id="ab-odstraneniDo" placeholder="např. 31.05.2026">
                     </div>
                 </div>
+
+                <!-- RÁMEČEK PRO PODPIS -->
+                <div class="form-group" style="margin-top:20px;">
+                    <label style="color:#3498db; font-weight:bold;">Podpis klienta (Unterschrift Kunde):</label>
+                    <div class="signature-wrapper">
+                        <canvas id="sig-canvas"></canvas>
+                    </div>
+                    <button class="sig-clear-btn" onclick="clearSignature()">Smazat podpis</button>
+                </div>
                 
-                <div class="row" style="margin-top:15px;">
+                <div class="row" style="margin-top:15px; clear:both;">
                     <button class="btn-sec" style="flex:1;" onclick="closeAbnahmeModal()">Zrušit</button>
                     <button class="btn-main" style="flex:2; background:#3498db; color:white;" onclick="exportAbnahmePDF()">Generovat Abnahme PDF</button>
                 </div>
@@ -177,7 +209,6 @@
             <div class="card" id="seznam-container"></div>
         </div>
 
-        <!-- SEKCE 3: NASTAVENÍ -->
         <div id="view-nastaveni" class="tab-content hidden">
             <div class="card">
                 <div class="card-title">Uživatel & Firma</div>
@@ -198,7 +229,7 @@
                     <input type="text" id="cfg-mesto" value="94577 Winzer">
                 </div>
                 <div class="form-group">
-                    <label>Odpovědná osoba (podpis)</label>
+                    <label>Odpovědná osoba (podpis v textu)</label>
                     <input type="text" id="cfg-podpis" value="">
                 </div>
                 <button class="btn-main" onclick="saveSettings()">Uložit Nastavení</button>
@@ -215,6 +246,80 @@
     </nav>
 
     <script>
+        // --- LOGIKA PRO PLÁTNO PODPISU ---
+        const canvas = document.getElementById('sig-canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        function resizeCanvas() {
+            // Přizpůsobení rozlišení (Retina displeje na iPhone)
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            ctx.scale(ratio, ratio);
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000000';
+        }
+
+        function getMousePos(e) {
+            let rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            let pos = getMousePos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            let pos = getMousePos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function stopDrawing() {
+            if(isDrawing) {
+                ctx.stroke();
+                ctx.closePath();
+                isDrawing = false;
+            }
+        }
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function isCanvasBlank() {
+            const blank = document.createElement('canvas');
+            blank.width = canvas.width;
+            blank.height = canvas.height;
+            return canvas.toDataURL() === blank.toDataURL();
+        }
+
+        // Event listeners pro myš i dotyk
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchend', stopDrawing);
+
+        // --- ZBYTEK APLIKACE ---
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let currentLang = localStorage.getItem('app_lang') || 'cs';
         let filterMode = 'week'; 
@@ -223,16 +328,8 @@
         document.getElementById('inp-datum').valueAsDate = new Date();
 
         const slovnik = {
-            cs: {
-                title: "Pracovní hodiny", calc: "Vypočítat", list: "Záznamy", sett: "Nastavení",
-                zeit: "Pracovní doba", det: "Detaily práce", projn: "Číslo zakázky", taet: "Popis práce",
-                satz: "Sazba (€/h)", save: "Uložit", datum: "Datum", von: "Začátek", bis: "Konec", pause: "Přestávka (minut)"
-            },
-            de: {
-                title: "Arbeitsstunden", calc: "Berechnen", list: "Einträge", sett: "Einstellungen",
-                zeit: "Arbeitszeit", det: "Arbeitsdetails", projn: "Projekt-Nr.", taet: "Tätigkeit",
-                satz: "Stundensatz (€/h)", save: "Speichern", datum: "Datum", von: "Beginn", bis: "Ende", pause: "Pause (Min)"
-            }
+            cs: { title: "Pracovní hodiny", calc: "Vypočítat", list: "Záznamy", sett: "Nastavení", zeit: "Pracovní doba", det: "Detaily práce", projn: "Číslo zakázky", taet: "Popis práce", satz: "Sazba (€/h)", save: "Uložit", datum: "Datum", von: "Začátek", bis: "Konec", pause: "Přestávka (min)" },
+            de: { title: "Arbeitsstunden", calc: "Berechnen", list: "Einträge", sett: "Einstellungen", zeit: "Arbeitszeit", det: "Arbeitsdetails", projn: "Projekt-Nr.", taet: "Tätigkeit", satz: "Stundensatz (€/h)", save: "Speichern", datum: "Datum", von: "Beginn", bis: "Ende", pause: "Pause (Min)" }
         };
 
         function setLanguage(lang) {
@@ -392,10 +489,13 @@
             }
             document.getElementById('abnahme-form-card').classList.remove('hidden');
             window.scrollTo({top: 0, behavior: 'smooth'});
+            // Fix velikosti plátna při prvním otevření
+            setTimeout(resizeCanvas, 100);
         }
 
         function closeAbnahmeModal() {
             document.getElementById('abnahme-form-card').classList.add('hidden');
+            clearSignature();
         }
 
         function saveSettings() {
@@ -502,7 +602,6 @@
             doc.save("Tatigkeitsnachweis.pdf");
         }
 
-        // --- NOVÁ FUNKCE: EXPORT ABNAHMEPROTOKOLL (DOKONČENÝ KUS KÓDU) ---
         function exportAbnahmePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -513,7 +612,7 @@
             let firma = document.getElementById('cfg-firma').value;
             let adresa = document.getElementById('cfg-adresa').value;
             let mesto = document.getElementById('cfg-mesto').value;
-            let podpisKunde = document.getElementById('cfg-podpis').value || 'Name in Druckbuchstaben AG';
+            let podpisKundeText = document.getElementById('cfg-podpis').value || 'Name in Druckbuchstaben AG';
 
             let bezZkousky = document.getElementById('ab-bezZkousky').checked;
             let seZkouskou = document.getElementById('ab-seZkouskou').checked;
@@ -525,31 +624,24 @@
             let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
 
-            // Nadpis
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(14);
             doc.text("ABNAHME- & FORTSCHRITTSPROTOKOLL", 105, 15, { align: 'center' });
 
-            // Mřížka s údaji (bunkaTabulky ve SwiftUI)
             doc.setLineWidth(0.3);
             doc.setFontSize(9);
             
-            // Řádek 1
             doc.rect(15, 25, 90, 10); doc.text("Vorname, Name", 17, 29); doc.setFont("Helvetica", "normal"); doc.text(jmeno, 17, 33); doc.setFont("Helvetica", "bold");
             doc.rect(105, 25, 90, 10); doc.text("Kunde", 107, 29); doc.setFont("Helvetica", "normal"); doc.text(firma, 107, 33); doc.setFont("Helvetica", "bold");
-            // Řádek 2
             doc.rect(15, 35, 90, 10); doc.text("Projekt-Nr.", 17, 39); doc.setFont("Helvetica", "normal"); doc.text(cisloZ, 17, 43); doc.setFont("Helvetica", "bold");
             doc.rect(105, 35, 90, 10); doc.text("Anschrift", 107, 39); doc.setFont("Helvetica", "normal"); doc.text(adresa, 107, 43); doc.setFont("Helvetica", "bold");
-            // Řádek 3
             doc.rect(15, 45, 90, 10); doc.text("Leistungszeitraum", 17, 49); doc.setFont("Helvetica", "normal"); doc.text(`${startDatum} - ${endDatum}`, 17, 53); doc.setFont("Helvetica", "bold");
             doc.rect(105, 45, 90, 10); doc.text("PLZ, Ort", 107, 49); doc.setFont("Helvetica", "normal"); doc.text(mesto, 107, 53);
 
-            // Popis činností
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(11);
             doc.text("Leistungsbeschreibung / Tätigkeitsbeschreibung", 15, 63);
 
-            // Tabulka aktivit (radekAktivity ve SwiftUI)
             let y = 68;
             doc.setFillColor(230, 230, 230);
             doc.rect(15, y, 35, 7, 'F'); doc.rect(15, y, 35, 7, 'S'); doc.text("Datum", 17, y + 5);
@@ -569,13 +661,11 @@
                 doc.rect(170, y, 25, 7, 'S'); doc.text(h.toFixed(2), 192, y + 5, { align: 'right' });
             });
 
-            // Závěrečný součet (HStack se sumou ze SwiftUI)
             y += 7;
             doc.setFont("Helvetica", "bold");
             doc.rect(15, y, 155, 7, 'S'); doc.text("Gesamt", 152, y + 5, { align: 'right' });
             doc.rect(170, y, 25, 7, 'S'); doc.text(celkemHodin.toFixed(2), 192, y + 5, { align: 'right' });
 
-            // Sekce: Zaškrtávací pole s propisováním hodnot (checkboxRadek)
             y += 15;
             doc.setFontSize(11);
             doc.text("Bei der Abnahme wurde festgestellt:", 15, y);
@@ -583,19 +673,16 @@
             doc.setFontSize(10);
             doc.setFont("Helvetica", "normal");
             
-            // Checkbox 1
             y += 7;
             doc.rect(15, y - 3, 4, 4); 
             if(bezZkousky) { doc.text("X", 16, y); }
             doc.text("die Leistung/en sind ohne Funktionsprüfung abgenommen", 23, y);
 
-            // Checkbox 2
             y += 7;
             doc.rect(15, y - 3, 4, 4);
             if(seZkouskou) { doc.text("X", 16, y); }
             doc.text("die Leistung/en sind mit Funktionsprüfung abgenommen", 23, y);
 
-            // Checkbox 3 & Text chyb (sVadami)
             y += 7;
             doc.rect(15, y - 3, 4, 4);
             if(sVadami) { doc.text("X", 16, y); }
@@ -608,7 +695,6 @@
                 doc.setFont("Helvetica", "normal");
             }
 
-            // Odstranění do
             y += 10;
             doc.text("Mängel werden bis spätestens", 15, y);
             doc.setFont("Helvetica", "bold");
@@ -616,16 +702,24 @@
             doc.setFont("Helvetica", "normal");
             doc.text("behoben.", 115, y);
 
-            // Podpisy (Podpisová sekce ze SwiftUI)
+            // --- VLOŽENÍ PODPISU Z HTML CANVASU ---
             y += 20;
             doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')}`, 15, y);
 
             y += 30;
+            
+            // Kontrola, zda je plátno podepsané. Pokud ano, vložíme obrázek nad čáru
+            if (!isCanvasBlank()) {
+                const imgData = canvas.toDataURL('image/png');
+                // Obrázek se vloží od X: 15, Y posunuto nahoru nad linku
+                doc.addImage(imgData, 'PNG', 15, y - 18, 50, 16); 
+            }
+
             doc.line(15, y, 85, y);
             doc.line(125, y, 195, y);
             
             doc.setFontSize(9);
-            doc.text(podpisKunde, 15, y + 4);
+            doc.text(podpisKundeText, 15, y + 4);
             doc.text("*Unterschrift Auftraggeber", 15, y + 8);
             
             doc.text(jmeno, 125, y + 4);
@@ -636,13 +730,13 @@
             doc.setFont("Helvetica", "italic");
             doc.text("* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.", 15, y);
 
-            // Schování formuláře a uložení
             closeAbnahmeModal();
             doc.save("AbnahmeProtokoll.pdf");
         }
 
         loadSettings();
         setLanguage(currentLang);
+        window.addEventListener("resize", resizeCanvas);
     </script>
 </body>
 </html>
