@@ -803,11 +803,9 @@ const signParam = urlParams.get('sign');
 if (signParam) {
     const base64Clean = signParam.replace(/ /g, '+'); 
     const decodedText = decodeURIComponent(escape(atob(base64Clean))); 
-    const Data = JSON.parse(decodedText); 
-                try {
-                    let encodedData = params.get('sign');
-                    let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
-                    document.getElementById('cfg-jmeno').value = data.jmeno;
+    const Data = JSON.parse(    try {
+        let data = Data;
+               document.getElementById('cfg-jmeno').value = data.jmeno;
                     document.getElementById('cfg-firma').value = data.firma;
                     document.getElementById('cfg-adresa').value = data.adresa;
                     document.getElementById('cfg-mesto').value = data.mesto;
