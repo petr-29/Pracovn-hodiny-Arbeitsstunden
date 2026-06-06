@@ -3,444 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pracovní hodiny & Protokol o převzetí</title>
-    <style>
-        :root {
-            --primary: #0066cc;
-            --primary-hover: #0052a3;
-            --background: #f4f6f9;
-            --text: #333;
-            --border: #ccc;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            max-width: 800px;
-            width: 100%;
-        }
-
-        h1, h2 {
-            color: #111;
-            margin-top: 0;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-        }
-
-        input[type="text"], input[type="date"], input[type="time"], textarea, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1em;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        th, td {
-            border: 1px solid var(--border);
-            padding: 10px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f8f9fa;
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .checkbox-item input {
-            width: 18px;
-            height: 18px;
-        }
-
-        .signature-section {
-            margin-top: 30px;
-            border-top: 2px dashed var(--border);
-            padding-top: 20px;
-        }
-
-        .canvas-container {
-            border: 2px solid #999;
-            background: #fff;
-            border-radius: 4px;
-            position: relative;
-            margin-bottom: 10px;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 200px;
-            touch-action: none;
-        }
-
-        .btn-clear {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85em;
-        }
-
-        .actions {
-            margin-top: 30px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 1em;
-            flex: 1;
-            min-width: 200px;
-            text-align: center;
-        }
-
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--primary-hover); }
-        .btn-success { background-color: #28a745; color: white; }
-        .btn-success:hover { background-color: #218838; }
-
-        .alert {
-            padding: 15px;
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-    </style>
+    <title>Pracovní výkaz & Protokol</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        input, textarea, select { width: 100%; padding: 8px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .sig-container { display: flex; gap: 20px; margin-top: 20px; }
+        canvas { border: 1px solid #000; width: 100%; height: 150px; background: #fff; }
+        .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; margin-top: 10px; }
+        .btn-blue { background: #007bff; }
+        .btn-green { background: #28a745; }
+        .btn-red { background: #dc3545; }
+    </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="errorAlert" class="alert"></div>
-
-    <h1>Protokol o převzetí / Abnahmeprotokoll</h1>
-    
-    <div class="grid-2">
-        <div class="form-group">
-            <label>Jméno technika / Name des Technikers</label>
-            <input type="text" id="jmeno" value="Petr Michálek">
-        </div>
-        <div class="form-group">
-            <label>Zákazník (Firma) / Kunde (Firma)</label>
-            <input type="text" id="firma" value="Netzsch, Sedanstrasse 70 D – 95100 Selb">
-        </div>
+<div class="container" id="content">
+    <h1>Výkaz práce</h1>
+    <div class="grid">
+        <input type="text" id="jmeno" placeholder="Jméno technika">
+        <input type="text" id="firma" placeholder="Firma/Zákazník">
     </div>
 
-    <div class="grid-2">
-        <div class="form-group">
-            <label>Ulice a č.p. / Straße u. Hs.-Nr.</label>
-            <input type="text" id="adresa" value="Goethestraße 3">
-        </div>
-        <div class="form-group">
-            <label>PSČ a Město / PLZ u. Ort</label>
-            <input type="text" id="mesto" value="94577 Winzer">
-        </div>
-    </div>
-
-    <h2>Odpracované hodiny / Arbeitsstunden</h2>
+    <h2>Záznamy</h2>
     <table id="hoursTable">
         <thead>
-            <tr>
-                <th>Datum</th>
-                <th>Od / Von</th>
-                <th>Do / Bis</th>
-                <th>Pauza / Pause</th>
-                <th>Projekt / Zakázka</th>
-            </tr>
+            <tr><th>Datum</th><th>Od</th><th>Do</th><th>Pauza</th><th>Projekt</th></tr>
         </thead>
-        <tbody>
-            <tr data-id="1779021498815">
-                <td><input type="text" class="row-date" value="16. 5. 2026"></td>
-                <td><input type="time" class="row-start" value="07:30"></td>
-                <td><input type="time" class="row-end" value="17:00"></td>
-                <td><input type="text" class="row-pause" value="30"></td>
-                <td><input type="text" class="row-project" value="Netzsch, Sedanstrasse 70 D – 95100 Selb"></td>
-            </tr>
+        <tbody id="tableBody">
+            <!-- Dynamicky generováno -->
         </tbody>
     </table>
 
-    <div class="checkbox-group">
-        <div class="checkbox-item">
-            <input type="checkbox" id="bezZkousky">
-            <label for="bezZkousky">Bez zkoušky funkčnosti / Ohne Funktionprüfung</label>
+    <div class="sig-container">
+        <div style="flex:1">
+            <label>Tvůj podpis:</label>
+            <canvas id="sigUser"></canvas>
+            <button class="btn btn-red" onclick="clearSig('sigUser')">Smazat</button>
         </div>
-        <div class="checkbox-item">
-            <input type="checkbox" id="seZkouskou" checked>
-            <label for="seZkouskou">Se zkouškou funkčnosti / Mit Funktionprüfung</label>
-        </div>
-        <div class="checkbox-item">
-            <input type="checkbox" id="sVadami">
-            <label for="sVadami">S vadami (viz text níže) / Mit Mängeln</label>
+        <div style="flex:1">
+            <label>Podpis zákazníka:</label>
+            <canvas id="sigClient"></canvas>
+            <button class="btn btn-red" onclick="clearSig('sigClient')">Smazat</button>
         </div>
     </div>
 
-    <div class="form-group">
-        <label>Zjištěné vady / Festgestellte Mängel</label>
-        <textarea id="vadyText" rows="3"></textarea>
-    </div>
-
-    <div class="form-group">
-        <label>Odstranění vad do / Mängelbeseitigung bis</label>
-        <input type="text" id="odstraneniDo">
-    </div>
-
-    <div class="signature-section">
-        <h2>Podpis zákazníka / Unterschrift des Kunden</h2>
-        <div class="canvas-container">
-            <canvas id="signatureCanvas"></canvas>
-        </div>
-        <button type="button" class="btn-clear" onclick="clearCanvas()">Vymazat podpis / Löschen</button>
-        <input type="hidden" id="podpisKundeText" value="---">
-    </div>
-
-    <div class="actions">
-        <button class="btn btn-primary" onclick="generateShareLink()">Generovat odkaz pro WhatsApp</button>
-        <button class="btn btn-success" onclick="saveAsPDF()">Uložit jako PDF</button>
+    <div style="margin-top:20px;">
+        <button class="btn btn-blue" onclick="generatePDF('standard')">Standard PDF (Týden)</button>
+        <button class="btn btn-green" onclick="generatePDF('abnahme')">Abnahme PDF</button>
     </div>
 </div>
 
 <script>
-    // Inicializace kreslení na canvasu
-    const canvas = document.getElementById('signatureCanvas');
-    const ctx = canvas.getContext('2d');
-    let isDrawing = false;
-
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        ctx.scale(ratio, ratio);
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
+    // Inicializace canvasů
+    function setupCanvas(id) {
+        const canvas = document.getElementById(id);
+        const ctx = canvas.getContext('2d');
         ctx.strokeStyle = '#000';
-    }
+        ctx.lineWidth = 2;
+        let drawing = false;
 
-    window.addEventListener('resize', resizeCanvas);
-    document.addEventListener('DOMContentLoaded', () => {
-        resizeCanvas();
-        checkUrlParams(); // Kontrola, zda nepřicházíme přes odkaz od šéfa
-    });
-
-    // Podpora pro myš i dotyk
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    }
-
-    function startDraw(e) {
-        isDrawing = true;
-        const pos = getPos(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-    }
-
-    function draw(e) {
-        if (!isDrawing) return;
-        e.preventDefault();
-        const pos = getPos(e);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-    }
-
-    function stopDraw() { isDrawing = false; }
-
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDraw);
-    
-    canvas.addEventListener('touchstart', startDraw);
-    canvas.addEventListener('touchmove', draw);
-    canvas.addEventListener('touchend', stopDraw);
-
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // --- OPRAVENÁ LOGIKA PRO BEZPEČNÉ UTF-8 ŠIFROVÁNÍ ---
-    function generateShareLink() {
-        // Posbíráme data z formuláře
-        const rows = [];
-        document.querySelectorAll('#hoursTable tbody tr').forEach(tr => {
-            rows.push({
-                id: tr.dataset.id ? parseInt(tr.dataset.id) : Date.now(),
-                datum: tr.querySelector('.row-date').value,
-                zacatek: tr.querySelector('.row-start').value,
-                konec: tr.querySelector('.row-end').value,
-                prestashka: tr.querySelector('.row-pause').value,
-                cisloZakazky: "",
-                popisPrace: "",
-                sazba: 30,
-                projekt: tr.querySelector('.row-project').value,
-                selected: true
-            });
-        });
-
-        const appData = {
-            type: "abnahme",
-            jmeno: document.getElementById('jmeno').value,
-            firma: document.getElementById('firma').value,
-            adresa: document.getElementById('adresa').value,
-            mesto: document.getElementById('mesto').value,
-            podpisKundeText: document.getElementById('podpisKundeText').value,
-            bezZkousky: document.getElementById('bezZkousky').checked,
-            seZkouskou: document.getElementById('seZkouskou').checked,
-            sVadami: document.getElementById('sVadami').checked,
-            vadyText: document.getElementById('vadyText').value,
-            odstraneniDo: document.getElementById('odstraneniDo').value,
-            zaznamy: rows
+        const getPos = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
         };
 
-        try {
-            // Převedení objektu na JSON text
-            const jsonString = JSON.stringify(appData);
-            // Bezpečné kódování textu s diakritikou do Base64
-            const base64Encoded = btoa(unescape(encodeURIComponent(jsonString)));
-            
-            // Sestavení čisté výsledné URL adresy
-            const baseUrl = window.location.origin + window.location.pathname;
-            const finalLink = `${baseUrl}?sign=${base64Encoded}`;
-
-            // Zkopírování odkazu do schránky a upozornění uživatele
-            navigator.clipboard.writeText(finalLink).then(() => {
-                alert('Odkaz pro šéfa byl úspěšně zkopírován do schránky! Můžeš ho rovnou vložit do WhatsAppu.');
-            }).catch(() => {
-                alert('Odkaz se nepodařilo zkopírovat automaticky. Zde je:\n\n' + finalLink);
-            });
-
-        } catch (err) {
-            alert('Chyba při generování odkazu: ' + err.message);
-        }
+        canvas.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(getPos(e).x, getPos(e).y); });
+        canvas.addEventListener('mousemove', (e) => { if (drawing) { ctx.lineTo(getPos(e).x, getPos(e).y); ctx.stroke(); } });
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('touchstart', (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(getPos(e).touches[0].clientX - canvas.getBoundingClientRect().left, e.touches[0].clientY - canvas.getBoundingClientRect().top); });
+        canvas.addEventListener('touchmove', (e) => { if (drawing) { ctx.lineTo(e.touches[0].clientX - canvas.getBoundingClientRect().left, e.touches[0].clientY - canvas.getBoundingClientRect().top); ctx.stroke(); } });
     }
 
-    // --- OPRAVENÁ LOGIKA PRO NAČÍTÁNÍ ODKAZU ---
-    function checkUrlParams() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const signParam = urlParams.get('sign');
+    setupCanvas('sigUser');
+    setupCanvas('sigClient');
 
-        if (!signParam) return; // Žádná data v odkazu nejsou, načteme čistou stránku
-
-        try {
-            // Bezpečné dekódování z Base64 s podporou UTF-8 znaků
-            const decodedJson = decodeURIComponent(escape(atob(signParam)));
-            const data = JSON.parse(decodedJson);
-
-            // Vyplnění hlavních polí formuláře naimportovanými daty
-            if (data.jmeno) document.getElementById('jmeno').value = data.jmeno;
-            if (data.firma) document.getElementById('firma').value = data.firma;
-            if (data.adresa) document.getElementById('adresa').value = data.adresa;
-            if (data.mesto) document.getElementById('mesto').value = data.mesto;
-            if (data.vadyText) document.getElementById('vadyText').value = data.vadyText;
-            if (data.odstraneniDo) document.getElementById('odstraneniDo').value = data.odstraneniDo;
-            
-            document.getElementById('bezZkousky').checked = !!data.bezZkousky;
-            document.getElementById('seZkouskou').checked = !!data.seZkouskou;
-            document.getElementById('sVadami').checked = !!data.sVadami;
-
-            // Vyčištění a sestavení tabulky odpracovaných hodin
-            const tbody = document.querySelector('#hoursTable tbody');
-            tbody.innerHTML = '';
-
-            if (data.zaznamy && Array.isArray(data.zaznamy)) {
-                data.zaznamy.forEach(item => {
-                    // OŠETŘENÍ FORMÁTU DATA (Převod z YYYY-MM-DD zpět na D. M. YYYY)
-                    let displayDate = item.datum;
-                    if (displayDate && displayDate.includes('-')) {
-                        const parts = displayDate.split('-');
-                        if (parts.length === 3) {
-                            displayDate = `${parseInt(parts[2])}. ${parseInt(parts[1])}. ${parts[0]}`;
-                        }
-                    }
-
-                    const tr = document.createElement('tr');
-                    tr.dataset.id = item.id;
-                    tr.innerHTML = `
-                        <td><input type="text" class="row-date" value="${displayDate || ''}"></td>
-                        <td><input type="time" class="row-start" value="${item.zacatek || ''}"></td>
-                        <td><input type="time" class="row-end" value="${item.konec || ''}"></td>
-                        <td><input type="text" class="row-pause" value="${item.prestavka || item.prestashka || '0'}"></td>
-                        <td><input type="text" class="row-project" value="${item.projekt || ''}"></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-
-        } catch (error) {
-            console.error(error);
-            const alertBox = document.getElementById('errorAlert');
-            alertBox.innerText = 'Chyba načítání odkazu. Data jsou poškozená nebo neúplná.';
-            alertBox.style.display = 'block';
-        }
+    function clearSig(id) {
+        const c = document.getElementById(id);
+        c.getContext('2d').clearRect(0, 0, c.width, c.height);
     }
 
-    // Funkce pro stažení PDF do mobilu/PC
-    function saveAsPDF() {
-        const element = document.querySelector('.container');
-        const opt = {
-            margin:       10,
-            filename:     'Protokol_Abnahme.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(element).save();
+    // Generování řádků pro PDF
+    function getWeekRows() {
+        let rows = '';
+        const today = new Date();
+        const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1)); // Pondělí
+
+        for (let i = 0; i < 7; i++) {
+            let d = new Date(firstDayOfWeek);
+            d.setDate(d.getDate() + i);
+            let dateStr = d.toLocaleDateString('cs-CZ');
+            rows += `<tr><td>${dateStr}</td><td></td><td></td><td></td><td></td></tr>`;
+        }
+        return rows;
+    }
+
+    function generatePDF(type) {
+        const sigUser = document.getElementById('sigUser').toDataURL();
+        const sigClient = document.getElementById('sigClient').toDataURL();
+        
+        let content = `
+            <h1>${type === 'abnahme' ? 'Abnahme Protokoll' : 'Týdenní výkaz'}</h1>
+            <p>Technik: ${document.getElementById('jmeno').value}</p>
+            <p>Zákazník: ${document.getElementById('firma').value}</p>
+            <table border="1" style="width:100%; border-collapse:collapse;">
+                <thead><tr><th>Datum</th><th>Od</th><th>Do</th><th>Pauza</th><th>Projekt</th></tr></thead>
+                <tbody>${getWeekRows()}</tbody>
+            </table>
+            <div style="display:flex; justify-content:space-between; margin-top:50px;">
+                <div><p>Podpis technika:</p><img src="${sigUser}" width="200" height="100"></div>
+                <div><p>Podpis zákazníka:</p><img src="${sigClient}" width="200" height="100"></div>
+            </div>
+        `;
+
+        html2pdf().from(content).save(type + '_dokument.pdf');
     }
 </script>
 
