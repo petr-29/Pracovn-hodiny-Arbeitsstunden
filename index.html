@@ -412,7 +412,6 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        /* LIVE NÁHLED DOKUMENTŮ */
         function updateLivePreview() {
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
             vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
@@ -427,7 +426,6 @@
             let html = '';
             
             if (currentExportType === 'standard') {
-                /* ŠABLONA PODLE POSLANÉHO OBRÁZKU (TÄTIGKEITSNACHWEIS) */
                 html += `<div class="preview-header-full">TÄTIGKEITSNACHWEIS</div>`;
                 html += `<div class="preview-flex-header">`;
                 html += `  <div style="line-height:1.5;">`;
@@ -464,7 +462,6 @@
                 html += `</div>`;
 
             } else {
-                /* ČISTÝ PŮVODNÍ ABNAHME PROTOKOL */
                 let bezZkousky = document.getElementById('ab-bezZkousky').checked;
                 let seZkouskou = document.getElementById('ab-seZkouskou').checked;
                 let sVadami = document.getElementById('ab-sVadami').checked;
@@ -555,7 +552,6 @@
             });
         }
 
-        /* PDF GEN - STANDARD (PŘESNĚ PODLE OBRÁZKU) */
         function exportStandardPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -615,7 +611,6 @@
             doc.save("Tatigkeitsnachweis.pdf");
         }
 
-        /* PDF GEN - PŮVODNÍ ABNAHME PROTOKOL */
         function exportAbnahmePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -696,7 +691,6 @@
             doc.save("AbnahmeProtokoll.pdf");
         }
 
-        /* JÁDRO MATEMATIKY A LOGIKY */
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let currentLang = localStorage.getItem('app_lang') || 'cs';
         let filterMode = 'week'; let maskEarnings = false;
