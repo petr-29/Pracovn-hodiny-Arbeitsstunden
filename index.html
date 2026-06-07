@@ -140,3 +140,310 @@
             border: none;
             border-radius: 4px;
             font-weight: bold;
+            cursor: pointer;
+            font-size: 1em;
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-success:hover { background-color: #218838; }
+
+        .alert {
+            padding: 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <div id="errorAlert" class="alert"></div>
+
+    <h1>Protokol o převzetí / Abnahmeprotokoll</h1>
+    
+    <div class="grid-2">
+        <div class="form-group">
+            <label>Jméno technika / Name des Technikers</label>
+            <input type="text" id="jmeno" value="Petr Michálek">
+        </div>
+        <div class="form-group">
+            <label>Zákazník (Firma) / Kunde (Firma)</label>
+            <input type="text" id="firma" value="Netzsch, Sedanstrasse 70 D – 95100 Selb">
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="form-group">
+            <label>Ulice a č.p. / Straße u. Hs.-Nr.</label>
+            <input type="text" id="adresa" value="Goethestraße 3">
+        </div>
+        <div class="form-group">
+            <label>PSČ a Město / PLZ u. Ort</label>
+            <input type="text" id="mesto" value="94577 Winzer">
+        </div>
+    </div>
+
+    <h2>Odpracované hodiny / Arbeitsstunden</h2>
+    <table id="hoursTable">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Od / Von</th>
+                <th>Do / Bis</th>
+                <th>Pauza / Pause</th>
+                <th>Projekt / Zakázka</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr data-id="1779021498815">
+                <td><input type="text" class="row-date" value="16. 5. 2026"></td>
+                <td><input type="time" class="row-start" value="07:30"></td>
+                <td><input type="time" class="row-end" value="17:00"></td>
+                <td><input type="text" class="row-pause" value="30"></td>
+                <td><input type="text" class="row-project" value="Netzsch, Sedanstrasse 70 D – 95100 Selb"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="checkbox-group">
+        <div class="checkbox-item">
+            <input type="checkbox" id="bezZkousky">
+            <label for="bezZkousky">Bez zkoušky funkčnosti / Ohne Funktionprüfung</label>
+        </div>
+        <div class="checkbox-item">
+            <input type="checkbox" id="seZkouskou" checked>
+            <label for="seZkouskou">Se zkouškou funkčnosti / Mit Funktionprüfung</label>
+        </div>
+        <div class="checkbox-item">
+            <input type="checkbox" id="sVadami">
+            <label for="sVadami">S vadami (viz text níže) / Mit Mängeln</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Zjištěné vady / Festgestellte Mängel</label>
+        <textarea id="vadyText" rows="3"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Odstranění vad do / Mängelbeseitigung bis</label>
+        <input type="text" id="odstraneniDo">
+    </div>
+
+    <div class="signature-section">
+        <h2>Podpis zákazníka / Unterschrift des Kunden</h2>
+        <div class="canvas-container">
+            <canvas id="signatureCanvas"></canvas>
+        </div>
+        <button type="button" class="btn-clear" onclick="clearCanvas()">Vymazat podpis / Löschen</button>
+        <input type="hidden" id="podpisKundeText" value="---">
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-primary" onclick="generateShareLink()">Generovat odkaz pro WhatsApp</button>
+        <button class="btn btn-success" onclick="saveAsPDF()">Uložit jako PDF</button>
+    </div>
+</div>
+
+<script>
+    // Inicializace kreslení na canvasu
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        ctx.scale(ratio, ratio);
+        ctx.lineWidth = 2.5;         // Mírně zesílená stopa, aby propiska lépe vynikla
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#0a3ca6'; // <--- TADY: Nastavena klasická modrá barva propisky
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    document.addEventListener('DOMContentLoaded', () => {
+        resizeCanvas();
+        checkUrlParams(); // Kontrola, zda nepřicházíme přes odkaz od šéfa
+    });
+
+    // Podpora pro myš i dotyk
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function startDraw(e) {
+        isDrawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+
+    function stopDraw() { isDrawing = false; }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    
+    canvas.addEventListener('touchstart', startDraw);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDraw);
+
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // --- OPRAVENÁ LOGIKA PRO BEZPEČNÉ UTF-8 ŠIFROVÁNÍ ---
+    function generateShareLink() {
+        // Posbíráme data z formuláře
+        const rows = [];
+        document.querySelectorAll('#hoursTable tbody tr').forEach(tr => {
+            rows.push({
+                id: tr.dataset.id ? parseInt(tr.dataset.id) : Date.now(),
+                datum: tr.querySelector('.row-date').value,
+                zacatek: tr.querySelector('.row-start').value,
+                konec: tr.querySelector('.row-end').value,
+                prestashka: tr.querySelector('.row-pause').value,
+                cisloZakazky: "",
+                popisPrace: "",
+                sazba: 30,
+                projekt: tr.querySelector('.row-project').value,
+                selected: true
+            });
+        });
+
+        const appData = {
+            type: "abnahme",
+            jmeno: document.getElementById('jmeno').value,
+            firma: document.getElementById('firma').value,
+            adresa: document.getElementById('adresa').value,
+            mesto: document.getElementById('mesto').value,
+            podpisKundeText: document.getElementById('podpisKundeText').value,
+            bezZkousky: document.getElementById('bezZkousky').checked,
+            seZkouskou: document.getElementById('seZkouskou').checked,
+            sVadami: document.getElementById('sVadami').checked,
+            vadyText: document.getElementById('vadyText').value,
+            odstraneniDo: document.getElementById('odstraneniDo').value,
+            zaznamy: rows
+        };
+
+        try {
+            // Převedení objektu na JSON text
+            const jsonString = JSON.stringify(appData);
+            // Bezpečné kódování textu s diakritikou do Base64
+            const base64Encoded = btoa(unescape(encodeURIComponent(jsonString)));
+            
+            // Sestavení čisté výsledné URL adresy
+            const baseUrl = window.location.origin + window.location.pathname;
+            const finalLink = `${baseUrl}?sign=${base64Encoded}`;
+
+            // Zkopírování odkazu do schránky a upozornění uživatele
+            navigator.clipboard.writeText(finalLink).then(() => {
+                alert('Odkaz pro šéfa byl úspěšně zkopírován do schránky! Můžeš ho rovnou vložit do WhatsAppu.');
+            }).catch(() => {
+                alert('Odkaz se nepodařilo zkopírovat automaticky. Zde je:\n\n' + finalLink);
+            });
+
+        } catch (err) {
+            alert('Chyba při generování odkazu: ' + err.message);
+        }
+    }
+
+    // --- OPRAVENÁ LOGIKA PRO NAČÍTÁNÍ ODKAZU ---
+    function checkUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const signParam = urlParams.get('sign');
+
+        if (!signParam) return; // Žádná data v odkazu nejsou, načteme čistou stránku
+
+        try {
+            // Bezpečné dekódování z Base64 s podporou UTF-8 znaků
+            const decodedJson = decodeURIComponent(escape(atob(signParam)));
+            const data = JSON.parse(decodedJson);
+
+            // Vyplnění hlavních polí formuláře naimportovanými daty
+            if (data.jmeno) document.getElementById('jmeno').value = data.jmeno;
+            if (data.firma) document.getElementById('firma').value = data.firma;
+            if (data.adresa) document.getElementById('adresa').value = data.adresa;
+            if (data.mesto) document.getElementById('mesto').value = data.mesto;
+            if (data.vadyText) document.getElementById('vadyText').value = data.vadyText;
+            if (data.odstraneniDo) document.getElementById('odstraneniDo').value = data.odstraneniDo;
+            
+            document.getElementById('bezZkousky').checked = !!data.bezZkousky;
+            document.getElementById('seZkouskou').checked = !!data.seZkouskou;
+            document.getElementById('sVadami').checked = !!data.sVadami;
+
+            // Vyčištění a sestavení tabulky odpracovaných hodin
+            const tbody = document.querySelector('#hoursTable tbody');
+            tbody.innerHTML = '';
+
+            if (data.zaznamy && Array.isArray(data.zaznamy)) {
+                data.zaznamy.forEach(item => {
+                    // OŠETŘENÍ FORMÁTU DATA (Převod z YYYY-MM-DD zpět na D. M. YYYY)
+                    let displayDate = item.datum;
+                    if (displayDate && displayDate.includes('-')) {
+                        const parts = displayDate.split('-');
+                        if (parts.length === 3) {
+                            displayDate = `${parts[2]}. ${parts[1]}. ${parts[0]}`;
+                        }
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.dataset.id = item.id;
+                    tr.innerHTML = `
+                        <td><input type="text" class="row-date" value="${displayDate || ''}"></td>
+                        <td><input type="time" class="row-start" value="${item.zacatek || ''}"></td>
+                        <td><input type="time" class="row-end" value="${item.konec || ''}"></td>
+                        <td><input type="text" class="row-pause" value="${item.prestavka || item.prestashka || '0'}"></td>
+                        <td><input type="text" class="row-project" value="${item.projekt || ''}"></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+        } catch (error) {
+            console.error(error);
+            const alertBox = document.getElementById('errorAlert');
+            alertBox.innerText = 'Chyba načítání odkazu. Data jsou poškozená nebo neúplná.';
+            alertBox.style.display = 'block';
+        }
+    }
+
+    // Funkce pro stažení PDF do mobilu/PC
+    function saveAsPDF() {
+        const element = document.querySelector('.container');
+        const opt = {
+            margin:       10,
+            filename:     'Protokol_Abnahme.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
+
+</body>
+</html>
