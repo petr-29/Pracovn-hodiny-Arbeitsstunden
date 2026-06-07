@@ -210,6 +210,9 @@
                     <button class="btn-main" style="background:#3498db; color:white; font-size:15px; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="shareRemoteLink()">
                         <span data-cs="🔗 Sdílet odkaz (vyvolá menu Sdílení)" data-de="🔗 Link teilen (öffnet Teilen-Menü)">🔗 Sdílet odkaz (vyvolá menu Sdílení)</span>
                     </button>
+                    <button class="btn-sec" style="background:#2ecc71; border: 1px solid #27ae60; padding: 12px; font-weight:bold; font-size:15px; color:#fff;" onclick="copyRemoteLink()">
+                        <span data-cs="📋 Zkopírovat samotný odkaz" data-de="📋 Nur den Link kopieren">📋 Zkopírovat samotný odkaz</span>
+                    </button>
                     <button class="btn-sec" style="background:#ecf0f1; border: 1px solid #bdc3c7; padding: 12px; font-weight:bold; font-size:15px; color:#2c3e50;" onclick="openRemoteLink()">
                         <span data-cs="👁️ Otevřít odkaz zde (otevře v prohlížeči)" data-de="👁️ Link hier öffnen (öffnet im Browser)">👁️ Otevřít odkaz zde (otevře v prohlížeči)</span>
                     </button>
@@ -559,8 +562,7 @@
                 try {
                     await navigator.share({
                         title: currentLang === 'cs' ? 'Dokument k podpisu' : 'Dokument zur Unterschrift',
-                        text: currentLang === 'cs' ? 'Prosím o podpis pracovního výkazu přes tento odkaz:' : 'Bitte um Unterschrift des Arbeitsnachweises über diesen Link:',
-                        url: url
+                        url: url // Zde je odstraněn onen vložený text zprávy
                     });
                 } catch (e) { console.log('Sdílení zrušeno nebo selhalo', e); }
             } else {
@@ -568,6 +570,19 @@
                     alert(currentLang === 'cs' ? "Váš prohlížeč nativní sdílení nepodporuje. Odkaz byl ale úspěšně zkopírován do schránky (můžete jej vložit do zprávy)." : "Ihr Browser unterstützt natives Teilen nicht. Der Link wurde jedoch in die Zwischenablage kopiert.");
                 });
             }
+        }
+
+        // Přidána funkce pro kopírování odkazu
+        function copyRemoteLink() {
+            if (!dataPodpisuIch) {
+                if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto pokračovat?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem fortfahren?")) return;
+            }
+            let url = buildShareUrl();
+            navigator.clipboard.writeText(url).then(() => {
+                alert(currentLang === 'cs' ? "Odkaz byl zkopírován do schránky! Nyní ho můžete kamkoliv vložit." : "Link wurde in die Zwischenablage kopiert! Sie können ihn nun überall einfügen.");
+            }).catch(err => {
+                alert(currentLang === 'cs' ? "Kopírování selhalo." : "Kopieren fehlgeschlagen.");
+            });
         }
 
         function openRemoteLink() {
