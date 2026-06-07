@@ -421,11 +421,170 @@
             let adresa = document.getElementById('cfg-adresa').value;
             let mesto = document.getElementById('cfg-mesto').value;
             let pKunde = document.getElementById('cfg-podpis').value || '---';
-            let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
+            let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].    let html = '';
 
-            let html = '';
+    if (currentExportType === 'standard') {
+        let tableRowsHtml = '';
+        let totalNetHours = 0;
+
+        if (vybrane.length > 0) {
+            // Najdeme pondělí pro týden, ze kterého je první vybraný záznam
+            let baseDate = new Date(vybrane[0].datum);
+            let dayOfWeek = baseDate.getDay(); // 0 = Neděle, 1 = Pondělí...
+            let diff = baseDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            let monday = new Date(baseDate.setDate(diff));
+
+            let daysOfWeekGerman = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+
+            // Vygenerujeme fixně všech 7 dní od pondělí do neděle
+            for (let i = 0; i < 7; i++) {
+                let currentDay = new Date(monday);
+                currentDay.setDate(monday.getDate() + i);
+
+                let dateStr = `${currentDay.getDate()}.${currentDay.getMonth() + 1}.${currentDay.getFullYear()}`;
+
+                // Podíváme se, jestli pro tento den existuje záznam v odpracovaných hodinách
+                let match = vybrane.find(item => {
+                    let d = new Date(item.datum);
+                    return d.getDate() === currentDay.getDate() &&
+                           d.getMonth() === currentDay.getMonth() &&
+                           d.getFullYear() === currentDay.getFullYear();
+                });
+
+                let vonBis = '';
+                let gesamtH = '';
+                let pauseVal = '';
+                let ohnePause = '';
+
+                if (match) {
+                    let start = match.zacatek || match.start || '';
+                    let end = match.konec || match.end || '';
+                    let p = match.prestavka || match.pause || '';
+                    let h = match.hodiny || match.hours || '';
+
+                    if (start && end) vonBis = `${start} - ${end}`;
+                    pauseVal = p ? (p.toString().includes('m') ? p : p + 'm') : '';
+                    ohnePause = h ? parseFloat(h).toFixed(2) : '';
+
+                    // Výpočet hrubého času (Gesamt h) mezi začátkem a koncem
+                    if (start && end) {
+                        let [sH, sM] = start.split(':').map(Number);
+                        let [eH, eM] = end.split(':').map(Number);
+                        if (!isNaN(sH) && !isNaN(eH)) {
+                            let diffMin = (eH * 60 + eM) - (sH * 60 + sM);
+                            if (diffMin > 0) {
+                                gesamtH = (diffMin / 60).toFixed(2);
+                            }
+                        }
+                    }
+                    if (h) totalNetHours += parseFloat(h);
+                }
+
+                // Přidání řádku do německé tabulky
+                tableRowsHtml += `
+                    <tr>
+                        <td style="border: 1px solid black; padding: 7px; font-weight: bold; background-color: #fcfcfc;">${daysOfWeekGerman[i]}</td>
+                        <td style="border: 1px solid black; padding: 7px; text-align: center;">${dateStr}</td>
+                        <td style="border: 1px solid black; padding: 7px; text-align: center; font-weight: 500;">${vonBis || '&nbsp;'}</td>
+                        <td style="border: 1px solid black; padding: 7px; text-align: center;">${gesamtH || '&nbsp;'}</td>
+                        <td style="border: 1px solid black; padding: 7px; text-align: center;">${pauseVal || '&nbsp;'}</td>
+                        <td style="border: 1px solid black; padding: 7px; text-align: center; font-weight: bold;">${ohnePause || '&nbsp;'}</td>
+                        <td style="border: 1px solid black; padding: 7px; text-align: center; color: #aba; font-size: 10px; letter-spacing: 2px;">ja / nein</td>
+                        <td style="border: 1px solid black; padding: 7px; text-align: center; color: #aba; font-size: 10px; letter-spacing: 2px;">ja / nein</td>
+                    </tr>
+                `;
+            }
+        } else {
+            tableRowsHtml = '<tr><td colspan="8" style="border: 1px solid black; padding: 20px; text-align: center; color: #666;">Keine Daten für diese Woche vorhanden.</td></tr>';
+        }
+
+        // Sestavení kompletního vzhledu dokumentu (Obrázek 2)
+        html += `
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 15px; color: black; background: white; box-sizing: border-box;">
             
-            if (currentExportType === 'standard') {
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: bottom; padding-bottom: 5px;">
+                        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 3px solid black; display: inline-block; padding-bottom: 2px;">TÄTIGKEITSNACHWEIS</h1>
+                    </td>
+                    <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+                        <div style="border: 1px solid black; padding: 8px; min-height: 85px; font-size: 13px; line-height: 1.4;">
+                            <strong style="font-size: 10px; text-transform: uppercase; color: #555; display: block; margin-bottom: 4px; border-bottom: 1px dashed #ccc; padding-bottom: 2px;">Kundenanschrift:</strong>
+                            <div style="font-weight: bold;">${firma || '&nbsp;'}</div>
+                            <div>${adresa || '&nbsp;'}</div>
+                            <div>${mesto || '&nbsp;'}</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="text-align: right; margin-bottom: 12px; font-size: 13px;">
+                <label style="margin-right: 25px; font-weight: bold; cursor: pointer;"><input type="checkbox" style="vertical-align: middle; margin-right: 6px;"> Regional</label>
+                <strong>KW:</strong> <span style="background: #f0f0f0; padding: 2px 8px; border: 1px solid #ccc; border-radius: 3px;">${kwNum}</span>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px;">
+                <tr>
+                    <td style="border: 1px solid black; padding: 8px; width: 50%; vertical-align: top;">
+                        <span style="color: #666; font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 2px;">Name, Vorname</span>
+                        <strong>${jmeno || '&nbsp;'}</strong>
+                    </td>
+                    <td style="border: 1px solid black; padding: 8px; width: 50%; vertical-align: middle; background-color: #f7f7f7; font-size: 11px; font-weight: bold; text-align: center; color: #444;">
+                        Mitarbeiter bitte ankreuzen:
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="border: 1px solid black; padding: 8px; vertical-align: top;">
+                        <span style="color: #666; font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 2px;">Baustelle</span>
+                        <strong>${(vybrane[0]?.zakazka || vybrane[0]?.cisloZakazky || '') || '&nbsp;'}</strong>
+                    </td>
+                </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px;">
+                <thead>
+                    <tr style="background-color: #e6e6e6; text-align: center; font-weight: bold;">
+                        <th style="border: 1px solid black; padding: 6px; text-align: left; width: 12%;">Tage</th>
+                        <th style="border: 1px solid black; padding: 6px; width: 13%;">Datum</th>
+                        <th style="border: 1px solid black; padding: 6px; width: 18%;">Arb.-Zeit<br><span style="font-size: 10px; font-weight: normal;">von &nbsp; &nbsp; &nbsp; &nbsp; bis</span></th>
+                        <th style="border: 1px solid black; padding: 6px; width: 10%;">Gesamt h</th>
+                        <th style="border: 1px solid black; padding: 6px; width: 9%;">Pause</th>
+                        <th style="border: 1px solid black; padding: 6px; width: 12%;">Gesamt ohne<br>Pause</th>
+                        <th style="border: 1px solid black; padding: 6px; width: 13%;">Tägliche<br>Heimfahrt?<br><span style="font-size: 9px; font-weight: normal; color:#555;">ja &nbsp; | &nbsp; nein</span></th>
+                        <th style="border: 1px solid black; padding: 6px; width: 13%;">Übernachtung<br>am Einsatzort?<br><span style="font-size: 9px; font-weight: normal; color:#555;">ja &nbsp; | &nbsp; nein</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
+                <tfoot>
+                    <tr style="background-color: #f2f2f2; font-weight: bold; font-size: 13px;">
+                        <td colspan="5" style="border: 1px solid black; padding: 10px; text-align: right;">Gesamtstunden pro Woche:</td>
+                        <td style="border: 1px solid black; padding: 10px; text-align: center; color: #2e7d32; font-size: 14px;">${totalNetHours.toFixed(2)} h</td>
+                        <td colspan="2" style="border: 1px solid black;"></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <p style="font-size: 10.5px; font-style: italic; margin-top: 4px; margin-bottom: 35px; color: #333;">
+                Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.
+            </p>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 12px;">
+                <tr>
+                    <td style="width: 44%; border-top: 1px solid black; text-align: center; padding-top: 6px; font-weight: bold; color: #444;">
+                        Unterschrift und Stempel des Kunden
+                    </td>
+                    <td style="width: 12%;"></td>
+                    <td style="width: 44%; border-top: 1px solid black; text-align: center; padding-top: 6px; font-weight: bold; color: #444;">
+                        Datum / Unterschrift des Mitarbeiters
+                    </td>
+                </tr>
+            </table>
+        </div>
+        `;
+    }
+
                 html += `<div class="preview-header-full">TÄTIGKEITSNACHWEIS</div>`;
                 html += `<div class="preview-flex-header">`;
                 html += `  <div style="line-height:1.5;">`;
