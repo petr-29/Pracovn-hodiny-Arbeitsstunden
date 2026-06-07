@@ -136,6 +136,14 @@
             touch-action: none;
             margin: 15px 0;
         }
+
+        .action-button-large {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px;
+            font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4;
+        }
+        .action-button-large small { font-size: 12px; font-weight: normal; opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -144,6 +152,7 @@
         let remoteMode = false;
         let remoteZaznamy = [];
         let currentExportType = '';
+        let remoteDataPayload = null; // Uchování dat z odkazu
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
@@ -323,7 +332,23 @@
                     <label>Odpovědná osoba (Klient / Šéf)</label>
                     <input type="text" id="cfg-podpis" value="---">
                 </div>
-                <button class="btn-main" onclick="saveSettings()">Uložit Nastavení</button>
+
+                <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
+                <div class="card-title">Kontakty pro automatické odesílání</div>
+                <div class="form-group">
+                    <label>E-mail: Účtárna (Buchhaltung)</label>
+                    <input type="email" id="cfg-email-uctarna" placeholder="např. uctarna@firma.cz">
+                </div>
+                <div class="form-group">
+                    <label>E-mail: Pracovník (Kopie pro Vás)</label>
+                    <input type="email" id="cfg-email-pracovnik" placeholder="např. petr@michalek.cz">
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp: Pracovník (Kopie pro Vás)</label>
+                    <input type="text" id="cfg-wa-pracovnik" placeholder="Mezinárodní formát (např. 420123456789)">
+                </div>
+
+                <button class="btn-main" onclick="saveSettings()" style="margin-top:15px;">Uložit Nastavení</button>
             </div>
         </div>
 
@@ -614,6 +639,9 @@
                 sVadami: document.getElementById('ab-sVadami').checked,
                 vadyText: document.getElementById('ab-vadyText').value,
                 odstraneniDo: document.getElementById('ab-odstraneniDo').value,
+                emailUctarna: document.getElementById('cfg-email-uctarna').value,
+                emailPracovnik: document.getElementById('cfg-email-pracovnik').value,
+                waPracovnik: document.getElementById('cfg-wa-pracovnik').value,
                 dataPodpisuIch: dataPodpisuIchTiny || dataPodpisuIch, // Zabalení zmenšeného podpisu pro krátký odkaz
                 zaznamy: vybrane
             };
@@ -625,6 +653,7 @@
             });
         }
 
+        // Tlačítko Dokončit pro Šéfa + zobrazení nových komunikačních tlačítek
         function finishRemoteSign() {
             if (!dataPodpisuKunde) {
                 alert("Prosím, podepište dokument kliknutím na vyhrazené místo. / Bitte unterschreiben Sie das Dokument.");
@@ -640,40 +669,61 @@
             successDiv.innerHTML = `
                 <div style="text-align:center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ccc;">
                     <h2 style="color:#2ecc71; margin-bottom:5px;">Děkuji za váš podpis</h2>
-                    <h3 style="color:#7f8c8d; margin-bottom:20px; font-weight:normal;">Danke für Ihre Unterschrift</h3>
-                    <p style="margin-bottom:25px; font-size:14px;">
-                        Podepsaný dokument prosím odešlete stisknutím tlačítka níže přes WhatsApp nebo E-mail.<br><br>
-                        Bitte senden Sie das unterschriebene Dokument über die Schaltfläche unten per WhatsApp oder E-Mail.
-                    </p>
-                    <button class="btn-main" style="background:#25D366; color:white; font-size:16px; padding:15px; margin-bottom:15px;" onclick="sharePdfNative()">
-                        📲 Odeslat dokument (WhatsApp / Mail)
+                    <h3 style="color:#7f8c8d; margin-bottom:15px; font-weight:normal;">Danke für Ihre Unterschrift</h3>
+                    
+                    <div style="background:#fff3cd; border-left:4px solid #f1c40f; padding:10px; margin-bottom:20px; text-align:left; font-size:12px; color:#8a6d3b; line-height:1.4;">
+                        <strong>WICHTIG / DŮLEŽITÉ:</strong><br>
+                        Nach dem Klicken wird die PDF-Datei heruntergeladen. Bitte hängen Sie die Datei <strong>manuell</strong> an die sich öffnende Nachricht an.<br>
+                        <i>(Po kliknutí se stáhne PDF. Prosím, přiložte jej ručně do otevřené zprávy.)</i>
+                    </div>
+
+                    <button class="action-button-large" style="background:#3498db;" onclick="sendSignedDocument('uctarna')">
+                        📧 Odeslat do účtárny<br><small>An die Buchhaltung senden (E-Mail)</small>
                     </button>
-                    <button class="btn-sec" style="width:100%; padding:12px;" onclick="executePDFExport()">
-                        ⬇️ Stáhnout PDF / PDF speichern
+                    <button class="action-button-large" style="background:#f39c12;" onclick="sendSignedDocument('pracovnik_mail')">
+                        📧 Odeslat kopii pracovníkovi<br><small>Kopie an den Mitarbeiter (E-Mail)</small>
                     </button>
+                    <button class="action-button-large" style="background:#25D366;" onclick="sendSignedDocument('pracovnik_wa')">
+                        💬 Odeslat kopii pracovníkovi<br><small>Kopie an den Mitarbeiter (WhatsApp)</small>
+                    </button>
+
+                    <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #ccc;">
+                        <button class="btn-sec" style="width:100%; padding:12px;" onclick="executePDFExport()">
+                            ⬇️ Pouze stáhnout PDF / Nur PDF speichern
+                        </button>
+                    </div>
                 </div>
             `;
             document.getElementById('export-card').appendChild(successDiv);
         }
 
-        async function sharePdfNative() {
-            let blob = executePDFExport(true);
-            let file = new File([blob], "Unterzeichnetes_Dokument.pdf", { type: "application/pdf" });
-            
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Unterzeichnetes Dokument',
-                        text: 'Dobrý den, v příloze zasílám podepsaný dokument / Hallo, anbei sende ich das unterschriebene Dokument.'
-                    });
-                } catch (e) {
-                    console.log('Sdílení zrušeno nebo selhalo', e);
+        // Logika pro stažení a odeslání specifikovaným kontaktům
+        function sendSignedDocument(target) {
+            // 1. Nejprve ihned stáhnout PDF do zařízení
+            executePDFExport();
+
+            // 2. Počkat vteřinu, než se zahájí stahování, a pak otevřít e-mail / WA
+            setTimeout(() => {
+                let subj = encodeURIComponent("Tätigkeitsnachweis / Abnahmeprotokoll - " + (remoteDataPayload.jmeno || ''));
+                let body = encodeURIComponent("Guten Tag,\nanbei sende ich das unterschriebene Dokument. (Bitte die PDF-Datei manuell anhängen!)\n\nDobrý den,\nv příloze zasílám podepsaný dokument. (Nezapomeňte přiložit PDF!)");
+
+                let url = '';
+                if (target === 'uctarna') {
+                    if (!remoteDataPayload.emailUctarna) { alert("E-mail účtárny není nastaven. / E-Mail der Buchhaltung ist nicht eingerichtet."); return; }
+                    url = `mailto:${remoteDataPayload.emailUctarna}?subject=${subj}&body=${body}`;
+                } else if (target === 'pracovnik_mail') {
+                    if (!remoteDataPayload.emailPracovnik) { alert("E-mail pracovníka není nastaven. / E-Mail des Mitarbeiters ist nicht eingerichtet."); return; }
+                    url = `mailto:${remoteDataPayload.emailPracovnik}?subject=${subj}&body=${body}`;
+                } else if (target === 'pracovnik_wa') {
+                    if (!remoteDataPayload.waPracovnik) { alert("WhatsApp číslo není nastaveno. / WhatsApp-Nummer ist nicht eingerichtet."); return; }
+                    let cleanWa = remoteDataPayload.waPracovnik.replace(/[^0-9]/g, '');
+                    url = `https://wa.me/${cleanWa}?text=${body}`;
                 }
-            } else {
-                alert("Váš prohlížeč nepodporuje přímé sdílení. Soubor se nyní stáhne do zařízení, poté jej prosím pošlete ručně.");
-                executePDFExport();
-            }
+
+                if (url) {
+                    window.location.href = url;
+                }
+            }, 1000);
         }
 
         function exportStandardPDF(returnBlob = false) {
@@ -778,7 +828,6 @@
                 }
             }
 
-            // Upravený součet hodin PDF
             let sigY = tY + 106;
             doc.setFont("Helvetica", "bold");
             doc.text("Gesamt: " + totalWeekHours.toFixed(2), 195, sigY, {align: 'right'});
@@ -966,6 +1015,10 @@
             localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value);
             localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
             localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value);
+            // Nové položky k uložení
+            localStorage.setItem('cfg_email_uctarna', document.getElementById('cfg-email-uctarna').value);
+            localStorage.setItem('cfg_email_pracovnik', document.getElementById('cfg-email-pracovnik').value);
+            localStorage.setItem('cfg_wa_pracovnik', document.getElementById('cfg-wa-pracovnik').value);
             alert('Nastavení uloženo!');
         }
 
@@ -975,6 +1028,10 @@
             if(localStorage.getItem('cfg_adresa')) document.getElementById('cfg-adresa').value = localStorage.getItem('cfg_adresa');
             if(localStorage.getItem('cfg_mesto')) document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto');
             if(localStorage.getItem('cfg_podpis')) document.getElementById('cfg-podpis').value = localStorage.getItem('cfg_podpis');
+            // Nové položky k načtení
+            if(localStorage.getItem('cfg_email_uctarna')) document.getElementById('cfg-email-uctarna').value = localStorage.getItem('cfg_email_uctarna');
+            if(localStorage.getItem('cfg_email_pracovnik')) document.getElementById('cfg-email-pracovnik').value = localStorage.getItem('cfg_email_pracovnik');
+            if(localStorage.getItem('cfg_wa_pracovnik')) document.getElementById('cfg-wa-pracovnik').value = localStorage.getItem('cfg_wa_pracovnik');
         }
 
         function exportCSV() {
@@ -994,19 +1051,21 @@
                     let encodedData = params.get('sign');
                     let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
                     
-                    document.getElementById('cfg-jmeno').value = data.jmeno;
-                    document.getElementById('cfg-firma').value = data.firma;
-                    document.getElementById('cfg-adresa').value = data.adresa;
-                    document.getElementById('cfg-mesto').value = data.mesto;
-                    document.getElementById('cfg-podpis').value = data.podpisKundeText;
-                    document.getElementById('ab-bezZkousky').checked = data.bezZkousky;
-                    document.getElementById('ab-seZkouskou').checked = data.seZkouskou;
-                    document.getElementById('ab-sVadami').checked = data.sVadami;
-                    document.getElementById('ab-vadyText').value = data.vadyText;
-                    document.getElementById('ab-odstraneniDo').value = data.odstraneniDo;
+                    remoteDataPayload = data; // Uložení dat pro pozdější použití při odesílání
                     
-                    remoteZaznamy = data.zaznamy; 
-                    currentExportType = data.type;
+                    document.getElementById('cfg-jmeno').value = data.jmeno || '';
+                    document.getElementById('cfg-firma').value = data.firma || '';
+                    document.getElementById('cfg-adresa').value = data.adresa || '';
+                    document.getElementById('cfg-mesto').value = data.mesto || '';
+                    document.getElementById('cfg-podpis').value = data.podpisKundeText || '';
+                    document.getElementById('ab-bezZkousky').checked = data.bezZkousky || false;
+                    document.getElementById('ab-seZkouskou').checked = data.seZkouskou || false;
+                    document.getElementById('ab-sVadami').checked = data.sVadami || false;
+                    document.getElementById('ab-vadyText').value = data.vadyText || '';
+                    document.getElementById('ab-odstraneniDo').value = data.odstraneniDo || '';
+                    
+                    remoteZaznamy = data.zaznamy || []; 
+                    currentExportType = data.type || 'standard';
                     dataPodpisuIch = data.dataPodpisuIch || null;
 
                     document.getElementById('view-zaznamy').classList.remove('hidden');
