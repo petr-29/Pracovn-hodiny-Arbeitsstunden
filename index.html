@@ -82,6 +82,24 @@
 
         .action-button-large { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4; }
         .action-button-large small { font-size: 12px; font-weight: normal; opacity: 0.9; }
+
+        /* Styl pro vygenerovaný přímý Booking odkaz */
+        .booking-link-container {
+            margin-top: 12px;
+            padding: 12px;
+            background: #e8f4f8;
+            border: 1px solid #bce1ec;
+            border-radius: 8px;
+            text-align: center;
+            word-break: break-all;
+        }
+        .booking-link {
+            color: #003580;
+            font-weight: bold;
+            text-decoration: underline;
+            font-size: 15px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -208,8 +226,9 @@
 
                 <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;" id="remote-share-wrapper">
                     <button class="btn-main" style="background:#3498db; color:white; font-size:15px; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="shareRemoteLink()">
-                        <span data-cs="🔗 Sdílet odkaz (vyvolá menu Sdílení)" data-de="🔗 Link teilen (öffnet Teilen-Menü)">🔗 Sdílet odkaz (vyvolá menu Sdílení)</span>
+                        <span data-cs="🔗 Vygenerovat přímý odkaz pro klienta" data-de="🔗 Direkten Link für den Kunden generieren">🔗 Vygenerovat přímý odkaz pro klienta</span>
                     </button>
+                    <div id="booking-link-output" class="hidden"></div>
                     <button class="btn-sec" style="background:#2ecc71; border: 1px solid #27ae60; padding: 12px; font-weight:bold; font-size:15px; color:#fff;" onclick="copyRemoteLink()">
                         <span data-cs="📋 Zkopírovat samotný odkaz" data-de="📋 Nur den Link kopieren">📋 Zkopírovat samotný odkaz</span>
                     </button>
@@ -368,11 +387,12 @@
         function openExportCard(type) {
             let vybrane = zaznamy.filter(z => z.selected);
             if(vybrane.length === 0) { 
-                alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro export!' : 'Bitte wählen Sie zuerst die Zeilen für den Export aus!'); 
+                alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky for export!' : 'Bitte wählen Sie zuerst die Zeilen für den Export aus!'); 
                 return; 
             }
             currentExportType = type;
             document.getElementById('export-card').classList.remove('hidden');
+            document.getElementById('booking-link-output').classList.add('hidden'); // Schovat starý link při novém otevření
             if (type === 'abnahme') {
                 document.getElementById('abnahme-fields').classList.remove('hidden');
                 document.getElementById('btn-execute-export').style.background = '#3498db';
@@ -527,6 +547,7 @@
             document.getElementById('document-live-preview').classList.remove('hidden');
             document.getElementById('wrapper-kunde').classList.remove('hidden');
             document.getElementById('export-card-actions').classList.remove('hidden');
+            document.getElementById('booking-link-output').classList.add('hidden');
         }
 
         function executePDFExport(returnBlob = false) {
@@ -553,26 +574,24 @@
             return window.location.href.split('?')[0] + '?sign=' + encodedData;
         }
 
+        // UPRAVENO: Funkce nyní vytvoří přímo klikatelný modrý Booking-styl odkaz pod tlačítkem
         async function shareRemoteLink() {
             if (!dataPodpisuIch) {
-                if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto odkaz sdílet?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem teilen?")) return;
+                if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto odkaz vygenerovat?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem generieren?")) return;
             }
             let url = buildShareUrl();
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: currentLang === 'cs' ? 'Dokument k podpisu' : 'Dokument zur Unterschrift',
-                        url: url // Zde je odstraněn onen vložený text zprávy
-                    });
-                } catch (e) { console.log('Sdílení zrušeno nebo selhalo', e); }
-            } else {
-                navigator.clipboard.writeText(url).then(() => {
-                    alert(currentLang === 'cs' ? "Váš prohlížeč nativní sdílení nepodporuje. Odkaz byl ale úspěšně zkopírován do schránky (můžete jej vložit do zprávy)." : "Ihr Browser unterstützt natives Teilen nicht. Der Link wurde jedoch in die Zwischenablage kopiert.");
-                });
-            }
+            let linkBox = document.getElementById('booking-link-output');
+            
+            linkBox.innerHTML = `
+                <div class="booking-link-container">
+                    <a href="${url}" target="_blank" class="booking-link">
+                        ${url}
+                    </a>
+                </div>
+            `;
+            linkBox.classList.remove('hidden');
         }
 
-        // Přidána funkce pro kopírování odkazu
         function copyRemoteLink() {
             if (!dataPodpisuIch) {
                 if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto pokračovat?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem fortfahren?")) return;
@@ -667,7 +686,7 @@
             document.getElementById('export-card').appendChild(successDiv);
         }
 
-        // --- EXPORT PDF FUNKCE (beze změn v logice, pouze zachování původních designů) ---
+        // --- EXPORT PDF FUNKCE ---
         function exportStandardPDF(returnBlob = false) {
             const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
@@ -810,15 +829,12 @@
         function setLanguage(lang) {
             currentLang = lang; localStorage.setItem('app_lang', lang);
             
-            // Aktivace správného tlačítka
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.lang-btn[onclick="setLanguage('${lang}')"]`).classList.add('active');
 
-            // Překlad všech prvků s atributy data-cs a data-de
             document.querySelectorAll('[data-cs]').forEach(el => {
                 el.innerHTML = el.getAttribute('data-' + lang);
             });
-            // Překlad placeholderů (v textových polích)
             document.querySelectorAll('[data-ph-cs]').forEach(el => {
                 el.setAttribute('placeholder', el.getAttribute('data-ph-' + lang));
             });
