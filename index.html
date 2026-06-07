@@ -62,21 +62,38 @@
         .action-toolbar { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .btn-sec { background: #e0e0e0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; }
 
-        .preview-box {
-            background: #fff;
+        /* NOVÝ EXKLUZIVNÍ FULL-PAGE NÁHLED DOKUMENTU */
+        .preview-container-full {
+            background: #ffffff;
             border: 1px solid #bdc3c7;
-            padding: 15px;
-            border-radius: 6px;
+            padding: 20px;
+            border-radius: 8px;
             font-size: 13px;
-            margin: 15px 0;
-            max-height: 250px;
-            overflow-y: auto;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: #000000;
         }
-        .preview-header { font-weight: bold; text-align: center; font-size: 15px; margin-bottom: 10px; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; }
-        .preview-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .preview-table th, .preview-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-        .preview-table th { background-color: #f2f2f2; }
+        .preview-header-full { 
+            font-weight: bold; 
+            text-align: center; 
+            font-size: 16px; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #2c3e50; 
+            padding-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .preview-meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 15px;
+        }
+        .preview-meta-item { line-height: 1.4; }
+        .preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        .preview-table th, .preview-table td { border: 1px solid #bdc3c7; padding: 8px; text-align: left; font-size: 12px; }
+        .preview-table th { background-color: #f2f2f2; font-weight: bold; }
 
         .signature-placeholder {
             border: 2px dashed #3498db;
@@ -126,7 +143,7 @@
 </head>
 <body>
 
-    <!-- TENTO DROBEČEK KÓDU OKAMŽITĚ SKRYJE CELOU APLIKACI PŘED ŠÉFEM, POKUD DETEKUJE PARAMETR ?sign -->
+    <!-- OKAMŽITÁ OCHRANA PŘED ŠÉFEM -->
     <script>
         let remoteMode = false;
         let remoteZaznamy = [];
@@ -134,7 +151,6 @@
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
-            // Vstříkneme do stránky styl, který skryje všechno nežádoucí ještě před vykreslením zbytku HTML
             const style = document.createElement('style');
             style.innerHTML = `
                 #main-lang-bar, #view-kalkulacka, #view-nastaveni, 
@@ -225,16 +241,17 @@
             <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
                 <div class="card-title">Kontrola dokumentu před podpisem</div>
                 
-                <div id="document-live-preview" class="preview-box"></div>
+                <!-- VELKÝ FULL-PAGE NÁHLED BEZ SCROLLBOXU -->
+                <div id="document-live-preview" class="preview-container-full"></div>
 
                 <div id="abnahme-fields" class="hidden">
                     <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
                     <div class="form-group inline">
-                        <input type="checkbox" id="ab-bezZkousky" onchange="document.getElementById('ab-seZkouskou').checked = !this.checked">
+                        <input type="checkbox" id="ab-bezZkousky" onchange="document.getElementById('ab-seZkouskou').checked = !this.checked; updateLivePreview();">
                         <label for="ab-bezZkousky">Ohne Funktionsprüfung (Bez funkční zkoušky)</label>
                     </div>
                     <div class="form-group inline">
-                        <input type="checkbox" id="ab-seZkouskou" checked onchange="document.getElementById('ab-bezZkousky').checked = !this.checked">
+                        <input type="checkbox" id="ab-seZkouskou" checked onchange="document.getElementById('ab-bezZkousky').checked = !this.checked; updateLivePreview();">
                         <label for="ab-seZkouskou">Mit Funktionsprüfung (S funkční zkouškou)</label>
                     </div>
                     <div class="form-group inline" style="margin-top:10px;">
@@ -398,6 +415,7 @@
                 document.getElementById('box-ich').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
             }
             closeSignatureModal();
+            updateLivePreview(); // překreslit náhled i s novým podpisem
         }
 
         function openExportCard(type) {
@@ -422,40 +440,88 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
+        /* OPRAVENÝ KOMPLETNÍ NÁHLED NA CELOU STRÁNKU */
         function updateLivePreview() {
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
             vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             
             let jmeno = document.getElementById('cfg-jmeno').value;
             let firma = document.getElementById('cfg-firma').value;
-            
+            let adresa = document.getElementById('cfg-adresa').value;
+            let mesto = document.getElementById('cfg-mesto').value;
+            let pKunde = document.getElementById('cfg-podpis').value || '---';
+
+            let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
+            let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
+            let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
+
             let html = '';
+            
             if (currentExportType === 'abnahme') {
+                let bezZkousky = document.getElementById('ab-bezZkousky').checked;
+                let seZkouskou = document.getElementById('ab-seZkouskou').checked;
                 let sVadami = document.getElementById('ab-sVadami').checked;
                 let vadyText = document.getElementById('ab-vadyText').value || '---';
                 let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
 
-                html += `<div class="preview-header">ABNAHMEPROTOKOLL (Náhled)</div>`;
-                html += `<div><strong>Auftragnehmer:</strong> ${jmeno}</div>`;
-                html += `<div><strong>Kunde:</strong> ${firma}</div>`;
+                html += `<div class="preview-header-full">ABNAHME- & FORTSCHRITTSPROTOKOLL</div>`;
+                html += `<div class="preview-meta-grid">`;
+                html += `<div class="preview-meta-item"><strong>Auftragnehmer:</strong><br>${jmeno}</div>`;
+                html += `<div class="preview-meta-item"><strong>Kunde:</strong><br>${firma}</div>`;
+                html += `<div class="preview-meta-item"><strong>Projekt-Nr:</strong><br>${cisloZ}</div>`;
+                html += `<div class="preview-meta-item"><strong>Anschrift:</strong><br>${adresa}, ${mesto}</div>`;
+                html += `<div class="preview-meta-item"><strong>Zeitraum:</strong><br>${startDatum} - ${endDatum}</div>`;
+                html += `</div>`;
+
+                html += `<table class="preview-table"><tr><th>Datum</th><th>Tätigkeit</th><th style="text-align:right;">h</th></tr>`;
+                let celkem = 0;
+                vybrane.forEach(z => {
+                    let h = kalkulujCisteHodiny(z);
+                    celkem += h;
+                    html += `<tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${z.popisPrace || '---'}</td><td style="text-align:right;">${h.toFixed(2)}</td></tr>`;
+                });
+                html += `<tr><td colspan="2" style="text-align:right;"><strong>Gesamt Stunden:</strong></td><td style="text-align:right;"><strong>${celkem.toFixed(2)}</strong></td></tr></table>`;
+
+                html += `<div style="margin-top:20px; font-weight:bold;">Status:</div>`;
+                html += `<div style="margin-top:5px;">[${bezZkousky ? 'X' : ' '}] ohne Funktionsprüfung abgenommen</div>`;
+                html += `<div>[${seZkouskou ? 'X' : ' '}] mit Funktionsprüfung abgenommen</div>`;
+                html += `<div>[${sVadami ? 'X' : ' '}] Mängel festgestellt: ${sVadami ? vadyText : 'Nein / Žádné'}</div>`;
                 if(sVadami) {
-                    html += `<div style="color:red; margin-top:5px;"><strong>Mängel:</strong> ${vadyText}</div>`;
-                    html += `<div style="color:red;"><strong>Behoben bis:</strong> ${odstraneniDo}</div>`;
+                    html += `<div style="color:red; margin-top:5px;"><strong>Beheben bis:</strong> ${odstraneniDo}</div>`;
                 }
+
             } else {
-                html += `<div class="preview-header">TÄTIGKEITSNACHWEIS (Náhled)</div>`;
-                html += `<div><strong>Mitarbeiter:</strong> ${jmeno}</div>`;
-                html += `<div><strong>Kunde:</strong> ${firma}</div>`;
+                // TÄTIGKEITSNACHWEIS
+                html += `<div class="preview-header-full">TÄTIGKEITSNACHWEIS</div>`;
+                html += `<div class="preview-meta-grid">`;
+                html += `<div class="preview-meta-item"><strong>Mitarbeiter:</strong><br>${jmeno}</div>`;
+                html += `<div class="preview-meta-item"><strong>Kunde:</strong><br>${firma}<br>${adresa}<br>${mesto}</div>`;
+                html += `</div>`;
+
+                html += `<table class="preview-table"><tr><th>Datum</th><th>von - bis</th><th>Pause</th><th style="text-align:right;">Gesamt h</th></tr>`;
+                let celkem = 0;
+                vybrane.forEach(z => {
+                    let h = kalkulujCisteHodiny(z);
+                    celkem += h;
+                    html += `<tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${z.zacatek} - ${z.konec}</td><td>${z.prestavka}m</td><td style="text-align:right;">${h.toFixed(2)}</td></tr>`;
+                });
+                html += `<tr><td colspan="3" style="text-align:right;"><strong>Gesamt h:</strong></td><td style="text-align:right;"><strong>${celkem.toFixed(2)}</strong></td></tr></table>`;
             }
 
-            html += `<table class="preview-table"><tr><th>Datum</th><th>Beschreibung</th><th>h</th></tr>`;
-            let celkem = 0;
-            vybrane.forEach(z => {
-                let h = kalkulujCisteHodiny(z);
-                celkem += h;
-                html += `<tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${z.popisPrace || '---'}</td><td>${h.toFixed(2)}</td></tr>`;
-            });
-            html += `<tr><td colspan="2" style="text-align:right;"><strong>Gesamt Stunden:</strong></td><td><strong>${celkem.toFixed(2)}</strong></td></tr></table>`;
+            // Vizuální kontrola vložených podpisů přímo v náhledu
+            html += `<div style="margin-top:30px; display:flex; justify-content:space-between; border-top:1px solid #eee; padding-top:15px;">`;
+            html += `<div style="text-align:center; width:45%;">`;
+            if(dataPodpisuKunde) html += `<img src="${dataPodpisuKunde}" style="max-height:50px; display:block; margin:0 auto;">`;
+            else html += `<div style="height:50px; border:1px dashed #ccc; line-height:50px; font-size:11px; color:#aaa;">(Chybí podpis klienta)</div>`;
+            html += `<div style="font-size:10px; margin-top:5px; border-top:1px solid #000;">Unterschrift Kunde (${pKunde})</div>`;
+            html += `</div>`;
+
+            html += `<div style="text-align:center; width:45%;">`;
+            if(dataPodpisuIch) html += `<img src="${dataPodpisuIch}" style="max-height:50px; display:block; margin:0 auto;">`;
+            else html += `<div style="height:50px; border:1px dashed #ccc; line-height:50px; font-size:11px; color:#aaa;">(Chybí tvůj podpis)</div>`;
+            html += `<div style="font-size:10px; margin-top:5px; border-top:1px solid #000;">Unterschrift Auftragnehmer (${jmeno})</div>`;
+            html += `</div>`;
+            html += `</div>`;
 
             document.getElementById('document-live-preview').innerHTML = html;
         }
