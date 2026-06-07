@@ -269,12 +269,12 @@
                     <button class="btn-main" style="background:#3498db; color:white; font-size:15px;" onclick="generateRemoteSignLink()">🔗 GENEROVAT ODKAZ PRO ŠÉFA (WhatsApp / Mail)</button>
                 </div>
 
-                <div style="margin-bottom: 12px;">
+                <div style="margin-bottom: 12px;" id="wrapper-kunde">
                     <label style="font-weight:bold; font-size:14px; color:#2980b9;">1. Podpis klienta / Stavbyvedoucího:</label>
                     <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')">Klikněte pro podepsání prstem</div>
                 </div>
 
-                <div style="margin-bottom: 15px;">
+                <div style="margin-bottom: 15px;" id="wrapper-ich">
                     <label style="font-weight:bold; font-size:14px; color:#27ae60;">2. Váš podpis (Dodavatel):</label>
                     <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')">Klikněte pro podepsání prstem</div>
                 </div>
@@ -370,6 +370,7 @@
             ctx.lineWidth = 3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
+            // Nastavení modré propisky
             ctx.strokeStyle = '#0a3ca6';
         }
 
@@ -380,7 +381,15 @@
             const blank = document.createElement('canvas');
             blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
-            const dataUrl = canvas.toDataURL('image/png');
+            
+            // Komprese podpisu pro odkaz na WhatsApp (menší canvas)
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = canvas.width / 2;
+            tmpCanvas.height = canvas.height / 2;
+            const tCtx = tmpCanvas.getContext('2d');
+            tCtx.drawImage(canvas, 0, 0, tmpCanvas.width, tmpCanvas.height);
+            const dataUrl = tmpCanvas.toDataURL('image/png');
+
             if (targetSignature === 'kunde') {
                 dataPodpisuKunde = dataUrl;
                 document.getElementById('box-kunde').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
@@ -427,9 +436,7 @@
                 let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
                 let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
 
-                // HTML konstrukce odpovídající přesně originálnímu vzoru s přidáním KW
                 html += `<div style="position:relative; background:#fff; border:1px solid #ccc; padding:20px; font-family:sans-serif; color:#000;">`;
-                // PŘIDÁNO: KW v pravém horním rohu náhledu
                 html += `  <div style="position:absolute; top:20px; right:20px; font-weight:bold; font-size:14px; border:1px solid #000; padding:4px 8px;">KW ${kwNum}</div>`;
                 html += `  <div style="text-align:center; font-weight:bold; font-size:18px; margin-bottom: 20px;">TÄTIGKEITSNACHWEIS</div>`;
                 html += `  <div style="width:250px; margin:0 auto 20px auto; border:1px solid #000; font-size:12px;">`;
@@ -466,6 +473,7 @@
                 html += `    </tr>`;
 
                 let dayRecords = new Array(7).fill(null);
+                let totalWeekHours = 0;
                 vybrane.forEach(z => {
                     let d = new Date(z.datum).getDay();
                     let idx = d === 0 ? 6 : d - 1;
@@ -478,6 +486,7 @@
                     if(rec) {
                         let dFmt = new Date(rec.datum).toLocaleDateString('de-DE');
                         let h = kalkulujCisteHodiny(rec);
+                        totalWeekHours += h;
                         let start = rec.zacatek; let end = rec.konec; let pause = rec.prestavka;
                         let [h1, m1] = start.split(':').map(Number); let [h2, m2] = end.split(':').map(Number);
                         let startM = h1*60+m1; let endM = h2*60+m2; if(endM < startM) endM += 24*60;
@@ -497,6 +506,9 @@
                 }
 
                 html += `  </table>`;
+                
+                // Přidání součtu hodin
+                html += `  <div style="text-align:right; font-weight:bold; font-size:12px; margin-top:8px;">Gesamtstunden (Součet hodin): ${totalWeekHours.toFixed(2)} h</div>`;
                 html += `  <div style="margin-top:15px; font-size:10px;">Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.</div>`;
                 html += `  <div style="margin-top:40px; display:flex; justify-content:space-between; font-size:11px;">`;
                 html += `      <div style="width:45%; border-top:1px solid #000; position:relative; padding-top:4px;">`;
@@ -511,7 +523,6 @@
                 html += `</div>`;
 
             } else {
-                // Původní Abnahme náhled
                 let bezZkousky = document.getElementById('ab-bezZkousky').checked;
                 let seZkouskou = document.getElementById('ab-seZkouskou').checked;
                 let sVadami = document.getElementById('ab-sVadami').checked;
@@ -567,15 +578,23 @@
             dataPodpisuKunde = null; dataPodpisuIch = null;
             document.getElementById('box-kunde').innerText = 'Klikněte pro podepsání prstem';
             document.getElementById('box-ich').innerText = 'Klikněte pro podepsání prstem';
+            let sScreen = document.getElementById('success-screen');
+            if (sScreen) sScreen.remove();
+            document.getElementById('document-live-preview').classList.remove('hidden');
+            document.getElementById('wrapper-kunde').classList.remove('hidden');
+            document.getElementById('export-card-actions').classList.remove('hidden');
         }
 
-        function executePDFExport() {
-            if (currentExportType === 'abnahme') exportAbnahmePDF();
-            else exportStandardPDF();
-            if(!remoteMode) closeExportCard();
+        function executePDFExport(returnBlob = false) {
+            if (currentExportType === 'abnahme') return exportAbnahmePDF(returnBlob);
+            else return exportStandardPDF(returnBlob);
+            if(!remoteMode && !returnBlob) closeExportCard();
         }
 
         function generateRemoteSignLink() {
+            if (!dataPodpisuIch) {
+                if(!confirm("Nemáte vložený Váš podpis. Chcete přesto vytvořit odkaz? (Pro šéfa bude lepší, když se tam nejprve podepíšete.)")) return;
+            }
             let vybrane = zaznamy.filter(z => z.selected);
             let meta = {
                 type: currentExportType,
@@ -589,17 +608,72 @@
                 sVadami: document.getElementById('ab-sVadami').checked,
                 vadyText: document.getElementById('ab-vadyText').value,
                 odstraneniDo: document.getElementById('ab-odstraneniDo').value,
+                dataPodpisuIch: dataPodpisuIch, // Zabalení vlastního podpisu
                 zaznamy: vybrane
             };
             let jsonString = JSON.stringify(meta);
             let encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
             let shareUrl = window.location.href.split('?')[0] + '?sign=' + encodedData;
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("Odkaz ke vzdálenému podpisu byl bezpečně zkopírován do schránky!");
+                alert("Odkaz ke vzdálenému podpisu byl bezpečně zkopírován do schránky! Nyní jej můžete odeslat šéfovi (např. přes WhatsApp nebo e-mail).");
             });
         }
 
-        function exportStandardPDF() {
+        // Tlačítko Dokončit pro Šéfa
+        function finishRemoteSign() {
+            if (!dataPodpisuKunde) {
+                alert("Prosím, podepište dokument kliknutím na vyhrazené místo. / Bitte unterschreiben Sie das Dokument.");
+                return;
+            }
+            
+            // Schování náhledu a podpisových prvků
+            document.getElementById('document-live-preview').classList.add('hidden');
+            document.getElementById('wrapper-kunde').classList.add('hidden');
+            document.getElementById('export-card-actions').classList.add('hidden');
+            
+            // Zobrazení poděkování a odeslání
+            let successDiv = document.createElement('div');
+            successDiv.id = 'success-screen';
+            successDiv.innerHTML = `
+                <div style="text-align:center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ccc;">
+                    <h2 style="color:#2ecc71; margin-bottom:5px;">Děkuji za váš podpis</h2>
+                    <h3 style="color:#7f8c8d; margin-bottom:20px; font-weight:normal;">Danke für Ihre Unterschrift</h3>
+                    <p style="margin-bottom:25px; font-size:14px;">
+                        Podepsaný dokument prosím odešlete stisknutím tlačítka níže přes WhatsApp nebo E-mail.<br><br>
+                        Bitte senden Sie das unterschriebene Dokument über die Schaltfläche unten per WhatsApp oder E-Mail.
+                    </p>
+                    <button class="btn-main" style="background:#25D366; color:white; font-size:16px; padding:15px; margin-bottom:15px;" onclick="sharePdfNative()">
+                        📲 Odeslat dokument (WhatsApp / Mail)
+                    </button>
+                    <button class="btn-sec" style="width:100%; padding:12px;" onclick="executePDFExport()">
+                        ⬇️ Stáhnout PDF / PDF speichern
+                    </button>
+                </div>
+            `;
+            document.getElementById('export-card').appendChild(successDiv);
+        }
+
+        async function sharePdfNative() {
+            let blob = executePDFExport(true);
+            let file = new File([blob], "Unterzeichnetes_Dokument.pdf", { type: "application/pdf" });
+            
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Unterzeichnetes Dokument',
+                        text: 'Dobrý den, v příloze zasílám podepsaný dokument / Hallo, anbei sende ich das unterschriebene Dokument.'
+                    });
+                } catch (e) {
+                    console.log('Sdílení zrušeno nebo selhalo', e);
+                }
+            } else {
+                alert("Váš prohlížeč nepodporuje přímé sdílení. Soubor se nyní stáhne do zařízení, poté jej prosím pošlete ručně.");
+                executePDFExport();
+            }
+        }
+
+        function exportStandardPDF(returnBlob = false) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
@@ -616,16 +690,13 @@
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
             let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
 
-            // TÄTIGKEITSNACHWEIS TITLE
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(16);
             doc.text("TÄTIGKEITSNACHWEIS", 105, 25, {align: 'center'});
 
-            // PŘIDÁNO: Zobrazení KW v pravém horním rohu PDF
             doc.setFontSize(12);
             doc.text(`KW ${kwNum}`, 195, 25, {align: 'right'});
 
-            // Box pro Kundenanschrift
             let kX = 70; let kY = 32;
             doc.setFontSize(8); doc.setFont("Helvetica", "normal");
             doc.rect(kX, kY, 70, 25);
@@ -635,15 +706,12 @@
             doc.text(adresa.substring(0, 45), kX+2, kY+14);
             doc.text(mesto.substring(0, 45), kX+2, kY+19);
 
-            // HLAVNÍ TABULKA přesně podle originálu
             let tY = 65; 
             let cols = [15, 39, 63, 79, 95, 111, 127, 151, 162, 173, 184, 195];
 
-            // Horizontální linky
             for(let i=0; i<=3; i++) doc.line(15, tY + i*10, 195, tY + i*10); 
             for(let i=4; i<=10; i++) doc.line(15, tY + i*10, 195, tY + i*10); 
 
-            // Vertikální linky
             doc.line(cols[0], tY, cols[0], tY + 100); 
             doc.line(cols[11], tY, cols[11], tY + 100); 
             doc.line(75, tY, 75, tY + 10); 
@@ -653,11 +721,9 @@
             doc.line(cols[9], tY + 10, cols[9], tY + 100); 
             doc.line(cols[10], tY + 20, cols[10], tY + 100); 
 
-            // Rozdělení Arb.-Zeit
             doc.line(cols[2], tY+25, cols[4], tY+25);
             doc.line(cols[3], tY+25, cols[3], tY+100);
 
-            // Hlavičky tabulky
             doc.setFontSize(8);
             doc.text("Name", cols[0]+2, tY+4); doc.setFont("Helvetica", "bold"); doc.text(nName, cols[0]+15, tY+8); doc.setFont("Helvetica", "normal");
             doc.text("Vorname", 77, tY+4); doc.setFont("Helvetica", "bold"); doc.text(vName, 90, tY+8); doc.setFont("Helvetica", "normal");
@@ -677,9 +743,9 @@
             doc.text("ja", cols[7]+5.5, tY+27, {align:'center'}); doc.text("nein", cols[8]+5.5, tY+27, {align:'center'});
             doc.text("ja", cols[9]+5.5, tY+27, {align:'center'}); doc.text("nein", cols[10]+5.5, tY+27, {align:'center'});
 
-            // Řazení do dnů v týdnu
             const ordDays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
             let dayRecords = new Array(7).fill(null);
+            let totalWeekHours = 0;
             vybrane.forEach(z => {
                 let d = new Date(z.datum).getDay();
                 let idx = d === 0 ? 6 : d - 1;
@@ -693,6 +759,7 @@
                 if(rec) {
                     let dFmt = new Date(rec.datum).toLocaleDateString('de-DE');
                     let h = kalkulujCisteHodiny(rec); 
+                    totalWeekHours += h;
                     let start = rec.zacatek; let end = rec.konec; let pause = rec.prestavka;
 
                     let [h1, m1] = start.split(':').map(Number); let [h2, m2] = end.split(':').map(Number);
@@ -708,8 +775,13 @@
                 }
             }
 
-            // Patička a podpisy
-            let sigY = tY + 115;
+            // Přidání součtu hodin pod tabulku
+            let sigY = tY + 106;
+            doc.setFont("Helvetica", "bold");
+            doc.text("Gesamtstunden (Součet hodin): " + totalWeekHours.toFixed(2) + " h", 195, sigY, {align: 'right'});
+            doc.setFont("Helvetica", "normal");
+            
+            sigY += 9;
             doc.setFontSize(8);
             doc.text("Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.", 15, sigY);
 
@@ -724,10 +796,11 @@
 
             doc.text(new Date().toLocaleDateString('de-DE'), 130, sigY-2);
 
+            if(returnBlob) return doc.output('blob');
             doc.save("Tatigkeitsnachweis.pdf");
         }
 
-        function exportAbnahmePDF() {
+        function exportAbnahmePDF(returnBlob = false) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
@@ -804,6 +877,7 @@
             doc.setFontSize(9); doc.text(podpisKundeText, 15, y + 4); doc.text("*Unterschrift Auftraggeber", 15, y + 8);
             doc.text(jmeno, 125, y + 4); doc.text("Unterschrift Auftragnehmer", 125, y + 8);
 
+            if(returnBlob) return doc.output('blob');
             doc.save("AbnahmeProtokoll.pdf");
         }
 
@@ -916,6 +990,7 @@
                 try {
                     let encodedData = params.get('sign');
                     let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
+                    
                     document.getElementById('cfg-jmeno').value = data.jmeno;
                     document.getElementById('cfg-firma').value = data.firma;
                     document.getElementById('cfg-adresa').value = data.adresa;
@@ -926,11 +1001,23 @@
                     document.getElementById('ab-sVadami').checked = data.sVadami;
                     document.getElementById('ab-vadyText').value = data.vadyText;
                     document.getElementById('ab-odstraneniDo').value = data.odstraneniDo;
-                    remoteZaznamy = data.zaznamy; currentExportType = data.type;
+                    
+                    remoteZaznamy = data.zaznamy; 
+                    currentExportType = data.type;
+                    dataPodpisuIch = data.dataPodpisuIch || null; // Natažení vlastního podpisu
+
                     document.getElementById('view-zaznamy').classList.remove('hidden');
                     document.getElementById('export-card').classList.remove('hidden');
-                    document.getElementById('export-card-actions').innerHTML = `<button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="executePDFExport()">✔️ STÁHNOUT PDF</button>`;
-                    if(data.type === 'abnahme') document.getElementById('abnahme-fields').classList.remove('hidden');
+                    
+                    // Schování prvků, které šéf nemá vidět
+                    if(document.getElementById('abnahme-fields')) document.getElementById('abnahme-fields').classList.add('hidden');
+                    if(document.getElementById('wrapper-ich')) document.getElementById('wrapper-ich').classList.add('hidden');
+                    
+                    // Přidání speciálního tlačítka pro dokončení u šéfa
+                    document.getElementById('export-card-actions').innerHTML = `
+                        <button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="finishRemoteSign()">✔️ ULOŽIT A ODESLAT ZPĚT</button>
+                    `;
+                    
                     updateLivePreview();
                 } catch(e) { alert("Chyba načítání odkazu. Zkuste to vygenerovat znovu."); }
             }
