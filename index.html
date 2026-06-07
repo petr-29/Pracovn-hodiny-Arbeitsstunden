@@ -374,7 +374,8 @@
             canvas.height = 200;
             ctx.lineWidth = 3;
             ctx.lineCap = 'round';
-            ctx.strokeStyle = '#000000';
+            ctx.lineJoin = 'round';       // Hladké napojování tahů propisky
+            ctx.strokeStyle = '#0a3ca6'; // Modrá barva propisky (Ink Blue)
         }
 
         function closeSignatureModal() { document.getElementById('signature-modal').classList.add('hidden'); }
@@ -606,7 +607,7 @@
             doc.line(15, y, 90, y); doc.line(120, y, 195, y);
             doc.setFontSize(10); doc.text("Unterschrift Kunde", 15, y + 5); doc.text(jmeno, 120, y + 5);
             doc.setFontSize(8); doc.setFont("Helvetica", "normal");
-            doc.text("Unterschrift Kunde", 15, y + 9); doc.text("Unterschrift Auftragnehmer", 120, y + 9);
+            doc.text("Unterschrift Kunde", 15, y + 9); doc.text("Unterschrift Unterschrift", 120, y + 9);
 
             doc.save("Tatigkeitsnachweis.pdf");
         }
