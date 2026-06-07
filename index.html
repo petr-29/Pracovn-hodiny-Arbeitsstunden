@@ -19,7 +19,7 @@
         body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; }
 
         .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
-        .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; }
+        .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
         .lang-btn.active { background: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
         header { background: var(--card-bg); padding: 15px; text-align: center; border-bottom: 1px solid var(--border); }
@@ -63,105 +63,37 @@
 
         /* NÁHLED STRÁNKY */
         .preview-container-full {
-            background: #ffffff;
-            border: 1px solid #bdc3c7;
-            padding: 20px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin: 20px 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            color: #000000;
-            overflow-x: auto;
+            background: #ffffff; border: 1px solid #bdc3c7; padding: 20px; border-radius: 8px;
+            font-size: 13px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); color: #000000; overflow-x: auto;
         }
-        .preview-header-full { 
-            font-weight: bold; 
-            text-align: center; 
-            font-size: 18px; 
-            margin-bottom: 20px; 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .preview-meta-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 1px dashed #ccc;
-            padding-bottom: 15px;
-        }
+        .preview-header-full { font-weight: bold; text-align: center; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .preview-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
         .preview-meta-item { line-height: 1.4; }
         .preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
         .preview-table th, .preview-table td { border: 1px solid #000000; padding: 8px; text-align: left; font-size: 12px; color: #000; }
         .preview-table th { background-color: #f2f2f2; font-weight: bold; }
 
-        .signature-placeholder {
-            border: 2px dashed #3498db;
-            background: #ecf0f1;
-            padding: 15px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 5px;
-            font-weight: bold;
-            color: #2980b9;
-        }
+        .signature-placeholder { border: 2px dashed #3498db; background: #ecf0f1; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 5px; font-weight: bold; color: #2980b9; }
         .signature-display-img { max-height: 70px; display: block; margin: 0 auto; }
 
-        .signature-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .modal-content {
-            background: white;
-            width: 100%;
-            max-width: 500px;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
-        canvas.sig-canvas {
-            width: 100%;
-            height: 200px;
-            border: 1px solid #bdc3c7;
-            background: #fafafa;
-            border-radius: 6px;
-            display: block;
-            touch-action: none;
-            margin: 15px 0;
-        }
+        .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 20px; text-align: center; }
+        canvas.sig-canvas { width: 100%; height: 200px; border: 1px solid #bdc3c7; background: #fafafa; border-radius: 6px; display: block; touch-action: none; margin: 15px 0; }
 
-        .action-button-large {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px;
-            font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4;
-        }
+        .action-button-large { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4; }
         .action-button-large small { font-size: 12px; font-weight: normal; opacity: 0.9; }
     </style>
 </head>
 <body>
 
     <script>
-        let remoteMode = false;
-        let remoteZaznamy = [];
-        let currentExportType = '';
-        let remoteDataPayload = null;
-        
+        let remoteMode = false; let remoteZaznamy = []; let currentExportType = ''; let remoteDataPayload = null;
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
             const style = document.createElement('style');
             style.innerHTML = `
                 #main-lang-bar, #view-kalkulacka, #view-nastaveni, 
-                #records-toolbar, #remote-share-wrapper, #main-tab-bar, #app-footer { 
-                    display: none !important; 
-                }
+                #records-toolbar, #remote-share-wrapper, #main-tab-bar, #app-footer { display: none !important; }
             `;
             document.head.appendChild(style);
         }
@@ -173,7 +105,7 @@
     </div>
 
     <header>
-        <h1 id="app-title">Pracovní hodiny</h1>
+        <h1 id="app-title" data-cs="Pracovní hodiny" data-de="Arbeitsstunden">Pracovní hodiny</h1>
     </header>
 
     <div class="container">
@@ -182,66 +114,66 @@
             <div class="card">
                 <div class="stats-box">
                     <div>
-                        <div id="stat-title" style="font-size: 12px; color:#7f8c8d;">Tento týden</div>
+                        <div id="stat-title" style="font-size: 12px; color:#7f8c8d;" data-cs="Tento týden" data-de="Diese Woche">Tento týden</div>
                         <div class="earnings" id="stat-sum">0.00 €</div>
                     </div>
                     <button class="btn-sec" onclick="toggleEarningsMask()" id="btn-mask">👁️</button>
                 </div>
                 <div class="segmented-control">
-                    <button id="btn-filter-week" class="active" onclick="setFilterMode('week')">Týden / Woche</button>
-                    <button id="btn-filter-month" onclick="setFilterMode('month')">Měsíc / Monat</button>
+                    <button id="btn-filter-week" class="active" onclick="setFilterMode('week')" data-cs="Týden" data-de="Woche">Týden</button>
+                    <button id="btn-filter-month" onclick="setFilterMode('month')" data-cs="Měsíc" data-de="Monat">Měsíc</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title" id="lbl-arbeitszeit">Pracovní doba</div>
+                <div class="card-title" id="lbl-arbeitszeit" data-cs="Pracovní doba" data-de="Arbeitszeit">Pracovní doba</div>
                 <div class="form-group">
-                    <label id="lbl-datum">Datum</label>
+                    <label id="lbl-datum" data-cs="Datum" data-de="Datum">Datum</label>
                     <input type="date" id="inp-datum">
                 </div>
                 <div class="row">
                     <div class="form-group">
-                        <label id="lbl-beginn">Začátek</label>
+                        <label id="lbl-beginn" data-cs="Začátek" data-de="Beginn">Začátek</label>
                         <input type="time" id="inp-zacatek" value="07:30">
                     </div>
                     <div class="form-group">
-                        <label id="lbl-ende">Konec</label>
+                        <label id="lbl-ende" data-cs="Konec" data-de="Ende">Konec</label>
                         <input type="time" id="inp-konec" value="17:00">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label id="lbl-pause">Přestávka (minut)</label>
+                    <label id="lbl-pause" data-cs="Přestávka (minut)" data-de="Pause (Minuten)">Přestávka (minut)</label>
                     <input type="number" id="inp-prestavka" value="30" step="5">
                 </div>
 
-                <div class="card-title" id="lbl-details" style="margin-top:20px;">Detaily práce</div>
+                <div class="card-title" id="lbl-details" style="margin-top:20px;" data-cs="Detaily práce" data-de="Arbeitsdetails">Detaily práce</div>
                 <div class="form-group">
-                    <label id="lbl-projn">Číslo zakázky</label>
+                    <label id="lbl-projn" data-cs="Číslo zakázky" data-de="Projekt-Nr.">Číslo zakázky</label>
                     <input type="text" id="inp-zakazka">
                 </div>
                 <div class="form-group">
-                    <label id="lbl-taet">Popis práce</label>
+                    <label id="lbl-taet" data-cs="Popis práce" data-de="Tätigkeit">Popis práce</label>
                     <textarea id="inp-popis" rows="3"></textarea>
                 </div>
                 <div class="form-group">
-                    <label id="lbl-satz">Sazba (€/h)</label>
+                    <label id="lbl-satz" data-cs="Sazba (€/h)" data-de="Stundensatz (€/h)">Sazba (€/h)</label>
                     <input type="number" id="inp-sazba" value="30.00" step="0.5">
                 </div>
 
-                <button class="btn-main" onclick="ulozZaznam()" id="btn-speichern">Uložit</button>
+                <button class="btn-main" onclick="ulozZaznam()" id="btn-speichern" data-cs="Uložit" data-de="Speichern">Uložit</button>
             </div>
         </div>
 
         <div id="view-zaznamy" class="tab-content hidden">
             <div class="action-toolbar" id="records-toolbar">
-                <button class="btn-sec" onclick="selectAllZaznamy()" id="btn-all">Vše</button>
+                <button class="btn-sec" onclick="selectAllZaznamy()" id="btn-all" data-cs="Vše" data-de="Alle">Vše</button>
                 <button class="btn-sec" onclick="exportCSV()" id="btn-csv-exp">CSV Export</button>
                 <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">Standard PDF</button>
                 <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
             </div>
 
             <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
-                <div class="card-title">Kontrola dokumentu před podpisem</div>
+                <div class="card-title" data-cs="Kontrola dokumentu před podpisem" data-de="Dokumentprüfung vor Unterschrift">Kontrola dokumentu před podpisem</div>
                 
                 <div id="document-live-preview" class="preview-container-full"></div>
 
@@ -249,48 +181,53 @@
                     <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
                     <div class="form-group inline">
                         <input type="checkbox" id="ab-bezZkousky" onchange="document.getElementById('ab-seZkouskou').checked = !this.checked; updateLivePreview();">
-                        <label for="ab-bezZkousky">Ohne Funktionsprüfung</label>
+                        <label for="ab-bezZkousky" data-cs="Bez funkční zkoušky" data-de="Ohne Funktionsprüfung">Ohne Funktionsprüfung</label>
                     </div>
                     <div class="form-group inline">
                         <input type="checkbox" id="ab-seZkouskou" checked onchange="document.getElementById('ab-bezZkousky').checked = !this.checked; updateLivePreview();">
-                        <label for="ab-seZkouskou">Mit Funktionsprüfung</label>
+                        <label for="ab-seZkouskou" data-cs="S funkční zkouškou" data-de="Mit Funktionsprüfung">Mit Funktionsprüfung</label>
                     </div>
                     <div class="form-group inline" style="margin-top:10px;">
                         <input type="checkbox" id="ab-sVadami" onchange="document.getElementById('vady-wrapper').classList.toggle('hidden', !this.checked); updateLivePreview();">
-                        <label for="ab-sVadami"><strong>Mängel festgestellt</strong></label>
+                        <label for="ab-sVadami"><strong data-cs="Zjištěny závady" data-de="Mängel festgestellt">Mängel festgestellt</strong></label>
                     </div>
                     
                     <div id="vady-wrapper" class="hidden">
                         <div class="form-group">
-                            <label>Popis závad (Mängel beschreiben...)</label>
+                            <label data-cs="Popis závad (Mängel beschreiben...):" data-de="Mängel beschreiben:">Popis závad (Mängel beschreiben...)</label>
                             <textarea id="ab-vadyText" rows="2" oninput="updateLivePreview()"></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Odstranit do (Behoben bis Datum):</label>
-                            <input type="text" id="ab-odstraneniDo" placeholder="např. 31.05.2026" oninput="updateLivePreview()">
+                            <label data-cs="Odstranit do (Behoben bis Datum):" data-de="Behoben bis Datum:">Odstranit do (Behoben bis Datum):</label>
+                            <input type="text" id="ab-odstraneniDo" placeholder="např. 31.05.2026" oninput="updateLivePreview()" data-ph-cs="např. 31.05.2026" data-ph-de="z.B. 31.05.2026">
                         </div>
                     </div>
                 </div>
 
                 <hr style="border:0; border-top:2px solid #2c3e50; margin:15px 0;">
 
-                <div style="margin-bottom: 20px;" id="remote-share-wrapper">
-                    <button class="btn-main" style="background:#3498db; color:white; font-size:15px;" onclick="generateRemoteSignLink()">🔗 GENEROVAT ODKAZ PRO ŠÉFA (WhatsApp / Mail)</button>
+                <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;" id="remote-share-wrapper">
+                    <button class="btn-main" style="background:#3498db; color:white; font-size:15px; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="shareRemoteLink()">
+                        <span data-cs="🔗 Sdílet odkaz (vyvolá menu Sdílení)" data-de="🔗 Link teilen (öffnet Teilen-Menü)">🔗 Sdílet odkaz (vyvolá menu Sdílení)</span>
+                    </button>
+                    <button class="btn-sec" style="background:#ecf0f1; border: 1px solid #bdc3c7; padding: 12px; font-weight:bold; font-size:15px; color:#2c3e50;" onclick="openRemoteLink()">
+                        <span data-cs="👁️ Otevřít odkaz zde (otevře v prohlížeči)" data-de="👁️ Link hier öffnen (öffnet im Browser)">👁️ Otevřít odkaz zde (otevře v prohlížeči)</span>
+                    </button>
                 </div>
 
                 <div style="margin-bottom: 12px;" id="wrapper-kunde">
-                    <label style="font-weight:bold; font-size:14px; color:#2980b9;">1. Podpis klienta / Stavbyvedoucího:</label>
-                    <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')">Klikněte pro podepsání prstem</div>
+                    <label style="font-weight:bold; font-size:14px; color:#2980b9;" data-cs="1. Podpis klienta / Stavbyvedoucího:" data-de="1. Unterschrift Kunde/Bauleiter:">1. Podpis klienta / Stavbyvedoucího:</label>
+                    <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')" data-cs="Klikněte pro podepsání prstem" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání prstem</div>
                 </div>
 
                 <div style="margin-bottom: 15px;" id="wrapper-ich">
-                    <label style="font-weight:bold; font-size:14px; color:#27ae60;">2. Váš podpis (Dodavatel):</label>
-                    <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')">Klikněte pro podepsání prstem</div>
+                    <label style="font-weight:bold; font-size:14px; color:#27ae60;" data-cs="2. Váš podpis (Dodavatel):" data-de="2. Ihre Unterschrift (Auftragnehmer):">2. Váš podpis (Dodavatel):</label>
+                    <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')" data-cs="Klikněte pro podepsání prstem" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání prstem</div>
                 </div>
                 
                 <div class="row" id="export-card-actions">
-                    <button class="btn-sec" style="flex:1;" onclick="closeExportCard()">Zrušit</button>
-                    <button class="btn-main" id="btn-execute-export" style="flex:2; background:#2c3e50; color:white;" onclick="executePDFExport()">Místní uložení PDF</button>
+                    <button class="btn-sec" style="flex:1;" onclick="closeExportCard()" data-cs="Zrušit" data-de="Abbrechen">Zrušit</button>
+                    <button class="btn-main" id="btn-execute-export" style="flex:2; background:#2c3e50; color:white;" onclick="executePDFExport()" data-cs="Místní uložení PDF" data-de="PDF lokal speichern">Místní uložení PDF</button>
                 </div>
             </div>
 
@@ -302,53 +239,53 @@
                 <h3 id="modal-sig-title">Podpis</h3>
                 <canvas id="modal-canvas" class="sig-canvas"></canvas>
                 <div class="row">
-                    <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button>
-                    <button class="btn-sec" onclick="closeSignatureModal()">Zavřít</button>
-                    <button class="btn-main" style="background:#2ecc71; color:white;" onclick="saveModalSignature()">Uložit podpis</button>
+                    <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()" data-cs="Smazat" data-de="Löschen">Smazat</button>
+                    <button class="btn-sec" onclick="closeSignatureModal()" data-cs="Zavřít" data-de="Schließen">Zavřít</button>
+                    <button class="btn-main" style="background:#2ecc71; color:white;" onclick="saveModalSignature()" data-cs="Uložit podpis" data-de="Unterschrift speichern">Uložit podpis</button>
                 </div>
             </div>
         </div>
 
         <div id="view-nastaveni" class="tab-content hidden">
             <div class="card">
-                <div class="card-title">Uživatel & Firma</div>
+                <div class="card-title" data-cs="Uživatel & Firma" data-de="Benutzer & Firma">Uživatel & Firma</div>
                 <div class="form-group">
-                    <label>Jméno uživatele</label>
+                    <label data-cs="Jméno uživatele" data-de="Benutzername">Jméno uživatele</label>
                     <input type="text" id="cfg-jmeno" value="Petr Michálek">
                 </div>
                 <div class="form-group">
-                    <label>Název projektu / Klienta</label>
+                    <label data-cs="Název projektu / Klienta" data-de="Projektname / Kunde">Název projektu / Klienta</label>
                     <input type="text" id="cfg-firma" value="Netzsch, Sedanstrasse 70 D – 95100 Selb">
                 </div>
                 <div class="form-group">
-                    <label>Adresa</label>
+                    <label data-cs="Adresa" data-de="Adresse">Adresa</label>
                     <input type="text" id="cfg-adresa" value="Goethestraße 3">
                 </div>
                 <div class="form-group">
-                    <label>Město a PSČ</label>
+                    <label data-cs="Město a PSČ" data-de="PLZ und Ort">Město a PSČ</label>
                     <input type="text" id="cfg-mesto" value="94577 Winzer">
                 </div>
                 <div class="form-group">
-                    <label>Odpovědná osoba (Klient / Šéf)</label>
+                    <label data-cs="Odpovědná osoba (Klient / Šéf)" data-de="Verantwortliche Person (Kunde / Chef)">Odpovědná osoba (Klient / Šéf)</label>
                     <input type="text" id="cfg-podpis" value="---">
                 </div>
 
                 <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
-                <div class="card-title">Kontakty pro automatické odesílání</div>
+                <div class="card-title" data-cs="Kontakty pro automatické odesílání" data-de="Kontakte für automatischen Versand">Kontakty pro automatické odesílání</div>
                 <div class="form-group">
-                    <label>E-mail: Účtárna (Buchhaltung)</label>
-                    <input type="email" id="cfg-email-uctarna" placeholder="např. uctarna@firma.cz">
+                    <label data-cs="E-mail: Účtárna (Buchhaltung)" data-de="E-Mail: Buchhaltung">E-mail: Účtárna (Buchhaltung)</label>
+                    <input type="email" id="cfg-email-uctarna" placeholder="např. uctarna@firma.cz" data-ph-cs="např. uctarna@firma.cz" data-ph-de="z.B. buchhaltung@firma.de">
                 </div>
                 <div class="form-group">
-                    <label>E-mail: Pracovník (Kopie pro Vás)</label>
-                    <input type="email" id="cfg-email-pracovnik" placeholder="např. petr@michalek.cz">
+                    <label data-cs="E-mail: Pracovník (Kopie pro Vás)" data-de="E-Mail: Mitarbeiter (Kopie)">E-mail: Pracovník (Kopie pro Vás)</label>
+                    <input type="email" id="cfg-email-pracovnik" placeholder="např. petr@michalek.cz" data-ph-cs="např. petr@michalek.cz" data-ph-de="z.B. max@mustermann.de">
                 </div>
                 <div class="form-group">
-                    <label>WhatsApp: Pracovník (Kopie pro Vás)</label>
-                    <input type="text" id="cfg-wa-pracovnik" placeholder="Mezinárodní formát (např. 420123456789)">
+                    <label data-cs="WhatsApp: Pracovník (Kopie pro Vás)" data-de="WhatsApp: Mitarbeiter (Kopie)">WhatsApp: Pracovník (Kopie pro Vás)</label>
+                    <input type="text" id="cfg-wa-pracovnik" placeholder="Mezinárodní formát (např. 420123456789)" data-ph-cs="Mezinárodní formát (např. 420123456789)" data-ph-de="International (z.B. 4915123456789)">
                 </div>
 
-                <button class="btn-main" onclick="saveSettings()" style="margin-top:15px;">Uložit Nastavení</button>
+                <button class="btn-main" onclick="saveSettings()" style="margin-top:15px;" data-cs="Uložit Nastavení" data-de="Einstellungen speichern">Uložit Nastavení</button>
             </div>
         </div>
 
@@ -356,21 +293,14 @@
     </div>
 
     <nav class="tab-bar" id="main-tab-bar">
-        <button class="tab-item active" onclick="switchTab('kalkulacka', this)"><span>➕</span><span id="tab-calc">Vypočítat</span></button>
-        <button class="tab-item" onclick="switchTab('zaznamy', this)"><span>🕒</span><span id="tab-list">Záznamy</span></button>
-        <button class="tab-item" onclick="switchTab('nastaveni', this)"><span>⚙️</span><span id="tab-sett">Nastavení</span></button>
+        <button class="tab-item active" onclick="switchTab('kalkulacka', this)"><span>➕</span><span id="tab-calc" data-cs="Vypočítat" data-de="Berechnen">Vypočítat</span></button>
+        <button class="tab-item" onclick="switchTab('zaznamy', this)"><span>🕒</span><span id="tab-list" data-cs="Záznamy" data-de="Einträge">Záznamy</span></button>
+        <button class="tab-item" onclick="switchTab('nastaveni', this)"><span>⚙️</span><span id="tab-sett" data-cs="Nastavení" data-de="Einstellungen">Nastavení</span></button>
     </nav>
 
     <script>
-        let dataPodpisuKunde = null;
-        let dataPodpisuIch = null;
-        let dataPodpisuIchTiny = null; 
-        let targetSignature = ''; 
-
-        const canvas = document.getElementById('modal-canvas');
-        const ctx = canvas.getContext('2d');
-        let isDrawing = false;
-
+        let dataPodpisuKunde = null; let dataPodpisuIch = null; let dataPodpisuIchTiny = null; let targetSignature = ''; 
+        const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         const deDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
         function getMousePos(e) {
@@ -389,7 +319,11 @@
 
         function openSignatureModal(target) {
             targetSignature = target;
-            document.getElementById('modal-sig-title').innerText = target === 'kunde' ? 'Podpis: Kunde / Šéf' : 'Podpis: Petr Michálek';
+            let textTitle = target === 'kunde' 
+                ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef')
+                : (currentLang === 'cs' ? 'Podpis: Petr Michálek' : 'Unterschrift: Petr Michálek');
+            
+            document.getElementById('modal-sig-title').innerText = textTitle;
             document.getElementById('signature-modal').classList.remove('hidden');
             canvas.width = canvas.offsetWidth;
             canvas.height = 200;
@@ -403,18 +337,16 @@
         function clearModalCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
         function saveModalSignature() {
-            const blank = document.createElement('canvas');
-            blank.width = canvas.width; blank.height = canvas.height;
-            if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
-            
+            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+            if (canvas.toDataURL() === blank.toDataURL()) { 
+                alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); 
+                return; 
+            }
             const dataUrl = canvas.toDataURL('image/png');
-
             const tmpCanvas = document.createElement('canvas');
-            tmpCanvas.width = 200;
-            tmpCanvas.height = 70;
+            tmpCanvas.width = 200; tmpCanvas.height = 70;
             const tCtx = tmpCanvas.getContext('2d');
-            tCtx.fillStyle = '#ffffff'; 
-            tCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+            tCtx.fillStyle = '#ffffff'; tCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
             tCtx.drawImage(canvas, 0, 0, tmpCanvas.width, tmpCanvas.height);
             const tinyDataUrl = tmpCanvas.toDataURL('image/jpeg', 0.3); 
 
@@ -432,7 +364,10 @@
 
         function openExportCard(type) {
             let vybrane = zaznamy.filter(z => z.selected);
-            if(vybrane.length === 0) { alert('Vyberte nejdříve řádky pro export!'); return; }
+            if(vybrane.length === 0) { 
+                alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro export!' : 'Bitte wählen Sie zuerst die Zeilen für den Export aus!'); 
+                return; 
+            }
             currentExportType = type;
             document.getElementById('export-card').classList.remove('hidden');
             if (type === 'abnahme') {
@@ -459,9 +394,7 @@
             let html = '';
             
             if (currentExportType === 'standard') {
-                let parts = jmeno.trim().split(' ');
-                let nName = parts.pop() || '';
-                let vName = parts.join(' ') || '';
+                let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
                 let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
                 let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
 
@@ -503,39 +436,23 @@
 
                 let dayRecords = new Array(7).fill(null);
                 let totalWeekHours = 0;
-                vybrane.forEach(z => {
-                    let d = new Date(z.datum).getDay();
-                    let idx = d === 0 ? 6 : d - 1;
-                    dayRecords[idx] = z;
-                });
-
+                vybrane.forEach(z => { let d = new Date(z.datum).getDay(); let idx = d === 0 ? 6 : d - 1; dayRecords[idx] = z; });
                 const ordDays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+                
                 for(let i=0; i<7; i++) {
                     let rec = dayRecords[i];
                     if(rec) {
-                        let dFmt = new Date(rec.datum).toLocaleDateString('de-DE');
-                        let h = kalkulujCisteHodiny(rec);
-                        totalWeekHours += h;
+                        let dFmt = new Date(rec.datum).toLocaleDateString('de-DE'); let h = kalkulujCisteHodiny(rec); totalWeekHours += h;
                         let start = rec.zacatek; let end = rec.konec; let pause = rec.prestavka;
                         let [h1, m1] = start.split(':').map(Number); let [h2, m2] = end.split(':').map(Number);
                         let startM = h1*60+m1; let endM = h2*60+m2; if(endM < startM) endM += 24*60;
                         let totalH = (endM - startM) / 60;
-
-                        html += `<tr>`;
-                        html += `<td style="text-align:left; padding:4px;">${ordDays[i]}</td>`;
-                        html += `<td>${dFmt}</td><td>${start}</td><td>${end}</td><td>${totalH.toFixed(2)}</td><td>${pause}</td><td>${h.toFixed(2)}</td>`;
-                        html += `<td></td><td></td><td></td><td></td>`;
-                        html += `</tr>`;
+                        html += `<tr><td style="text-align:left; padding:4px;">${ordDays[i]}</td><td>${dFmt}</td><td>${start}</td><td>${end}</td><td>${totalH.toFixed(2)}</td><td>${pause}</td><td>${h.toFixed(2)}</td><td></td><td></td><td></td><td></td></tr>`;
                     } else {
-                        html += `<tr>`;
-                        html += `<td style="text-align:left; padding:4px; height:22px;">${ordDays[i]}</td>`;
-                        html += `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
-                        html += `</tr>`;
+                        html += `<tr><td style="text-align:left; padding:4px; height:22px;">${ordDays[i]}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
                     }
                 }
-
                 html += `  </table>`;
-                
                 html += `  <div style="text-align:right; font-weight:bold; font-size:12px; margin-top:8px;">Gesamt: ${totalWeekHours.toFixed(2)}</div>`;
                 html += `  <div style="margin-top:15px; font-size:10px;">Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.</div>`;
                 html += `  <div style="margin-top:40px; display:flex; justify-content:space-between; font-size:11px;">`;
@@ -549,12 +466,9 @@
                 html += `      </div>`;
                 html += `  </div>`;
                 html += `</div>`;
-
             } else {
-                let bezZkousky = document.getElementById('ab-bezZkousky').checked;
-                let seZkouskou = document.getElementById('ab-seZkouskou').checked;
-                let sVadami = document.getElementById('ab-sVadami').checked;
-                let vadyText = document.getElementById('ab-vadyText').value || '---';
+                let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
+                let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
                 let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
                 let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
                 let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
@@ -604,10 +518,9 @@
         function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
             dataPodpisuKunde = null; dataPodpisuIch = null; dataPodpisuIchTiny = null;
-            document.getElementById('box-kunde').innerText = 'Klikněte pro podepsání prstem';
-            document.getElementById('box-ich').innerText = 'Klikněte pro podepsání prstem';
-            let sScreen = document.getElementById('success-screen');
-            if (sScreen) sScreen.remove();
+            document.getElementById('box-kunde').innerText = currentLang === 'cs' ? 'Klikněte pro podepsání prstem' : 'Klicken zum Unterschreiben';
+            document.getElementById('box-ich').innerText = currentLang === 'cs' ? 'Klikněte pro podepsání prstem' : 'Klicken zum Unterschreiben';
+            let sScreen = document.getElementById('success-screen'); if (sScreen) sScreen.remove();
             document.getElementById('document-live-preview').classList.remove('hidden');
             document.getElementById('wrapper-kunde').classList.remove('hidden');
             document.getElementById('export-card-actions').classList.remove('hidden');
@@ -619,77 +532,84 @@
             if(!remoteMode && !returnBlob) closeExportCard();
         }
 
-        function generateRemoteSignLink() {
-            if (!dataPodpisuIch) {
-                if(!confirm("Nemáte vložený Váš podpis. Chcete přesto vytvořit odkaz? (Pro šéfa bude lepší, když se tam nejprve podepíšete.)")) return;
-            }
+        // --- NOVÉ SDÍLECÍ FUNKCE ---
+        function buildShareUrl() {
             let vybrane = zaznamy.filter(z => z.selected);
             let meta = {
-                type: currentExportType,
-                jmeno: document.getElementById('cfg-jmeno').value,
-                firma: document.getElementById('cfg-firma').value,
-                adresa: document.getElementById('cfg-adresa').value,
-                mesto: document.getElementById('cfg-mesto').value,
-                podpisKundeText: document.getElementById('cfg-podpis').value,
-                bezZkousky: document.getElementById('ab-bezZkousky').checked,
-                seZkouskou: document.getElementById('ab-seZkouskou').checked,
-                sVadami: document.getElementById('ab-sVadami').checked,
-                vadyText: document.getElementById('ab-vadyText').value,
-                odstraneniDo: document.getElementById('ab-odstraneniDo').value,
-                emailUctarna: document.getElementById('cfg-email-uctarna').value,
-                emailPracovnik: document.getElementById('cfg-email-pracovnik').value,
-                waPracovnik: document.getElementById('cfg-wa-pracovnik').value,
-                dataPodpisuIch: dataPodpisuIchTiny || dataPodpisuIch, 
-                zaznamy: vybrane
+                type: currentExportType, jmeno: document.getElementById('cfg-jmeno').value,
+                firma: document.getElementById('cfg-firma').value, adresa: document.getElementById('cfg-adresa').value,
+                mesto: document.getElementById('cfg-mesto').value, podpisKundeText: document.getElementById('cfg-podpis').value,
+                bezZkousky: document.getElementById('ab-bezZkousky').checked, seZkouskou: document.getElementById('ab-seZkouskou').checked,
+                sVadami: document.getElementById('ab-sVadami').checked, vadyText: document.getElementById('ab-vadyText').value,
+                odstraneniDo: document.getElementById('ab-odstraneniDo').value, emailUctarna: document.getElementById('cfg-email-uctarna').value,
+                emailPracovnik: document.getElementById('cfg-email-pracovnik').value, waPracovnik: document.getElementById('cfg-wa-pracovnik').value,
+                dataPodpisuIch: dataPodpisuIchTiny || dataPodpisuIch, zaznamy: vybrane
             };
             let jsonString = JSON.stringify(meta);
             let encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
-            let shareUrl = window.location.href.split('?')[0] + '?sign=' + encodedData;
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("Odkaz ke vzdálenému podpisu byl bezpečně zkopírován do schránky! Nyní jej můžete odeslat šéfovi (např. přes WhatsApp nebo e-mail).");
-            });
+            return window.location.href.split('?')[0] + '?sign=' + encodedData;
         }
 
-        // Kopírování do schránky s vizuální odezvou
+        async function shareRemoteLink() {
+            if (!dataPodpisuIch) {
+                if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto odkaz sdílet?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem teilen?")) return;
+            }
+            let url = buildShareUrl();
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: currentLang === 'cs' ? 'Dokument k podpisu' : 'Dokument zur Unterschrift',
+                        text: currentLang === 'cs' ? 'Prosím o podpis pracovního výkazu přes tento odkaz:' : 'Bitte um Unterschrift des Arbeitsnachweises über diesen Link:',
+                        url: url
+                    });
+                } catch (e) { console.log('Sdílení zrušeno nebo selhalo', e); }
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert(currentLang === 'cs' ? "Váš prohlížeč nativní sdílení nepodporuje. Odkaz byl ale úspěšně zkopírován do schránky (můžete jej vložit do zprávy)." : "Ihr Browser unterstützt natives Teilen nicht. Der Link wurde jedoch in die Zwischenablage kopiert.");
+                });
+            }
+        }
+
+        function openRemoteLink() {
+            if (!dataPodpisuIch) {
+                if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto pokračovat?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem fortfahren?")) return;
+            }
+            let url = buildShareUrl();
+            window.open(url, '_blank');
+        }
+
         function copyToClipboard(text) {
             if(!text || text === 'Není nastaveno' || text === '') return;
             navigator.clipboard.writeText(text).then(() => {
-                alert("Zkopírováno / Kopiert: " + text);
+                alert(currentLang === 'cs' ? "Zkopírováno: " + text : "Kopiert: " + text);
             }).catch(err => {
-                alert("Kopírování selhalo. Zkopírujte prosím text ručně.");
+                alert(currentLang === 'cs' ? "Kopírování selhalo." : "Kopieren fehlgeschlagen.");
             });
         }
 
-        // Zobrazení a odeslání PDF s nativním Share Sheet (spodní menu iPhonu)
         async function sharePdfNative() {
             let blob = executePDFExport(true);
             let file = new File([blob], "Unterzeichnetes_Dokument.pdf", { type: "application/pdf" });
-            
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
-                        files: [file],
-                        title: 'Unterzeichnetes Dokument',
-                        text: 'Guten Tag, anbei das Dokument. / Dobrý den, v příloze zasílám podepsaný dokument.'
+                        files: [file], title: 'Unterzeichnetes Dokument',
+                        text: currentLang === 'cs' ? 'Dobrý den, v příloze zasílám podepsaný dokument.' : 'Guten Tag, anbei das unterschriebene Dokument.'
                     });
-                } catch (e) {
-                    console.log('Sdílení zrušeno uživatelem nebo selhalo', e);
-                }
+                } catch (e) { console.log('Sdílení selhalo', e); }
             } else {
-                alert("Váš prohlížeč nepodporuje přímé sdílení. Dokument se nyní stáhne klasicky.");
+                alert(currentLang === 'cs' ? "Váš prohlížeč nepodporuje přímé sdílení. Dokument se nyní stáhne." : "Ihr Browser unterstützt direktes Teilen nicht. Das Dokument wird nun heruntergeladen.");
                 executePDFExport();
             }
         }
 
         function openPdfViewer() {
-            let blob = executePDFExport(true);
-            let url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
+            let blob = executePDFExport(true); let url = URL.createObjectURL(blob); window.open(url, '_blank');
         }
 
         function finishRemoteSign() {
             if (!dataPodpisuKunde) {
-                alert("Prosím, podepište dokument kliknutím na vyhrazené místo. / Bitte unterschreiben Sie das Dokument.");
+                alert(currentLang === 'cs' ? "Prosím, podepište dokument kliknutím na vyhrazené místo." : "Bitte unterschreiben Sie das Dokument, indem Sie auf den dafür vorgesehenen Platz klicken.");
                 return;
             }
             
@@ -700,162 +620,103 @@
             let emailU = remoteDataPayload.emailUctarna || 'Není nastaveno';
             let emailP = remoteDataPayload.emailPracovnik || 'Není nastaveno';
             
-            let successDiv = document.createElement('div');
-            successDiv.id = 'success-screen';
+            let successDiv = document.createElement('div'); successDiv.id = 'success-screen';
             successDiv.innerHTML = `
                 <div style="text-align:center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ccc;">
-                    <h2 style="color:#2ecc71; margin-bottom:5px;">Děkuji za váš podpis</h2>
-                    <h3 style="color:#7f8c8d; margin-bottom:15px; font-weight:normal;">Danke für Ihre Unterschrift</h3>
+                    <h2 style="color:#2ecc71; margin-bottom:5px;">${currentLang==='cs'?'Děkuji za váš podpis':'Danke für Ihre Unterschrift'}</h2>
                     
                     <p style="margin-bottom:15px; font-size:14px; text-align:left; color:#2c3e50;">
-                        Das PDF wurde erstellt. Sie können es nun ansehen, speichern oder direkt per E-Mail/WhatsApp teilen.<br><br>
-                        <em>Dokument je připraven. Můžete si vybrat, jak jej chcete nasdílet nebo uložit.</em>
+                        ${currentLang==='cs'?'Dokument je připraven. Můžete si vybrat, jak jej chcete nasdílet nebo uložit.':'Das PDF wurde erstellt. Sie können es nun ansehen, speichern oder direkt per E-Mail/WhatsApp teilen.'}
                     </p>
 
                     <div style="background:#f5f6fa; border:1px solid #dcdde1; border-radius:8px; padding:15px; margin-bottom:20px; text-align:left; font-size:13px;">
-                        <strong style="font-size:14px; color:#2c3e50;">Kontakty pro odeslání (Kontakte zum Senden):</strong><br>
-                        <small style="color:#7f8c8d;">(Kliknutím na e-mail si jej zkopírujete / Klicken zum Kopieren)</small><br><br>
+                        <strong style="font-size:14px; color:#2c3e50;">${currentLang==='cs'?'Kontakty pro odeslání:':'Kontakte zum Senden:'}</strong><br>
+                        <small style="color:#7f8c8d;">${currentLang==='cs'?'(Kliknutím na e-mail si jej zkopírujete)':'(Klicken zum Kopieren)'}</small><br><br>
                         
-                        ✉️ <strong>Buchhaltung (Účtárna):</strong><br>
+                        ✉️ <strong>${currentLang==='cs'?'Účtárna':'Buchhaltung'}:</strong><br>
                         <span onclick="copyToClipboard('${emailU}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailU}</span><br><br>
                         
-                        ✉️ <strong>Mitarbeiter (Pracovník Kopie):</strong><br>
+                        ✉️ <strong>${currentLang==='cs'?'Kopie pracovník':'Mitarbeiter (Kopie)'}:</strong><br>
                         <span onclick="copyToClipboard('${emailP}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailP}</span>
                     </div>
 
                     <button class="action-button-large" style="background:#2ecc71; margin-bottom:15px;" onclick="sharePdfNative()">
-                        📲 Sdílet PDF (Mail / WhatsApp)<br><small>PDF teilen (E-Mail / WhatsApp / Speichern)</small>
+                        📲 ${currentLang==='cs'?'Sdílet PDF (Mail / WhatsApp)':'PDF teilen (E-Mail / WhatsApp)'}
                     </button>
                     
                     <button class="action-button-large" style="background:#34495e; margin-bottom:15px;" onclick="openPdfViewer()">
-                        👀 Zobrazit PDF na obrazovce<br><small>PDF auf dem Bildschirm anzeigen</small>
+                        👀 ${currentLang==='cs'?'Zobrazit PDF na obrazovce':'PDF auf dem Bildschirm anzeigen'}
                     </button>
-
                 </div>
             `;
             document.getElementById('export-card').appendChild(successDiv);
         }
 
+        // --- EXPORT PDF FUNKCE (beze změn v logice, pouze zachování původních designů) ---
         function exportStandardPDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value;
+            let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
+            let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
+            let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : ''; let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
 
-            let jmeno = document.getElementById('cfg-jmeno').value;
-            let firma = document.getElementById('cfg-firma').value;
-            let adresa = document.getElementById('cfg-adresa').value;
-            let mesto = document.getElementById('cfg-mesto').value;
-
-            let parts = jmeno.trim().split(' ');
-            let nName = parts.pop() || '';
-            let vName = parts.join(' ') || '';
-            let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
-            let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
-
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("TÄTIGKEITSNACHWEIS", 105, 25, {align: 'center'});
-
-            doc.setFontSize(12);
-            doc.text(`KW ${kwNum}`, 195, 25, {align: 'right'});
-
-            let kX = 70; let kY = 32;
-            doc.setFontSize(8); doc.setFont("Helvetica", "normal");
-            doc.rect(kX, kY, 70, 25);
+            doc.setFont("Helvetica", "bold"); doc.setFontSize(16); doc.text("TÄTIGKEITSNACHWEIS", 105, 25, {align: 'center'});
+            doc.setFontSize(12); doc.text(`KW ${kwNum}`, 195, 25, {align: 'right'});
+            let kX = 70; let kY = 32; doc.setFontSize(8); doc.setFont("Helvetica", "normal"); doc.rect(kX, kY, 70, 25);
             for(let i=1; i<=4; i++) doc.line(kX, kY + i*5, kX+70, kY + i*5);
-            doc.text("Kundenanschrift:", kX+2, kY+4);
-            doc.text(firma.substring(0, 45), kX+2, kY+9);
-            doc.text(adresa.substring(0, 45), kX+2, kY+14);
-            doc.text(mesto.substring(0, 45), kX+2, kY+19);
+            doc.text("Kundenanschrift:", kX+2, kY+4); doc.text(firma.substring(0, 45), kX+2, kY+9);
+            doc.text(adresa.substring(0, 45), kX+2, kY+14); doc.text(mesto.substring(0, 45), kX+2, kY+19);
 
-            let tY = 65; 
-            let cols = [15, 39, 63, 79, 95, 111, 127, 151, 162, 173, 184, 195];
-
+            let tY = 65; let cols = [15, 39, 63, 79, 95, 111, 127, 151, 162, 173, 184, 195];
             for(let i=0; i<=3; i++) doc.line(15, tY + i*10, 195, tY + i*10); 
             for(let i=4; i<=10; i++) doc.line(15, tY + i*10, 195, tY + i*10); 
-
-            doc.line(cols[0], tY, cols[0], tY + 100); 
-            doc.line(cols[11], tY, cols[11], tY + 100); 
-            doc.line(75, tY, 75, tY + 10); 
-            doc.line(cols[7], tY, cols[7], tY + 100); 
+            doc.line(cols[0], tY, cols[0], tY + 100); doc.line(cols[11], tY, cols[11], tY + 100); 
+            doc.line(75, tY, 75, tY + 10); doc.line(cols[7], tY, cols[7], tY + 100); 
             for(let i=1; i<=6; i++) doc.line(cols[i], tY + 20, cols[i], tY + 100); 
-            doc.line(cols[8], tY + 20, cols[8], tY + 100); 
-            doc.line(cols[9], tY + 10, cols[9], tY + 100); 
+            doc.line(cols[8], tY + 20, cols[8], tY + 100); doc.line(cols[9], tY + 10, cols[9], tY + 100); 
             doc.line(cols[10], tY + 20, cols[10], tY + 100); 
+            doc.line(cols[2], tY+25, cols[4], tY+25); doc.line(cols[3], tY+25, cols[3], tY+100);
 
-            doc.line(cols[2], tY+25, cols[4], tY+25);
-            doc.line(cols[3], tY+25, cols[3], tY+100);
-
-            doc.setFontSize(8);
-            doc.text("Name", cols[0]+2, tY+4); doc.setFont("Helvetica", "bold"); doc.text(nName, cols[0]+15, tY+8); doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8); doc.text("Name", cols[0]+2, tY+4); doc.setFont("Helvetica", "bold"); doc.text(nName, cols[0]+15, tY+8); doc.setFont("Helvetica", "normal");
             doc.text("Vorname", 77, tY+4); doc.setFont("Helvetica", "bold"); doc.text(vName, 90, tY+8); doc.setFont("Helvetica", "normal");
             doc.text("Mitarbeiter bitte ankreuzen:", cols[7]+2, tY+4);
-
             doc.text("Baustelle", cols[0]+2, tY+14); doc.setFont("Helvetica", "bold"); doc.text(cisloZ || firma, cols[0]+20, tY+18); doc.setFont("Helvetica", "normal");
             doc.text("Gesamt", cols[6]+12, tY+13, {align:'center'}); doc.text("ohne", cols[6]+12, tY+16, {align:'center'}); doc.text("Pause", cols[6]+12, tY+19, {align:'center'});
             doc.text("Tägliche", cols[7]+11, tY+14, {align:'center'}); doc.text("Heimfahrt?", cols[7]+11, tY+18, {align:'center'});
             doc.text("Übernachtung", cols[9]+11, tY+14, {align:'center'}); doc.text("am Einsatzort?", cols[9]+11, tY+18, {align:'center'});
-
-            doc.text("Tage", cols[0]+12, tY+26, {align:'center'});
-            doc.text("Datum", cols[1]+12, tY+26, {align:'center'});
-            doc.text("Arb.-Zeit", cols[2]+16, tY+23, {align:'center'}); 
-            doc.text("von", cols[2]+8, tY+29, {align:'center'}); doc.text("bis", cols[3]+8, tY+29, {align:'center'});
-            doc.text("Gesamt", cols[4]+8, tY+26, {align:'center'});
-            doc.text("Pause", cols[5]+8, tY+26, {align:'center'});
+            doc.text("Tage", cols[0]+12, tY+26, {align:'center'}); doc.text("Datum", cols[1]+12, tY+26, {align:'center'});
+            doc.text("Arb.-Zeit", cols[2]+16, tY+23, {align:'center'}); doc.text("von", cols[2]+8, tY+29, {align:'center'}); doc.text("bis", cols[3]+8, tY+29, {align:'center'});
+            doc.text("Gesamt", cols[4]+8, tY+26, {align:'center'}); doc.text("Pause", cols[5]+8, tY+26, {align:'center'});
             doc.text("ja", cols[7]+5.5, tY+27, {align:'center'}); doc.text("nein", cols[8]+5.5, tY+27, {align:'center'});
             doc.text("ja", cols[9]+5.5, tY+27, {align:'center'}); doc.text("nein", cols[10]+5.5, tY+27, {align:'center'});
 
             const ordDays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
-            let dayRecords = new Array(7).fill(null);
-            let totalWeekHours = 0;
-            vybrane.forEach(z => {
-                let d = new Date(z.datum).getDay();
-                let idx = d === 0 ? 6 : d - 1;
-                dayRecords[idx] = z;
-            });
+            let dayRecords = new Array(7).fill(null); let totalWeekHours = 0;
+            vybrane.forEach(z => { let d = new Date(z.datum).getDay(); let idx = d === 0 ? 6 : d - 1; dayRecords[idx] = z; });
 
             for(let i=0; i<7; i++) {
-                let y = tY + 36 + (i*10);
-                doc.text(ordDays[i], cols[0]+2, y);
+                let y = tY + 36 + (i*10); doc.text(ordDays[i], cols[0]+2, y);
                 let rec = dayRecords[i];
                 if(rec) {
-                    let dFmt = new Date(rec.datum).toLocaleDateString('de-DE');
-                    let h = kalkulujCisteHodiny(rec); 
-                    totalWeekHours += h;
+                    let dFmt = new Date(rec.datum).toLocaleDateString('de-DE'); let h = kalkulujCisteHodiny(rec); totalWeekHours += h;
                     let start = rec.zacatek; let end = rec.konec; let pause = rec.prestavka;
-
                     let [h1, m1] = start.split(':').map(Number); let [h2, m2] = end.split(':').map(Number);
                     let startM = h1*60+m1; let endM = h2*60+m2; if(endM < startM) endM += 24*60;
                     let totalH = (endM - startM) / 60; 
-
-                    doc.text(dFmt, cols[1]+12, y, {align:'center'});
-                    doc.text(start, cols[2]+8, y, {align:'center'});
-                    doc.text(end, cols[3]+8, y, {align:'center'});
-                    doc.text(totalH.toFixed(2), cols[4]+8, y, {align:'center'});
-                    doc.text(pause.toString(), cols[5]+8, y, {align:'center'});
-                    doc.text(h.toFixed(2), cols[6]+12, y, {align:'center'});
+                    doc.text(dFmt, cols[1]+12, y, {align:'center'}); doc.text(start, cols[2]+8, y, {align:'center'}); doc.text(end, cols[3]+8, y, {align:'center'});
+                    doc.text(totalH.toFixed(2), cols[4]+8, y, {align:'center'}); doc.text(pause.toString(), cols[5]+8, y, {align:'center'}); doc.text(h.toFixed(2), cols[6]+12, y, {align:'center'});
                 }
             }
 
-            let sigY = tY + 106;
-            doc.setFont("Helvetica", "bold");
-            doc.text("Gesamt: " + totalWeekHours.toFixed(2), 195, sigY, {align: 'right'});
-            doc.setFont("Helvetica", "normal");
-            
-            sigY += 9;
-            doc.setFontSize(8);
-            doc.text("Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.", 15, sigY);
-
-            sigY += 15;
-            doc.line(15, sigY, 80, sigY);
-            doc.line(130, sigY, 195, sigY);
-            doc.text("Unterschrift und Stempel des Kunden", 15, sigY+4);
-            doc.text("Datum / Unterschrift des Mitarbeiters", 130, sigY+4);
+            let sigY = tY + 106; doc.setFont("Helvetica", "bold"); doc.text("Gesamt: " + totalWeekHours.toFixed(2), 195, sigY, {align: 'right'});
+            doc.setFont("Helvetica", "normal"); sigY += 9;
+            doc.setFontSize(8); doc.text("Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.", 15, sigY);
+            sigY += 15; doc.line(15, sigY, 80, sigY); doc.line(130, sigY, 195, sigY);
+            doc.text("Unterschrift und Stempel des Kunden", 15, sigY+4); doc.text("Datum / Unterschrift des Mitarbeiters", 130, sigY+4);
 
             if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 20, sigY-15, 50, 14);
             if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 135, sigY-15, 50, 14);
-
             doc.text(new Date().toLocaleDateString('de-DE'), 130, sigY-2);
 
             if(returnBlob) return doc.output('blob');
@@ -863,30 +724,21 @@
         }
 
         function exportAbnahmePDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            
-            let jmeno = document.getElementById('cfg-jmeno').value;
-            let firma = document.getElementById('cfg-firma').value;
-            let adresa = document.getElementById('cfg-adresa').value;
-            let mesto = document.getElementById('cfg-mesto').value;
+            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value;
+            let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
             let podpisKundeText = document.getElementById('cfg-podpis').value || '---';
 
-            let bezZkousky = document.getElementById('ab-bezZkousky').checked;
-            let seZkouskou = document.getElementById('ab-seZkouskou').checked;
-            let sVadami = document.getElementById('ab-sVadami').checked;
-            let vadyText = document.getElementById('ab-vadyText').value || '---';
+            let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
+            let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
             let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
 
             let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
             let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
 
-            doc.setFont("Helvetica", "bold"); doc.setFontSize(14);
-            doc.text("ABNAHME- & FORTSCHRITTSPROTOKOLL", 105, 15, { align: 'center' });
-
+            doc.setFont("Helvetica", "bold"); doc.setFontSize(14); doc.text("ABNAHME- & FORTSCHRITTSPROTOKOLL", 105, 15, { align: 'center' });
             doc.setFontSize(9);
             doc.rect(15, 25, 90, 10); doc.text("Vorname, Name", 17, 29); doc.setFont("Helvetica", "normal"); doc.text(jmeno, 17, 33); doc.setFont("Helvetica", "bold");
             doc.rect(105, 25, 90, 10); doc.text("Kunde", 107, 29); doc.setFont("Helvetica", "normal"); doc.text(firma, 107, 33); doc.setFont("Helvetica", "bold");
@@ -897,14 +749,12 @@
 
             doc.setFont("Helvetica", "bold"); doc.setFontSize(11); doc.text("Leistungsbeschreibung / Tätigkeitsbeschreibung", 15, 63);
 
-            let y = 68;
-            doc.setFillColor(230, 230, 230);
+            let y = 68; doc.setFillColor(230, 230, 230);
             doc.rect(15, y, 35, 7, 'F'); doc.rect(15, y, 35, 7, 'S'); doc.text("Datum", 17, y + 5);
             doc.rect(50, y, 120, 7, 'F'); doc.rect(50, y, 120, 7, 'S'); doc.text("Tätigkeit", 52, y + 5);
             doc.rect(170, y, 25, 7, 'F'); doc.rect(170, y, 25, 7, 'S'); doc.text("Dauer [h]", 172, y + 5);
 
-            doc.setFont("Helvetica", "normal"); doc.setFontSize(9);
-            let celkemHodin = 0;
+            doc.setFont("Helvetica", "normal"); doc.setFontSize(9); let celkemHodin = 0;
             vybrane.forEach(z => {
                 let h = kalkulujCisteHodiny(z); celkemHodin += h; y += 7;
                 doc.rect(15, y, 35, 7, 'S'); doc.text(new Date(z.datum).toLocaleDateString('de-DE'), 17, y + 5);
@@ -918,20 +768,13 @@
 
             y += 15; doc.setFontSize(11); doc.text("Bei der Abnahme wurde festgestellt:", 15, y);
             doc.setFontSize(10); doc.setFont("Helvetica", "normal");
-            
-            y += 7; doc.rect(15, y - 3, 4, 4); if(bezZkousky) doc.text("X", 16, y);
-            doc.text("die Leistung/en sind ohne Funktionsprüfung abgenommen", 23, y);
-            
-            y += 7; doc.rect(15, y - 3, 4, 4); if(seZkouskou) doc.text("X", 16, y);
-            doc.text("die Leistung/en sind mit Funktionsprüfung abgenommen", 23, y);
-            
-            y += 7; doc.rect(15, y - 3, 4, 4); if(sVadami) doc.text("X", 16, y);
-            doc.text(`bis auf folgende Mängel: ${sVadami ? vadyText : 'Nein'}`, 23, y);
-
+            y += 7; doc.rect(15, y - 3, 4, 4); if(bezZkousky) doc.text("X", 16, y); doc.text("die Leistung/en sind ohne Funktionsprüfung abgenommen", 23, y);
+            y += 7; doc.rect(15, y - 3, 4, 4); if(seZkouskou) doc.text("X", 16, y); doc.text("die Leistung/en sind mit Funktionsprüfung abgenommen", 23, y);
+            y += 7; doc.rect(15, y - 3, 4, 4); if(sVadami) doc.text("X", 16, y); doc.text(`bis auf folgende Mängel: ${sVadami ? vadyText : 'Nein'}`, 23, y);
             y += 10; doc.text(`Mängel werden bis spätestens ${odstraneniDo} behoben.`, 15, y);
             y += 15; doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')}`, 15, y);
-
             y += 30;
+
             if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 15, y - 18, 40, 16);
             if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 125, y - 18, 40, 16);
 
@@ -943,30 +786,45 @@
             doc.save("AbnahmeProtokoll.pdf");
         }
 
+        // --- ZÁKLADNÍ FUNKCE A JAZYK ---
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let currentLang = localStorage.getItem('app_lang') || 'cs';
         let filterMode = 'week'; let maskEarnings = false;
         document.getElementById('inp-datum').valueAsDate = new Date();
 
         function setLanguage(lang) {
-            currentLang = lang; localStorage.setItem('app_lang', lang); if(remoteMode) return;
-            document.getElementById('app-title').innerText = lang === 'cs' ? "Pracovní hodiny" : "Arbeitsstunden";
+            currentLang = lang; localStorage.setItem('app_lang', lang);
+            
+            // Aktivace správného tlačítka
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.lang-btn[onclick="setLanguage('${lang}')"]`).classList.add('active');
+
+            // Překlad všech prvků s atributy data-cs a data-de
+            document.querySelectorAll('[data-cs]').forEach(el => {
+                el.innerHTML = el.getAttribute('data-' + lang);
+            });
+            // Překlad placeholderů (v textových polích)
+            document.querySelectorAll('[data-ph-cs]').forEach(el => {
+                el.setAttribute('placeholder', el.getAttribute('data-ph-' + lang));
+            });
+
+            if(remoteMode) return;
             updateStatistiky(); renderZaznamy();
         }
+
         function switchTab(tabId, button) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.remove('hidden');
             button.classList.add('active'); if(tabId === 'zaznamy') renderZaznamy();
         }
+
         function kalkulujCisteHodiny(zaznam) {
-            let [h1, m1] = zaznam.zacatek.split(':').map(Number);
-            let [h2, m2] = zaznam.konec.split(':').map(Number);
-            let start = h1 * 60 + m1; let konec = h2 * 60 + m2;
-            if (konec < start) konec += 24 * 60;
-            let cisty = (konec - start - Number(zaznam.prestavka)) / 60;
-            return cisty > 0 ? cisty : 0;
+            let [h1, m1] = zaznam.zacatek.split(':').map(Number); let [h2, m2] = zaznam.konec.split(':').map(Number);
+            let start = h1 * 60 + m1; let konec = h2 * 60 + m2; if (konec < start) konec += 24 * 60;
+            let cisty = (konec - start - Number(zaznam.prestavka)) / 60; return cisty > 0 ? cisty : 0;
         }
+
         function ulozZaznam() {
             let novy = {
                 id: Date.now(), datum: document.getElementById('inp-datum').value,
@@ -976,13 +834,17 @@
                 projekt: document.getElementById('cfg-firma').value, selected: false
             };
             zaznamy.push(novy); localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-            document.getElementById('inp-popis').value = ''; alert('Uloženo!'); updateStatistiky();
+            document.getElementById('inp-popis').value = ''; 
+            alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
+            updateStatistiky();
         }
+
         function getWeekNumber(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
             return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7);
         }
+
         function setFilterMode(mode) { filterMode = mode; updateStatistiky(); }
         function toggleEarningsMask() { maskEarnings = !maskEarnings; updateStatistiky(); }
         
@@ -992,6 +854,7 @@
             zaznamy.forEach(z => {
                 let zDatum = new Date(z.datum);
                 if (filterMode === 'week' && getWeekNumber(dnes) === getWeekNumber(zDatum)) celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
+                if (filterMode === 'month' && dnes.getMonth() === zDatum.getMonth() && dnes.getFullYear() === zDatum.getFullYear()) celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
             });
             document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
         }
@@ -999,7 +862,10 @@
         function renderZaznamy() {
             if(remoteMode) return;
             let container = document.getElementById('seznam-container'); container.innerHTML = '';
-            if (zaznamy.length === 0) { container.innerHTML = '<p style="text-align:center;padding:20px;">Žádné záznamy</p>'; return; }
+            if (zaznamy.length === 0) { 
+                container.innerHTML = `<p style="text-align:center;padding:20px;">${currentLang === 'cs' ? 'Žádné záznamy' : 'Keine Einträge'}</p>`; 
+                return; 
+            }
             zaznamy.forEach((z, index) => {
                 let h = kalkulujCisteHodiny(z);
                 let item = document.createElement('div'); item.className = 'zaznam-item';
@@ -1025,11 +891,10 @@
             localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value);
             localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
             localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value);
-            
             localStorage.setItem('cfg_email_uctarna', document.getElementById('cfg-email-uctarna').value);
             localStorage.setItem('cfg_email_pracovnik', document.getElementById('cfg-email-pracovnik').value);
             localStorage.setItem('cfg_wa_pracovnik', document.getElementById('cfg-wa-pracovnik').value);
-            alert('Nastavení uloženo!');
+            alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
         }
 
         function loadSettings() {
@@ -1038,7 +903,6 @@
             if(localStorage.getItem('cfg_adresa')) document.getElementById('cfg-adresa').value = localStorage.getItem('cfg_adresa');
             if(localStorage.getItem('cfg_mesto')) document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto');
             if(localStorage.getItem('cfg_podpis')) document.getElementById('cfg-podpis').value = localStorage.getItem('cfg_podpis');
-            
             if(localStorage.getItem('cfg_email_uctarna')) document.getElementById('cfg-email-uctarna').value = localStorage.getItem('cfg_email_uctarna');
             if(localStorage.getItem('cfg_email_pracovnik')) document.getElementById('cfg-email-pracovnik').value = localStorage.getItem('cfg_email_pracovnik');
             if(localStorage.getItem('cfg_wa_pracovnik')) document.getElementById('cfg-wa-pracovnik').value = localStorage.getItem('cfg_wa_pracovnik');
@@ -1060,7 +924,6 @@
                 try {
                     let encodedData = params.get('sign');
                     let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
-                    
                     remoteDataPayload = data; 
                     
                     document.getElementById('cfg-jmeno').value = data.jmeno || '';
@@ -1074,8 +937,7 @@
                     document.getElementById('ab-vadyText').value = data.vadyText || '';
                     document.getElementById('ab-odstraneniDo').value = data.odstraneniDo || '';
                     
-                    remoteZaznamy = data.zaznamy || []; 
-                    currentExportType = data.type || 'standard';
+                    remoteZaznamy = data.zaznamy || []; currentExportType = data.type || 'standard';
                     dataPodpisuIch = data.dataPodpisuIch || null;
 
                     document.getElementById('view-zaznamy').classList.remove('hidden');
@@ -1085,11 +947,13 @@
                     if(document.getElementById('wrapper-ich')) document.getElementById('wrapper-ich').classList.add('hidden');
                     
                     document.getElementById('export-card-actions').innerHTML = `
-                        <button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="finishRemoteSign()">✔️ ULOŽIT A ODESLAT ZPĚT</button>
+                        <button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="finishRemoteSign()">
+                            ${currentLang === 'cs' ? '✔️ ULOŽIT A ODESLAT ZPĚT' : '✔️ SPEICHERN & ZURÜCKSENDEN'}
+                        </button>
                     `;
                     
                     updateLivePreview();
-                } catch(e) { alert("Chyba načítání odkazu. Zkuste to vygenerovat znovu."); }
+                } catch(e) { alert("Chyba načítání odkazu. / Fehler beim Laden des Links."); }
             }
         }
 
