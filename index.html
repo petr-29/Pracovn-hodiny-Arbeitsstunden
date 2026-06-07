@@ -152,7 +152,7 @@
         let remoteMode = false;
         let remoteZaznamy = [];
         let currentExportType = '';
-        let remoteDataPayload = null; // Uchování dat z odkazu
+        let remoteDataPayload = null;
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
@@ -364,7 +364,7 @@
     <script>
         let dataPodpisuKunde = null;
         let dataPodpisuIch = null;
-        let dataPodpisuIchTiny = null; // Speciální mini verze pro odkaz (opravuje WhatsApp)
+        let dataPodpisuIchTiny = null; 
         let targetSignature = ''; 
 
         const canvas = document.getElementById('modal-canvas');
@@ -396,7 +396,7 @@
             ctx.lineWidth = 3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.strokeStyle = '#0a3ca6'; // Modrá propiska
+            ctx.strokeStyle = '#0a3ca6'; 
         }
 
         function closeSignatureModal() { document.getElementById('signature-modal').classList.add('hidden'); }
@@ -407,18 +407,16 @@
             blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
             
-            // Vysoká kvalita (pro PDF vytvořené rovnou z aplikace)
             const dataUrl = canvas.toDataURL('image/png');
 
-            // Extrémně zmenšená kvalita (pro kratší odkaz, aby se v aplikaci WhatsApp nerozbil)
             const tmpCanvas = document.createElement('canvas');
             tmpCanvas.width = 200;
             tmpCanvas.height = 70;
             const tCtx = tmpCanvas.getContext('2d');
-            tCtx.fillStyle = '#ffffff'; // Bílé pozadí
+            tCtx.fillStyle = '#ffffff'; 
             tCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
             tCtx.drawImage(canvas, 0, 0, tmpCanvas.width, tmpCanvas.height);
-            const tinyDataUrl = tmpCanvas.toDataURL('image/jpeg', 0.3); // Nízká komprese = zkrácení textu
+            const tinyDataUrl = tmpCanvas.toDataURL('image/jpeg', 0.3); 
 
             if (targetSignature === 'kunde') {
                 dataPodpisuKunde = dataUrl;
@@ -538,7 +536,6 @@
 
                 html += `  </table>`;
                 
-                // Přidání krátkého součtu hodin (Úprava dle požadavku)
                 html += `  <div style="text-align:right; font-weight:bold; font-size:12px; margin-top:8px;">Gesamt: ${totalWeekHours.toFixed(2)}</div>`;
                 html += `  <div style="margin-top:15px; font-size:10px;">Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.</div>`;
                 html += `  <div style="margin-top:40px; display:flex; justify-content:space-between; font-size:11px;">`;
@@ -642,7 +639,7 @@
                 emailUctarna: document.getElementById('cfg-email-uctarna').value,
                 emailPracovnik: document.getElementById('cfg-email-pracovnik').value,
                 waPracovnik: document.getElementById('cfg-wa-pracovnik').value,
-                dataPodpisuIch: dataPodpisuIchTiny || dataPodpisuIch, // Zabalení zmenšeného podpisu pro krátký odkaz
+                dataPodpisuIch: dataPodpisuIchTiny || dataPodpisuIch, 
                 zaznamy: vybrane
             };
             let jsonString = JSON.stringify(meta);
@@ -653,7 +650,43 @@
             });
         }
 
-        // Tlačítko Dokončit pro Šéfa + zobrazení nových komunikačních tlačítek
+        // Kopírování do schránky s vizuální odezvou
+        function copyToClipboard(text) {
+            if(!text || text === 'Není nastaveno' || text === '') return;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Zkopírováno / Kopiert: " + text);
+            }).catch(err => {
+                alert("Kopírování selhalo. Zkopírujte prosím text ručně.");
+            });
+        }
+
+        // Zobrazení a odeslání PDF s nativním Share Sheet (spodní menu iPhonu)
+        async function sharePdfNative() {
+            let blob = executePDFExport(true);
+            let file = new File([blob], "Unterzeichnetes_Dokument.pdf", { type: "application/pdf" });
+            
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Unterzeichnetes Dokument',
+                        text: 'Guten Tag, anbei das Dokument. / Dobrý den, v příloze zasílám podepsaný dokument.'
+                    });
+                } catch (e) {
+                    console.log('Sdílení zrušeno uživatelem nebo selhalo', e);
+                }
+            } else {
+                alert("Váš prohlížeč nepodporuje přímé sdílení. Dokument se nyní stáhne klasicky.");
+                executePDFExport();
+            }
+        }
+
+        function openPdfViewer() {
+            let blob = executePDFExport(true);
+            let url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        }
+
         function finishRemoteSign() {
             if (!dataPodpisuKunde) {
                 alert("Prosím, podepište dokument kliknutím na vyhrazené místo. / Bitte unterschreiben Sie das Dokument.");
@@ -664,6 +697,9 @@
             document.getElementById('wrapper-kunde').classList.add('hidden');
             document.getElementById('export-card-actions').classList.add('hidden');
             
+            let emailU = remoteDataPayload.emailUctarna || 'Není nastaveno';
+            let emailP = remoteDataPayload.emailPracovnik || 'Není nastaveno';
+            
             let successDiv = document.createElement('div');
             successDiv.id = 'success-screen';
             successDiv.innerHTML = `
@@ -671,59 +707,33 @@
                     <h2 style="color:#2ecc71; margin-bottom:5px;">Děkuji za váš podpis</h2>
                     <h3 style="color:#7f8c8d; margin-bottom:15px; font-weight:normal;">Danke für Ihre Unterschrift</h3>
                     
-                    <div style="background:#fff3cd; border-left:4px solid #f1c40f; padding:10px; margin-bottom:20px; text-align:left; font-size:12px; color:#8a6d3b; line-height:1.4;">
-                        <strong>WICHTIG / DŮLEŽITÉ:</strong><br>
-                        Nach dem Klicken wird die PDF-Datei heruntergeladen. Bitte hängen Sie die Datei <strong>manuell</strong> an die sich öffnende Nachricht an.<br>
-                        <i>(Po kliknutí se stáhne PDF. Prosím, přiložte jej ručně do otevřené zprávy.)</i>
+                    <p style="margin-bottom:15px; font-size:14px; text-align:left; color:#2c3e50;">
+                        Das PDF wurde erstellt. Sie können es nun ansehen, speichern oder direkt per E-Mail/WhatsApp teilen.<br><br>
+                        <em>Dokument je připraven. Můžete si vybrat, jak jej chcete nasdílet nebo uložit.</em>
+                    </p>
+
+                    <div style="background:#f5f6fa; border:1px solid #dcdde1; border-radius:8px; padding:15px; margin-bottom:20px; text-align:left; font-size:13px;">
+                        <strong style="font-size:14px; color:#2c3e50;">Kontakty pro odeslání (Kontakte zum Senden):</strong><br>
+                        <small style="color:#7f8c8d;">(Kliknutím na e-mail si jej zkopírujete / Klicken zum Kopieren)</small><br><br>
+                        
+                        ✉️ <strong>Buchhaltung (Účtárna):</strong><br>
+                        <span onclick="copyToClipboard('${emailU}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailU}</span><br><br>
+                        
+                        ✉️ <strong>Mitarbeiter (Pracovník Kopie):</strong><br>
+                        <span onclick="copyToClipboard('${emailP}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailP}</span>
                     </div>
 
-                    <button class="action-button-large" style="background:#3498db;" onclick="sendSignedDocument('uctarna')">
-                        📧 Odeslat do účtárny<br><small>An die Buchhaltung senden (E-Mail)</small>
+                    <button class="action-button-large" style="background:#2ecc71; margin-bottom:15px;" onclick="sharePdfNative()">
+                        📲 Sdílet PDF (Mail / WhatsApp)<br><small>PDF teilen (E-Mail / WhatsApp / Speichern)</small>
                     </button>
-                    <button class="action-button-large" style="background:#f39c12;" onclick="sendSignedDocument('pracovnik_mail')">
-                        📧 Odeslat kopii pracovníkovi<br><small>Kopie an den Mitarbeiter (E-Mail)</small>
-                    </button>
-                    <button class="action-button-large" style="background:#25D366;" onclick="sendSignedDocument('pracovnik_wa')">
-                        💬 Odeslat kopii pracovníkovi<br><small>Kopie an den Mitarbeiter (WhatsApp)</small>
+                    
+                    <button class="action-button-large" style="background:#34495e; margin-bottom:15px;" onclick="openPdfViewer()">
+                        👀 Zobrazit PDF na obrazovce<br><small>PDF auf dem Bildschirm anzeigen</small>
                     </button>
 
-                    <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #ccc;">
-                        <button class="btn-sec" style="width:100%; padding:12px;" onclick="executePDFExport()">
-                            ⬇️ Pouze stáhnout PDF / Nur PDF speichern
-                        </button>
-                    </div>
                 </div>
             `;
             document.getElementById('export-card').appendChild(successDiv);
-        }
-
-        // Logika pro stažení a odeslání specifikovaným kontaktům
-        function sendSignedDocument(target) {
-            // 1. Nejprve ihned stáhnout PDF do zařízení
-            executePDFExport();
-
-            // 2. Počkat vteřinu, než se zahájí stahování, a pak otevřít e-mail / WA
-            setTimeout(() => {
-                let subj = encodeURIComponent("Tätigkeitsnachweis / Abnahmeprotokoll - " + (remoteDataPayload.jmeno || ''));
-                let body = encodeURIComponent("Guten Tag,\nanbei sende ich das unterschriebene Dokument. (Bitte die PDF-Datei manuell anhängen!)\n\nDobrý den,\nv příloze zasílám podepsaný dokument. (Nezapomeňte přiložit PDF!)");
-
-                let url = '';
-                if (target === 'uctarna') {
-                    if (!remoteDataPayload.emailUctarna) { alert("E-mail účtárny není nastaven. / E-Mail der Buchhaltung ist nicht eingerichtet."); return; }
-                    url = `mailto:${remoteDataPayload.emailUctarna}?subject=${subj}&body=${body}`;
-                } else if (target === 'pracovnik_mail') {
-                    if (!remoteDataPayload.emailPracovnik) { alert("E-mail pracovníka není nastaven. / E-Mail des Mitarbeiters ist nicht eingerichtet."); return; }
-                    url = `mailto:${remoteDataPayload.emailPracovnik}?subject=${subj}&body=${body}`;
-                } else if (target === 'pracovnik_wa') {
-                    if (!remoteDataPayload.waPracovnik) { alert("WhatsApp číslo není nastaveno. / WhatsApp-Nummer ist nicht eingerichtet."); return; }
-                    let cleanWa = remoteDataPayload.waPracovnik.replace(/[^0-9]/g, '');
-                    url = `https://wa.me/${cleanWa}?text=${body}`;
-                }
-
-                if (url) {
-                    window.location.href = url;
-                }
-            }, 1000);
         }
 
         function exportStandardPDF(returnBlob = false) {
@@ -1015,7 +1025,7 @@
             localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value);
             localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
             localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value);
-            // Nové položky k uložení
+            
             localStorage.setItem('cfg_email_uctarna', document.getElementById('cfg-email-uctarna').value);
             localStorage.setItem('cfg_email_pracovnik', document.getElementById('cfg-email-pracovnik').value);
             localStorage.setItem('cfg_wa_pracovnik', document.getElementById('cfg-wa-pracovnik').value);
@@ -1028,7 +1038,7 @@
             if(localStorage.getItem('cfg_adresa')) document.getElementById('cfg-adresa').value = localStorage.getItem('cfg_adresa');
             if(localStorage.getItem('cfg_mesto')) document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto');
             if(localStorage.getItem('cfg_podpis')) document.getElementById('cfg-podpis').value = localStorage.getItem('cfg_podpis');
-            // Nové položky k načtení
+            
             if(localStorage.getItem('cfg_email_uctarna')) document.getElementById('cfg-email-uctarna').value = localStorage.getItem('cfg_email_uctarna');
             if(localStorage.getItem('cfg_email_pracovnik')) document.getElementById('cfg-email-pracovnik').value = localStorage.getItem('cfg_email_pracovnik');
             if(localStorage.getItem('cfg_wa_pracovnik')) document.getElementById('cfg-wa-pracovnik').value = localStorage.getItem('cfg_wa_pracovnik');
@@ -1051,7 +1061,7 @@
                     let encodedData = params.get('sign');
                     let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
                     
-                    remoteDataPayload = data; // Uložení dat pro pozdější použití při odesílání
+                    remoteDataPayload = data; 
                     
                     document.getElementById('cfg-jmeno').value = data.jmeno || '';
                     document.getElementById('cfg-firma').value = data.firma || '';
