@@ -62,42 +62,21 @@
         .action-toolbar { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .btn-sec { background: #e0e0e0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; }
 
-        /* NÁHLED STRÁNKY */
-        .preview-container-full {
-            background: #ffffff;
+        .preview-box {
+            background: #fff;
             border: 1px solid #bdc3c7;
-            padding: 20px;
-            border-radius: 8px;
+            padding: 15px;
+            border-radius: 6px;
             font-size: 13px;
-            margin: 20px 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            color: #000000;
+            margin: 15px 0;
+            max-height: 250px;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
-        .preview-header-full { 
-            font-weight: bold; 
-            text-align: center; 
-            font-size: 18px; 
-            margin-bottom: 20px; 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .preview-flex-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .preview-meta-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 1px dashed #ccc;
-            padding-bottom: 15px;
-        }
-        .preview-meta-item { line-height: 1.4; }
-        .preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
-        .preview-table th, .preview-table td { border: 1px solid #000000; padding: 8px; text-align: left; font-size: 12px; color: #000; }
-        .preview-table th { background-color: #f2f2f2; font-weight: bold; }
+        .preview-header { font-weight: bold; text-align: center; font-size: 15px; margin-bottom: 10px; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; }
+        .preview-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .preview-table th, .preview-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        .preview-table th { background-color: #f2f2f2; }
 
         .signature-placeholder {
             border: 2px dashed #3498db;
@@ -109,8 +88,10 @@
             margin-top: 5px;
             font-weight: bold;
             color: #2980b9;
+            transition: background 0.2s;
         }
-        .signature-display-img { max-height: 70px; display: block; margin: 0 auto; }
+        .signature-placeholder:hover { background: #dbe5e8; }
+        .signature-display-img { max-height: 80px; display: block; margin: 0 auto; }
 
         .signature-modal {
             position: fixed;
@@ -145,6 +126,7 @@
 </head>
 <body>
 
+    <!-- TENTO DROBEČEK KÓDU OKAMŽITĚ SKRYJE CELOU APLIKACI PŘED ŠÉFEM, POKUD DETEKUJE PARAMETR ?sign -->
     <script>
         let remoteMode = false;
         let remoteZaznamy = [];
@@ -152,6 +134,7 @@
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
+            // Vstříkneme do stránky styl, který skryje všechno nežádoucí ještě před vykreslením zbytku HTML
             const style = document.createElement('style');
             style.innerHTML = `
                 #main-lang-bar, #view-kalkulacka, #view-nastaveni, 
@@ -174,6 +157,7 @@
 
     <div class="container">
         
+        <!-- CALC TAB -->
         <div id="view-kalkulacka" class="tab-content">
             <div class="card">
                 <div class="stats-box">
@@ -228,6 +212,7 @@
             </div>
         </div>
 
+        <!-- RECORDS TAB -->
         <div id="view-zaznamy" class="tab-content hidden">
             <div class="action-toolbar" id="records-toolbar">
                 <button class="btn-sec" onclick="selectAllZaznamy()" id="btn-all">Vše</button>
@@ -236,19 +221,20 @@
                 <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
             </div>
 
+            <!-- EXPORT & SIGNATURE BOARD -->
             <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
                 <div class="card-title">Kontrola dokumentu před podpisem</div>
                 
-                <div id="document-live-preview" class="preview-container-full"></div>
+                <div id="document-live-preview" class="preview-box"></div>
 
                 <div id="abnahme-fields" class="hidden">
                     <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
                     <div class="form-group inline">
-                        <input type="checkbox" id="ab-bezZkousky" onchange="document.getElementById('ab-seZkouskou').checked = !this.checked; updateLivePreview();">
+                        <input type="checkbox" id="ab-bezZkousky" onchange="document.getElementById('ab-seZkouskou').checked = !this.checked">
                         <label for="ab-bezZkousky">Ohne Funktionsprüfung (Bez funkční zkoušky)</label>
                     </div>
                     <div class="form-group inline">
-                        <input type="checkbox" id="ab-seZkouskou" checked onchange="document.getElementById('ab-bezZkousky').checked = !this.checked; updateLivePreview();">
+                        <input type="checkbox" id="ab-seZkouskou" checked onchange="document.getElementById('ab-bezZkousky').checked = !this.checked">
                         <label for="ab-seZkouskou">Mit Funktionsprüfung (S funkční zkouškou)</label>
                     </div>
                     <div class="form-group inline" style="margin-top:10px;">
@@ -270,18 +256,25 @@
 
                 <hr style="border:0; border-top:2px solid #2c3e50; margin:15px 0;">
 
+                <!-- TLAČÍTKO PRO VZDÁLENÉ SDÍLENÍ ODKAZU -->
                 <div style="margin-bottom: 20px;" id="remote-share-wrapper">
-                    <button class="btn-main" style="background:#3498db; color:white; font-size:15px;" onclick="generateRemoteSignLink()">🔗 GENEROVAT ODKAZ PRO ŠÉFA (WhatsApp / Mail)</button>
+                    <button class="btn-main" style="background:#3498db; color:white; font-size:15px;" onclick="generateRemoteSignLink()">🔗 GENERAT ODKAZ PRO ŠÉFA (WhatsApp / Mail)</button>
+                    <p style="font-size:11px; color:#7f8c8d; text-align:center; margin-top:4px;">Použijte, pokud vedoucí stavby není osobně s vámi.</p>
                 </div>
 
+                <!-- MÍSTNÍ PODPISY PRSTEM -->
                 <div style="margin-bottom: 12px;">
-                    <label style="font-weight:bold; font-size:14px; color:#2980b9;">1. Podpis klienta / Stavbyvedoucího:</label>
-                    <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')">Klikněte pro podepsání prstem</div>
+                    <label style="font-weight:bold; font-size:14px; color:#2980b9;">1. Podpis klienta / Stavbyvedoucího (Zde na místě):</label>
+                    <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')">
+                        Klikněte zde pro podepsání prstem
+                    </div>
                 </div>
 
                 <div style="margin-bottom: 15px;">
                     <label style="font-weight:bold; font-size:14px; color:#27ae60;">2. Váš podpis (Dodavatel):</label>
-                    <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')">Klikněte pro podepsání prstem</div>
+                    <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')">
+                        Klikněte zde pro podepsání prstem
+                    </div>
                 </div>
                 
                 <div class="row" id="export-card-actions">
@@ -293,6 +286,7 @@
             <div class="card" id="seznam-container"></div>
         </div>
 
+        <!-- MODAL CANVAS FOR SIGNING -->
         <div id="signature-modal" class="signature-modal hidden">
             <div class="modal-content">
                 <h3 id="modal-sig-title">Podpis</h3>
@@ -305,6 +299,7 @@
             </div>
         </div>
 
+        <!-- SETTINGS TAB -->
         <div id="view-nastaveni" class="tab-content hidden">
             <div class="card">
                 <div class="card-title">Uživatel & Firma</div>
@@ -314,7 +309,7 @@
                 </div>
                 <div class="form-group">
                     <label>Název projektu / Klienta</label>
-                    <input type="text" id="cfg-firma" value="Netzsch, Sedanstrasse 70 D – 95100 Selb">
+                    <input type="text" id="cfg-firma" value="WEBER Elektrotechnik">
                 </div>
                 <div class="form-group">
                     <label>Adresa</label>
@@ -325,8 +320,8 @@
                     <input type="text" id="cfg-mesto" value="94577 Winzer">
                 </div>
                 <div class="form-group">
-                    <label>Odpovědná osoba (Klient / Šéf)</label>
-                    <input type="text" id="cfg-podpis" value="---">
+                    <label>Odpovědná osoba (jméno klienta v tisku)</label>
+                    <input type="text" id="cfg-podpis" value="">
                 </div>
                 <button class="btn-main" onclick="saveSettings()">Uložit Nastavení</button>
             </div>
@@ -350,8 +345,6 @@
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
 
-        const deDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-
         function getMousePos(e) {
             let rect = canvas.getBoundingClientRect();
             let clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -362,14 +355,16 @@
         canvas.addEventListener('mousedown', (e) => { isDrawing = true; let pos = getMousePos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
         canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; let pos = getMousePos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); });
         canvas.addEventListener('mouseup', () => isDrawing = false);
+
         canvas.addEventListener('touchstart', (e) => { isDrawing = true; let pos = getMousePos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); e.preventDefault(); });
         canvas.addEventListener('touchmove', (e) => { if (!isDrawing) return; let pos = getMousePos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); });
         canvas.addEventListener('touchend', () => isDrawing = false);
 
         function openSignatureModal(target) {
             targetSignature = target;
-            document.getElementById('modal-sig-title').innerText = target === 'kunde' ? 'Podpis: Kunde / Šéf' : 'Podpis: Petr Michálek';
+            document.getElementById('modal-sig-title').innerText = target === 'kunde' ? 'Podpis: Vedoucí / Kunde' : 'Podpis: Petr Michálek';
             document.getElementById('signature-modal').classList.remove('hidden');
+            
             canvas.width = canvas.offsetWidth;
             canvas.height = 200;
             ctx.lineWidth = 3;
@@ -377,13 +372,23 @@
             ctx.strokeStyle = '#000000';
         }
 
-        function closeSignatureModal() { document.getElementById('signature-modal').classList.add('hidden'); }
-        function clearModalCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function closeSignatureModal() {
+            document.getElementById('signature-modal').classList.add('hidden');
+        }
+
+        function clearModalCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
 
         function saveModalSignature() {
             const blank = document.createElement('canvas');
-            blank.width = canvas.width; blank.height = canvas.height;
-            if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
+            blank.width = canvas.width;
+            blank.height = canvas.height;
+            if (canvas.toDataURL() === blank.toDataURL()) {
+                alert('Nejdříve se podepište!');
+                return;
+            }
+
             const dataUrl = canvas.toDataURL('image/png');
             if (targetSignature === 'kunde') {
                 dataPodpisuKunde = dataUrl;
@@ -393,14 +398,18 @@
                 document.getElementById('box-ich').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
             }
             closeSignatureModal();
-            updateLivePreview();
         }
 
         function openExportCard(type) {
             let vybrane = zaznamy.filter(z => z.selected);
-            if(vybrane.length === 0) { alert('Vyberte nejdříve řádky pro export!'); return; }
+            if(vybrane.length === 0) {
+                alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro export!' : 'Bitte wählen Sie zuerst Einträge aus!');
+                return;
+            }
+
             currentExportType = type;
             document.getElementById('export-card').classList.remove('hidden');
+
             if (type === 'abnahme') {
                 document.getElementById('abnahme-fields').classList.remove('hidden');
                 document.getElementById('btn-execute-export').style.background = '#3498db';
@@ -408,6 +417,7 @@
                 document.getElementById('abnahme-fields').classList.add('hidden');
                 document.getElementById('btn-execute-export').style.background = '#f39c12';
             }
+
             updateLivePreview();
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
@@ -418,272 +428,52 @@
             
             let jmeno = document.getElementById('cfg-jmeno').value;
             let firma = document.getElementById('cfg-firma').value;
-            let adresa = document.getElementById('cfg-adresa').value;
-            let mesto = document.getElementById('cfg-mesto').value;
-            let pKunde = document.getElementById('cfg-podpis').value || '---';
-            let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].    let html = '';
-
-    if (currentExportType === 'standard') {
-        let tableRowsHtml = '';
-        let totalNetHours = 0;
-
-        if (vybrane.length > 0) {
-            // Najdeme pondělí pro týden, ze kterého je první vybraný záznam
-            let baseDate = new Date(vybrane[0].datum);
-            let dayOfWeek = baseDate.getDay(); // 0 = Neděle, 1 = Pondělí...
-            let diff = baseDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-            let monday = new Date(baseDate.setDate(diff));
-
-            let daysOfWeekGerman = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-
-            // Vygenerujeme fixně všech 7 dní od pondělí do neděle
-            for (let i = 0; i < 7; i++) {
-                let currentDay = new Date(monday);
-                currentDay.setDate(monday.getDate() + i);
-
-                let dateStr = `${currentDay.getDate()}.${currentDay.getMonth() + 1}.${currentDay.getFullYear()}`;
-
-                // Podíváme se, jestli pro tento den existuje záznam v odpracovaných hodinách
-                let match = vybrane.find(item => {
-                    let d = new Date(item.datum);
-                    return d.getDate() === currentDay.getDate() &&
-                           d.getMonth() === currentDay.getMonth() &&
-                           d.getFullYear() === currentDay.getFullYear();
-                });
-
-                let vonBis = '';
-                let gesamtH = '';
-                let pauseVal = '';
-                let ohnePause = '';
-
-                if (match) {
-                    let start = match.zacatek || match.start || '';
-                    let end = match.konec || match.end || '';
-                    let p = match.prestavka || match.pause || '';
-                    let h = match.hodiny || match.hours || '';
-
-                    if (start && end) vonBis = `${start} - ${end}`;
-                    pauseVal = p ? (p.toString().includes('m') ? p : p + 'm') : '';
-                    ohnePause = h ? parseFloat(h).toFixed(2) : '';
-
-                    // Výpočet hrubého času (Gesamt h) mezi začátkem a koncem
-                    if (start && end) {
-                        let [sH, sM] = start.split(':').map(Number);
-                        let [eH, eM] = end.split(':').map(Number);
-                        if (!isNaN(sH) && !isNaN(eH)) {
-                            let diffMin = (eH * 60 + eM) - (sH * 60 + sM);
-                            if (diffMin > 0) {
-                                gesamtH = (diffMin / 60).toFixed(2);
-                            }
-                        }
-                    }
-                    if (h) totalNetHours += parseFloat(h);
-                }
-
-                // Přidání řádku do německé tabulky
-                tableRowsHtml += `
-                    <tr>
-                        <td style="border: 1px solid black; padding: 7px; font-weight: bold; background-color: #fcfcfc;">${daysOfWeekGerman[i]}</td>
-                        <td style="border: 1px solid black; padding: 7px; text-align: center;">${dateStr}</td>
-                        <td style="border: 1px solid black; padding: 7px; text-align: center; font-weight: 500;">${vonBis || '&nbsp;'}</td>
-                        <td style="border: 1px solid black; padding: 7px; text-align: center;">${gesamtH || '&nbsp;'}</td>
-                        <td style="border: 1px solid black; padding: 7px; text-align: center;">${pauseVal || '&nbsp;'}</td>
-                        <td style="border: 1px solid black; padding: 7px; text-align: center; font-weight: bold;">${ohnePause || '&nbsp;'}</td>
-                        <td style="border: 1px solid black; padding: 7px; text-align: center; color: #aba; font-size: 10px; letter-spacing: 2px;">ja / nein</td>
-                        <td style="border: 1px solid black; padding: 7px; text-align: center; color: #aba; font-size: 10px; letter-spacing: 2px;">ja / nein</td>
-                    </tr>
-                `;
-            }
-        } else {
-            tableRowsHtml = '<tr><td colspan="8" style="border: 1px solid black; padding: 20px; text-align: center; color: #666;">Keine Daten für diese Woche vorhanden.</td></tr>';
-        }
-
-        // Sestavení kompletního vzhledu dokumentu (Obrázek 2)
-        html += `
-        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 15px; color: black; background: white; box-sizing: border-box;">
             
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                <tr>
-                    <td style="width: 50%; vertical-align: bottom; padding-bottom: 5px;">
-                        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 3px solid black; display: inline-block; padding-bottom: 2px;">TÄTIGKEITSNACHWEIS</h1>
-                    </td>
-                    <td style="width: 50%; vertical-align: top; padding-left: 15px;">
-                        <div style="border: 1px solid black; padding: 8px; min-height: 85px; font-size: 13px; line-height: 1.4;">
-                            <strong style="font-size: 10px; text-transform: uppercase; color: #555; display: block; margin-bottom: 4px; border-bottom: 1px dashed #ccc; padding-bottom: 2px;">Kundenanschrift:</strong>
-                            <div style="font-weight: bold;">${firma || '&nbsp;'}</div>
-                            <div>${adresa || '&nbsp;'}</div>
-                            <div>${mesto || '&nbsp;'}</div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-
-            <div style="text-align: right; margin-bottom: 12px; font-size: 13px;">
-                <label style="margin-right: 25px; font-weight: bold; cursor: pointer;"><input type="checkbox" style="vertical-align: middle; margin-right: 6px;"> Regional</label>
-                <strong>KW:</strong> <span style="background: #f0f0f0; padding: 2px 8px; border: 1px solid #ccc; border-radius: 3px;">${kwNum}</span>
-            </div>
-
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px;">
-                <tr>
-                    <td style="border: 1px solid black; padding: 8px; width: 50%; vertical-align: top;">
-                        <span style="color: #666; font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 2px;">Name, Vorname</span>
-                        <strong>${jmeno || '&nbsp;'}</strong>
-                    </td>
-                    <td style="border: 1px solid black; padding: 8px; width: 50%; vertical-align: middle; background-color: #f7f7f7; font-size: 11px; font-weight: bold; text-align: center; color: #444;">
-                        Mitarbeiter bitte ankreuzen:
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2" style="border: 1px solid black; padding: 8px; vertical-align: top;">
-                        <span style="color: #666; font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 2px;">Baustelle</span>
-                        <strong>${(vybrane[0]?.zakazka || vybrane[0]?.cisloZakazky || '') || '&nbsp;'}</strong>
-                    </td>
-                </tr>
-            </table>
-
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px;">
-                <thead>
-                    <tr style="background-color: #e6e6e6; text-align: center; font-weight: bold;">
-                        <th style="border: 1px solid black; padding: 6px; text-align: left; width: 12%;">Tage</th>
-                        <th style="border: 1px solid black; padding: 6px; width: 13%;">Datum</th>
-                        <th style="border: 1px solid black; padding: 6px; width: 18%;">Arb.-Zeit<br><span style="font-size: 10px; font-weight: normal;">von &nbsp; &nbsp; &nbsp; &nbsp; bis</span></th>
-                        <th style="border: 1px solid black; padding: 6px; width: 10%;">Gesamt h</th>
-                        <th style="border: 1px solid black; padding: 6px; width: 9%;">Pause</th>
-                        <th style="border: 1px solid black; padding: 6px; width: 12%;">Gesamt ohne<br>Pause</th>
-                        <th style="border: 1px solid black; padding: 6px; width: 13%;">Tägliche<br>Heimfahrt?<br><span style="font-size: 9px; font-weight: normal; color:#555;">ja &nbsp; | &nbsp; nein</span></th>
-                        <th style="border: 1px solid black; padding: 6px; width: 13%;">Übernachtung<br>am Einsatzort?<br><span style="font-size: 9px; font-weight: normal; color:#555;">ja &nbsp; | &nbsp; nein</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRowsHtml}
-                </tbody>
-                <tfoot>
-                    <tr style="background-color: #f2f2f2; font-weight: bold; font-size: 13px;">
-                        <td colspan="5" style="border: 1px solid black; padding: 10px; text-align: right;">Gesamtstunden pro Woche:</td>
-                        <td style="border: 1px solid black; padding: 10px; text-align: center; color: #2e7d32; font-size: 14px;">${totalNetHours.toFixed(2)} h</td>
-                        <td colspan="2" style="border: 1px solid black;"></td>
-                    </tr>
-                </tfoot>
-            </table>
-
-            <p style="font-size: 10.5px; font-style: italic; margin-top: 4px; margin-bottom: 35px; color: #333;">
-                Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.
-            </p>
-
-            <table style="width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 12px;">
-                <tr>
-                    <td style="width: 44%; border-top: 1px solid black; text-align: center; padding-top: 6px; font-weight: bold; color: #444;">
-                        Unterschrift und Stempel des Kunden
-                    </td>
-                    <td style="width: 12%;"></td>
-                    <td style="width: 44%; border-top: 1px solid black; text-align: center; padding-top: 6px; font-weight: bold; color: #444;">
-                        Datum / Unterschrift des Mitarbeiters
-                    </td>
-                </tr>
-            </table>
-        </div>
-        `;
-    }
-
-                html += `<div class="preview-header-full">TÄTIGKEITSNACHWEIS</div>`;
-                html += `<div class="preview-flex-header">`;
-                html += `  <div style="line-height:1.5;">`;
-                html += `    <strong>Kundenanschrift:</strong><br>${firma}<br>${adresa}<br>${mesto}<br><br>`;
-                html += `    <strong>Name: ${jmeno}</strong>`;
-                html += `  </div>`;
-                html += `  <div style="text-align:right; line-height:1.5;">`;
-                html += `    <strong>KW: ${kwNum}</strong><br>Kunde: ${pKunde}`;
-                html += `  </div>`;
-                html += `</div>`;
-
-                html += `<table class="preview-table">`;
-                html += `  <tr><th>Tag</th><th>Datum</th><th>von - bis</th><th>Pause</th><th>Gesamt h</th></tr>`;
-                let celkem = 0;
-                vybrane.forEach(z => {
-                    let h = kalkulujCisteHodiny(z);
-                    celkem += h;
-                    let denNazev = deDays[new Date(z.datum).getDay()];
-                    let dFmt = new Date(z.datum).toLocaleDateString('de-DE', {day:'numeric', month:'numeric', year:'numeric'});
-                    html += `  <tr><td>${denNazev}</td><td>${dFmt}</td><td>${z.zacatek} - ${z.konec}</td><td>${z.prestavka}m</td><td style="text-align:right;">${h.toFixed(2)}</td></tr>`;
-                });
-                html += `  <tr><td colspan="4" style="text-align:right; font-weight:bold;">Gesamtstunden pro Woche:</td><td style="text-align:right; font-weight:bold;">${celkem.toFixed(2)} h</td></tr>`;
-                html += `</table>`;
-
-                html += `<div style="margin-top:60px; display:flex; justify-content:space-between;">`;
-                html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
-                if(dataPodpisuKunde) html += `<img src="${dataPodpisuKunde}" style="max-height:40px; margin-bottom:5px;"><br>`;
-                html += `    <strong>Unterschrift Kunde</strong><br><span style="font-size:9px; color:#555;">Unterschrift Kunde</span>`;
-                html += `  </div>`;
-                html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
-                if(dataPodpisuIch) html += `<img src="${dataPodpisuIch}" style="max-height:40px; margin-bottom:5px;"><br>`;
-                html += `    <strong>${jmeno}</strong><br><span style="font-size:9px; color:#555;">Unterschrift Auftragnehmer</span>`;
-                html += `  </div>`;
-                html += `</div>`;
-
-            } else {
-                let bezZkousky = document.getElementById('ab-bezZkousky').checked;
-                let seZkouskou = document.getElementById('ab-seZkouskou').checked;
+            let html = '';
+            if (currentExportType === 'abnahme') {
                 let sVadami = document.getElementById('ab-sVadami').checked;
                 let vadyText = document.getElementById('ab-vadyText').value || '---';
                 let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
-                let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
-                let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
-                let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
 
-                html += `<div class="preview-header-full">ABNAHME- & FORTSCHRITTSPROTOKOLL</div>`;
-                html += `<div class="preview-meta-grid">`;
-                html += `  <div class="preview-meta-item"><strong>Vorname, Name:</strong><br>${jmeno}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Kunde:</strong><br>${firma}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Projekt-Nr:</strong><br>${cisloZ}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Anschrift:</strong><br>${adresa}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Leistungszeitraum:</strong><br>${startDatum} - ${endDatum}</div>`;
-                html += `  <div class="preview-meta-item"><strong>PLZ, Ort:</strong><br>${mesto}</div>`;
-                html += `</div>`;
-
-                html += `<p style="font-weight:bold; margin-top:10px;">Leistungsbeschreibung / Tätigkeitsbeschreibung</p>`;
-                html += `<table class="preview-table">`;
-                html += `  <tr><th>Datum</th><th>Tätigkeit</th><th style="text-align:right;">Dauer [h]</th></tr>`;
-                let celkem = 0;
-                vybrane.forEach(z => {
-                    let h = kalkulujCisteHodiny(z); celkem += h;
-                    html += `  <tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${z.popisPrace || '---'}</td><td style="text-align:right;">${h.toFixed(2)}</td></tr>`;
-                });
-                html += `  <tr><td colspan="2" style="text-align:right; font-weight:bold;">Gesamt:</td><td style="text-align:right; font-weight:bold;">${celkem.toFixed(2)}</td></tr>`;
-                html += `</table>`;
-
-                html += `<div style="margin-top:15px; font-size:12px; line-height:1.6;">`;
-                html += `  <strong>Bei der Abnahme wurde festgestellt:</strong><br>`;
-                html += `  [${bezZkousky ? 'X' : ' '}] die Leistung/en sind ohne Funktionsprüfung abgenommen<br>`;
-                html += `  [${seZkouskou ? 'X' : ' '}] die Leistung/en sind mit Funktionsprüfung abgenommen<br>`;
-                html += `  [${sVadami ? 'X' : ' '}] Mängel festgestellt: ${sVadami ? vadyText : 'Nein'}<br>`;
-                if(sVadami) html += `  Mängel werden bis spätestens <strong>${odstraneniDo}</strong> behoben.<br>`;
-                html += `</div>`;
-
-                html += `<div style="margin-top:40px; display:flex; justify-content:space-between;">`;
-                html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
-                if(dataPodpisuKunde) html += `<img src="${dataPodpisuKunde}" style="max-height:40px; margin-bottom:5px;"><br>`;
-                html += `    <strong>${pKunde}</strong><br><span style="font-size:9px; color:#555;">*Unterschrift Auftraggeber</span>`;
-                html += `  </div>`;
-                html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
-                if(dataPodpisuIch) html += `<img src="${dataPodpisuIch}" style="max-height:40px; margin-bottom:5px;"><br>`;
-                html += `    <strong>${jmeno}</strong><br><span style="font-size:9px; color:#555;">Unterschrift Auftragnehmer</span>`;
-                html += `  </div>`;
-                html += `</div>`;
+                html += `<div class="preview-header">ABNAHMEPROTOKOLL (Náhled)</div>`;
+                html += `<div><strong>Auftragnehmer:</strong> ${jmeno}</div>`;
+                html += `<div><strong>Kunde:</strong> ${firma}</div>`;
+                if(sVadami) {
+                    html += `<div style="color:red; margin-top:5px;"><strong>Mängel:</strong> ${vadyText}</div>`;
+                    html += `<div style="color:red;"><strong>Behoben bis:</strong> ${odstraneniDo}</div>`;
+                }
+            } else {
+                html += `<div class="preview-header">TÄTIGKEITSNACHWEIS (Náhled)</div>`;
+                html += `<div><strong>Mitarbeiter:</strong> ${jmeno}</div>`;
+                html += `<div><strong>Kunde:</strong> ${firma}</div>`;
             }
+
+            html += `<table class="preview-table"><tr><th>Datum</th><th>Beschreibung</th><th>h</th></tr>`;
+            let celkem = 0;
+            vybrane.forEach(z => {
+                let h = kalkulujCisteHodiny(z);
+                celkem += h;
+                html += `<tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${z.popisPrace || '---'}</td><td>${h.toFixed(2)}</td></tr>`;
+            });
+            html += `<tr><td colspan="2" style="text-align:right;"><strong>Gesamt Stunden:</strong></td><td><strong>${celkem.toFixed(2)}</strong></td></tr></table>`;
 
             document.getElementById('document-live-preview').innerHTML = html;
         }
 
         function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
-            dataPodpisuKunde = null; dataPodpisuIch = null;
-            document.getElementById('box-kunde').innerText = 'Klikněte pro podepsání prstem';
-            document.getElementById('box-ich').innerText = 'Klikněte pro podepsání prstem';
+            dataPodpisuKunde = null;
+            dataPodpisuIch = null;
+            document.getElementById('box-kunde').innerText = 'Klikněte zde pro podepsání prstem';
+            document.getElementById('box-ich').innerText = 'Klikněte zde pro podepsání prstem';
         }
 
         function executePDFExport() {
-            if (currentExportType === 'abnahme') exportAbnahmePDF();
-            else exportStandardPDF();
+            if (currentExportType === 'abnahme') {
+                exportAbnahmePDF();
+            } else {
+                exportStandardPDF();
+            }
             if(!remoteMode) closeExportCard();
         }
 
@@ -703,227 +493,184 @@
                 odstraneniDo: document.getElementById('ab-odstraneniDo').value,
                 zaznamy: vybrane
             };
+
             let jsonString = JSON.stringify(meta);
             let encodedData = btoa(unescape(encodeURIComponent(jsonString)));
             let shareUrl = window.location.href.split('?')[0] + '?sign=' + encodedData;
+
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("Odkaz ke vzdálenému podpisu byl zkopírován do schránky!");
+                alert("Odkaz byl zkopírován! Nyní ho můžete vložit do WhatsAppu nebo e-mailu pro šéfa.");
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Pracovní listy k podpisu',
+                        text: 'Dobrý den, posílám pracovní listy ke kontrole a podpisu:',
+                        url: shareUrl
+                    }).catch(() => {});
+                }
             });
-        }
-
-        function exportStandardPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-
-            let jmeno = document.getElementById('cfg-jmeno').value;
-            let firma = document.getElementById('cfg-firma').value;
-            let adresa = document.getElementById('cfg-adresa').value;
-            let mesto = document.getElementById('cfg-mesto').value;
-            let podpisKundeText = document.getElementById('cfg-podpis').value || '---';
-            let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
-
-            doc.setFont("Helvetica", "bold"); doc.setFontSize(18);
-            doc.text("TÄTIGKEITSNACHWEIS", 105, 20, { align: 'center' });
-
-            doc.setFontSize(11); doc.text("Kundenanschrift:", 15, 35);
-            doc.setFont("Helvetica", "normal");
-            doc.text(firma, 15, 41); doc.text(adresa, 15, 46); doc.text(mesto, 15, 51);
-
-            doc.setFont("Helvetica", "bold"); doc.text(`Name: ${jmeno}`, 15, 62);
-            
-            doc.text(`KW: ${kwNum}`, 195, 35, { align: 'right' });
-            doc.setFont("Helvetica", "normal"); doc.text(`Kunde: ${podpisKundeText}`, 195, 41, { align: 'right' });
-
-            doc.setFillColor(242, 242, 242); doc.rect(15, 70, 180, 8, 'F'); doc.rect(15, 70, 180, 8, 'S');
-            doc.setFont("Helvetica", "bold");
-            doc.text("Tag", 17, 75); doc.text("Datum", 47, 75); doc.text("von - bis", 82, 75); doc.text("Pause", 117, 75); doc.text("Gesamt h", 142, 75);
-
-            doc.setFont("Helvetica", "normal");
-            let y = 78; let celkemHodin = 0;
-
-            vybrane.forEach(z => {
-                let h = kalkulujCisteHodiny(z); celkemHodin += h; y += 8;
-                doc.rect(15, y-5, 180, 8, 'S');
-                let denNazev = deDays[new Date(z.datum).getDay()];
-                let dFmt = new Date(z.datum).toLocaleDateString('de-DE', {day:'numeric', month:'numeric', year:'numeric'});
-                doc.text(denNazev, 17, y);
-                doc.text(dFmt, 47, y);
-                doc.text(`${z.zacatek} - ${z.konec}`, 82, y);
-                doc.text(`${z.prestavka}m`, 117, y);
-                doc.text(h.toFixed(2), 193, y, { align: 'right' });
-            });
-
-            y += 12; doc.setFont("Helvetica", "bold");
-            doc.text(`Gesamtstunden pro Woche: ${celkemHodin.toFixed(2)} h`, 195, y, { align: 'right' });
-
-            y = 255;
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 15, y - 14, 40, 13);
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 120, y - 14, 40, 13);
-
-            doc.line(15, y, 90, y); doc.line(120, y, 195, y);
-            doc.setFontSize(10); doc.text("Unterschrift Kunde", 15, y + 5); doc.text(jmeno, 120, y + 5);
-            doc.setFontSize(8); doc.setFont("Helvetica", "normal");
-            doc.text("Unterschrift Kunde", 15, y + 9); doc.text("Unterschrift Auftragnehmer", 120, y + 9);
-
-            doc.save("Tatigkeitsnachweis.pdf");
-        }
-
-        function exportAbnahmePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            
-            let jmeno = document.getElementById('cfg-jmeno').value;
-            let firma = document.getElementById('cfg-firma').value;
-            let adresa = document.getElementById('cfg-adresa').value;
-            let mesto = document.getElementById('cfg-mesto').value;
-            let podpisKundeText = document.getElementById('cfg-podpis').value || '---';
-
-            let bezZkousky = document.getElementById('ab-bezZkousky').checked;
-            let seZkouskou = document.getElementById('ab-seZkouskou').checked;
-            let sVadami = document.getElementById('ab-sVadami').checked;
-            let vadyText = document.getElementById('ab-vadyText').value || '---';
-            let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
-
-            let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
-            let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
-            let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
-
-            doc.setFont("Helvetica", "bold"); doc.setFontSize(14);
-            doc.text("ABNAHME- & FORTSCHRITTSPROTOKOLL", 105, 15, { align: 'center' });
-
-            doc.setFontSize(9);
-            doc.rect(15, 25, 90, 10); doc.text("Vorname, Name", 17, 29); doc.setFont("Helvetica", "normal"); doc.text(jmeno, 17, 33); doc.setFont("Helvetica", "bold");
-            doc.rect(105, 25, 90, 10); doc.text("Kunde", 107, 29); doc.setFont("Helvetica", "normal"); doc.text(firma, 107, 33); doc.setFont("Helvetica", "bold");
-            doc.rect(15, 35, 90, 10); doc.text("Projekt-Nr.", 17, 39); doc.setFont("Helvetica", "normal"); doc.text(cisloZ, 17, 43); doc.setFont("Helvetica", "bold");
-            doc.rect(105, 35, 90, 10); doc.text("Anschrift", 107, 39); doc.setFont("Helvetica", "normal"); doc.text(adresa, 107, 43); doc.setFont("Helvetica", "bold");
-            doc.rect(15, 45, 90, 10); doc.text("Leistungszeitraum", 17, 49); doc.setFont("Helvetica", "normal"); doc.text(`${startDatum} - ${endDatum}`, 17, 53); doc.setFont("Helvetica", "bold");
-            doc.rect(105, 45, 90, 10); doc.text("PLZ, Ort", 107, 49); doc.setFont("Helvetica", "normal"); doc.text(mesto, 107, 53);
-
-            doc.setFont("Helvetica", "bold"); doc.setFontSize(11); doc.text("Leistungsbeschreibung / Tätigkeitsbeschreibung", 15, 63);
-
-            let y = 68;
-            doc.setFillColor(230, 230, 230);
-            doc.rect(15, y, 35, 7, 'F'); doc.rect(15, y, 35, 7, 'S'); doc.text("Datum", 17, y + 5);
-            doc.rect(50, y, 120, 7, 'F'); doc.rect(50, y, 120, 7, 'S'); doc.text("Tätigkeit", 52, y + 5);
-            doc.rect(170, y, 25, 7, 'F'); doc.rect(170, y, 25, 7, 'S'); doc.text("Dauer [h]", 172, y + 5);
-
-            doc.setFont("Helvetica", "normal"); doc.setFontSize(9);
-            let celkemHodin = 0;
-            vybrane.forEach(z => {
-                let h = kalkulujCisteHodiny(z); celkemHodin += h; y += 7;
-                doc.rect(15, y, 35, 7, 'S'); doc.text(new Date(z.datum).toLocaleDateString('de-DE'), 17, y + 5);
-                doc.rect(50, y, 120, 7, 'S'); doc.text(z.popisPrace.substring(0, 55), 52, y + 5);
-                doc.rect(170, y, 25, 7, 'S'); doc.text(h.toFixed(2), 192, y + 5, { align: 'right' });
-            });
-
-            y += 7; doc.setFont("Helvetica", "bold");
-            doc.rect(15, y, 155, 7, 'S'); doc.text("Gesamt", 152, y + 5, { align: 'right' });
-            doc.rect(170, y, 25, 7, 'S'); doc.text(celkemHodin.toFixed(2), 192, y + 5, { align: 'right' });
-
-            y += 15; doc.setFontSize(11); doc.text("Bei der Abnahme wurde festgestellt:", 15, y);
-            doc.setFontSize(10); doc.setFont("Helvetica", "normal");
-            
-            y += 7; doc.rect(15, y - 3, 4, 4); if(bezZkousky) doc.text("X", 16, y);
-            doc.text("die Leistung/en sind ohne Funktionsprüfung abgenommen", 23, y);
-            
-            y += 7; doc.rect(15, y - 3, 4, 4); if(seZkouskou) doc.text("X", 16, y);
-            doc.text("die Leistung/en sind mit Funktionsprüfung abgenommen", 23, y);
-            
-            y += 7; doc.rect(15, y - 3, 4, 4); if(sVadami) doc.text("X", 16, y);
-            doc.text(`bis auf folgende Mängel: ${sVadami ? vadyText : 'Nein'}`, 23, y);
-
-            y += 10; doc.text(`Mängel werden bis spätestens ${odstraneniDo} behoben.`, 15, y);
-            y += 15; doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')}`, 15, y);
-
-            y += 30;
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 15, y - 18, 40, 16);
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 125, y - 18, 40, 16);
-
-            doc.line(15, y, 85, y); doc.line(125, y, 195, y);
-            doc.setFontSize(9); doc.text(podpisKundeText, 15, y + 4); doc.text("*Unterschrift Auftraggeber", 15, y + 8);
-            doc.text(jmeno, 125, y + 4); doc.text("Unterschrift Auftragnehmer", 125, y + 8);
-
-            doc.save("AbnahmeProtokoll.pdf");
         }
 
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let currentLang = localStorage.getItem('app_lang') || 'cs';
-        let filterMode = 'week'; let maskEarnings = false;
+        let filterMode = 'week'; 
+        let maskEarnings = false;
+
         document.getElementById('inp-datum').valueAsDate = new Date();
 
+        const slovnik = {
+            cs: { title: "Pracovní hodiny", calc: "Vypočítat", list: "Záznamy", sett: "Nastavení", zeit: "Pracovní doba", det: "Detaily práce", projn: "Číslo zakázky", taet: "Popis práce", satz: "Sazba (€/h)", save: "Uložit", datum: "Datum", von: "Začátek", bis: "Konec", pause: "Přestávka (min)" },
+            de: { title: "Arbeitsstunden", calc: "Berechnen", list: "Einträge", sett: "Einstellungen", zeit: "Arbeitszeit", det: "Arbeitsdetails", projn: "Projekt-Nr.", taet: "Tätigkeit", satz: "Stundensatz (€/h)", save: "Speichern", datum: "Datum", von: "Beginn", bis: "Ende", pause: "Pause (Min)" }
+        };
+
         function setLanguage(lang) {
-            currentLang = lang; localStorage.setItem('app_lang', lang); if(remoteMode) return;
-            document.getElementById('app-title').innerText = lang === 'cs' ? "Pracovní hodiny" : "Arbeitsstunden";
-            updateStatistiky(); renderZaznamy();
+            currentLang = lang;
+            localStorage.setItem('app_lang', lang);
+            if(remoteMode) return;
+
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('app-title').innerText = slovnik[lang].title;
+            document.getElementById('tab-calc').innerText = slovnik[lang].calc;
+            document.getElementById('tab-list').innerText = slovnik[lang].list;
+            document.getElementById('tab-sett').innerText = slovnik[lang].sett;
+            document.getElementById('lbl-arbeitszeit').innerText = slovnik[lang].zeit;
+            document.getElementById('lbl-details').innerText = slovnik[lang].det;
+            document.getElementById('lbl-projn').innerText = slovnik[lang].projn;
+            document.getElementById('lbl-taet').innerText = slovnik[lang].taet;
+            document.getElementById('lbl-satz').innerText = slovnik[lang].satz;
+            document.getElementById('btn-speichern').innerText = slovnik[lang].save;
+            document.getElementById('lbl-datum').innerText = slovnik[lang].datum;
+            document.getElementById('lbl-beginn').innerText = slovnik[lang].von;
+            document.getElementById('lbl-ende').innerText = slovnik[lang].bis;
+            document.getElementById('lbl-pause').innerText = slovnik[lang].pause;
+
+            updateStatistiky();
+            renderZaznamy();
         }
+
         function switchTab(tabId, button) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.remove('hidden');
-            button.classList.add('active'); if(tabId === 'zaznamy') renderZaznamy();
+            button.classList.add('active');
+            if(tabId === 'zaznamy') renderZaznamy();
         }
+
         function kalkulujCisteHodiny(zaznam) {
             let [h1, m1] = zaznam.zacatek.split(':').map(Number);
             let [h2, m2] = zaznam.konec.split(':').map(Number);
-            let start = h1 * 60 + m1; let konec = h2 * 60 + m2;
-            if (konec < start) konec += 24 * 60;
-            let cisty = (konec - start - Number(zaznam.prestavka)) / 60;
-            return cisty > 0 ? cisty : 0;
+            let startMinuty = h1 * 60 + m1;
+            let konecMinuty = h2 * 60 + m2;
+            if (konecMinuty < startMinuty) konecMinuty += 24 * 60;
+            let cistyCas = (konecMinuty - startMinuty - Number(zaznam.prestavka)) / 60;
+            return cistyCas > 0 ? cistyCas : 0;
         }
+
         function ulozZaznam() {
-            let novy = {
-                id: Date.now(), datum: document.getElementById('inp-datum').value,
-                zacatek: document.getElementById('inp-zacatek').value, konec: document.getElementById('inp-konec').value,
-                prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
-                popisPrace: document.getElementById('inp-popis').value, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
-                projekt: document.getElementById('cfg-firma').value, selected: false
+            let novyZaznam = {
+                id: Date.now(),
+                datum: document.getElementById('inp-datum').value,
+                zacatek: document.getElementById('inp-zacatek').value,
+                konec: document.getElementById('inp-konec').value,
+                prestavka: document.getElementById('inp-prestavka').value,
+                cisloZakazky: document.getElementById('inp-zakazka').value,
+                popisPrace: document.getElementById('inp-popis').value,
+                sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
+                projekt: document.getElementById('cfg-firma').value,
+                selected: false
             };
-            zaznamy.push(novy); localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-            document.getElementById('inp-popis').value = ''; alert('Uloženo!'); updateStatistiky();
+            zaznamy.push(novyZaznam);
+            localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+            document.getElementById('inp-popis').value = '';
+            alert(currentLang === 'cs' ? 'Záznam úspěšně uložen!' : 'Eintrag erfolgreich gespeichert!');
+            updateStatistiky();
         }
+
         function getWeekNumber(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-            return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7);
+            var startOfYear = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            return Math.ceil((((d - startOfYear) / 86400000) + 1)/7);
         }
-        function setFilterMode(mode) { filterMode = mode; updateStatistiky(); }
-        function toggleEarningsMask() { maskEarnings = !maskEarnings; updateStatistiky(); }
-        
+
+        function setFilterMode(mode) {
+            filterMode = mode;
+            document.getElementById('btn-filter-week').classList.toggle('active', mode === 'week');
+            document.getElementById('btn-filter-month').classList.toggle('active', mode === 'month');
+            updateStatistiky();
+        }
+
+        function toggleEarningsMask() {
+            maskEarnings = !maskEarnings;
+            document.getElementById('btn-mask').innerText = maskEarnings ? '🙈' : '👁️';
+            updateStatistiky();
+        }
+
         function updateStatistiky() {
             if(remoteMode) return;
-            let dnes = new Date(); let celkemPenez = 0;
+            let dnes = new Date();
+            let celkemPenez = 0;
             zaznamy.forEach(z => {
                 let zDatum = new Date(z.datum);
-                if (filterMode === 'week' && getWeekNumber(dnes) === getWeekNumber(zDatum)) celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
+                if (filterMode === 'week' && getWeekNumber(dnes) === getWeekNumber(zDatum) && dnes.getFullYear() === zDatum.getFullYear()) {
+                    celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
+                } else if (filterMode === 'month' && dnes.getMonth() === zDatum.getMonth() && dnes.getFullYear() === zDatum.getFullYear()) {
+                    celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
+                }
             });
+            document.getElementById('stat-title').innerText = filterMode === 'week' ? `KW ${getWeekNumber(dnes)}` : (currentLang === 'cs' ? 'Tento měsíc' : 'Diesen Monat');
             document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
         }
 
         function renderZaznamy() {
             if(remoteMode) return;
-            let container = document.getElementById('seznam-container'); container.innerHTML = '';
-            if (zaznamy.length === 0) { container.innerHTML = '<p style="text-align:center;padding:20px;">Žádné záznamy</p>'; return; }
+            let container = document.getElementById('seznam-container');
+            container.innerHTML = '';
+            if (zaznamy.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding: 20px; color:#7f8c8d;">Žádné záznamy / Keine Einträge</p>';
+                return;
+            }
+            zaznamy.sort((a,b) => new Date(b.datum) - new Date(a.datum));
             zaznamy.forEach((z, index) => {
-                let h = kalkulujCisteHodiny(z);
-                let item = document.createElement('div'); item.className = 'zaznam-item';
+                let hodiny = kalkulujCisteHodiny(z);
+                let d = new Date(z.datum).toLocaleDateString(currentLang === 'cs' ? 'cs-CZ' : 'de-DE', {day: 'numeric', month: 'numeric'});
+                let item = document.createElement('div');
+                item.className = 'zaznam-item';
                 item.innerHTML = `
                     <div class="checkbox-container">
-                        <input type="checkbox" ${z.selected ? 'checked' : ''} onchange="zaznamy[${index}].selected=!zaznamy[${index}].selected; localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy));">
-                        <div><strong>${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>
+                        <input type="checkbox" ${z.selected ? 'checked' : ''} onchange="toggleZaznamSelect(${index})">
+                        <div>
+                            <div><strong>${d}</strong> | <span class="project-info">${z.projekt}</span></div>
+                            <div style="font-size:12px; color:#7f8c8d;">${z.popisPrace || '---'}</div>
+                        </div>
                     </div>
-                    <button class="btn-sec" style="background:#ff7675; color:white;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy();">🗑️</button>
+                    <div style="text-align:right;">
+                        <div><strong>${hodiny.toFixed(2)} h</strong></div>
+                        <button class="btn-sec" style="padding:2px 6px; font-size:11px; background:#ff7675; color:white; margin-top:4px;" onclick="smazatZaznam(${z.id})">🗑️</button>
+                    </div>
                 `;
                 container.appendChild(item);
             });
         }
 
+        function toggleZaznamSelect(index) {
+            zaznamy[index].selected = !zaznamy[index].selected;
+            localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+        }
+
         function selectAllZaznamy() {
-            let all = zaznamy.every(z => z.selected); zaznamy.forEach(z => z.selected = !all);
-            localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy)); renderZaznamy();
+            let allChecked = zaznamy.every(z => z.selected);
+            zaznamy.forEach(z => z.selected = !allChecked);
+            localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+            renderZaznamy();
+        }
+
+        function smazatZaznam(id) {
+            if(confirm(currentLang === 'cs' ? 'Smazat tento záznam?' : 'Eintrag lösen?')) {
+                zaznamy = zaznamy.filter(z => z.id !== id);
+                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+                renderZaznamy();
+                updateStatistiky();
+            }
         }
 
         function saveSettings() {
@@ -932,7 +679,7 @@
             localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value);
             localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
             localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value);
-            alert('Nastavení uloženo!');
+            alert('Nastavení uloženo / Einstellungen gespeichert');
         }
 
         function loadSettings() {
@@ -944,44 +691,262 @@
         }
 
         function exportCSV() {
-            let csv = "Datum;Beginn;Ende;Pause;Stunden\n";
-            zaznamy.filter(z => z.selected).forEach(z => {
-                csv += `${z.datum};${z.zacatek};${z.konec};${z.prestavka};${kalkulujCisteHodiny(z).toFixed(2)}\n`;
+            let vybrane = zaznamy.filter(z => z.selected);
+            if(vybrane.length === 0) vybrane = zaznamy;
+            let csv = "Datum;Beginn;Ende;Pause;Stunden;Projekt;Projekt-Nr.;Taetigkeit\n";
+            vybrane.forEach(z => {
+                let h = kalkulujCisteHodiny(z).toFixed(2);
+                let bezpecnyPopis = z.popisPrace.replace(/;/g, ',');
+                csv += `${z.datum};${z.zacatek};${z.konec};${z.prestavka};${h};${z.projekt};${z.cisloZakazky};${bezpecnyPopis}\n`;
             });
-            let blob = new Blob([csv], { type: 'text/csv;' });
-            let link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
+            let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "Export_Arbeitsstunden.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportStandardPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
+
+            let jmeno = document.getElementById('cfg-jmeno').value;
+            let firma = document.getElementById('cfg-firma').value;
+            let adresa = document.getElementById('cfg-adresa').value;
+            let mesto = document.getElementById('cfg-mesto').value;
+            let podpisKundeText = document.getElementById('cfg-podpis').value || '---';
+
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(18);
+            doc.text("TÄTIGKEITSNACHWEIS", 105, 20, { align: 'center' });
+
+            doc.setFontSize(11);
+            doc.text("Kundenanschrift:", 15, 35);
+            doc.setFont("Helvetica", "normal");
+            doc.text(firma, 15, 41);
+            doc.text(adresa, 15, 46);
+            doc.text(mesto, 15, 51);
+
+            doc.setFont("Helvetica", "bold");
+            doc.text(`Name: ${jmeno}`, 15, 62);
+
+            doc.setFillColor(230, 230, 230);
+            doc.rect(15, 70, 180, 8, 'F');
+            doc.rect(15, 70, 180, 8, 'S');
+
+            doc.text("Datum", 18, 75);
+            doc.text("von - bis", 50, 75);
+            doc.text("Pause", 85, 75);
+            doc.text("Gesamt h", 110, 75);
+            doc.text("Tätigkeit / Beschreibung", 140, 75);
+
+            doc.setFont("Helvetica", "normal");
+            let y = 78;
+            let celkemHodin = 0;
+
+            vybrane.forEach(z => {
+                let h = kalkulujCisteHodiny(z);
+                celkemHodin += h;
+                y += 8;
+                doc.rect(15, y-5, 180, 8, 'S');
+                doc.text(new Date(z.datum).toLocaleDateString('de-DE'), 18, y);
+                doc.text(`${z.zacatek} - ${z.konec}`, 50, y);
+                doc.text(`${z.prestavka}m`, 85, y);
+                doc.text(`${h.toFixed(2)}`, 110, y);
+                doc.text(z.popisPrace.substring(0, 25), 140, y);
+            });
+
+            y += 15;
+            doc.setFont("Helvetica", "bold");
+            doc.text(`Gesamtstunden pro Woche: ${celkemHodin.toFixed(2)} h`, 195, y, { align: 'right' });
+
+            y = 260; 
+            
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 15, y - 16, 40, 15);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 130, y - 16, 40, 15);
+
+            doc.line(15, y, 80, y);
+            doc.line(130, y, 195, y);
+            doc.setFontSize(9);
+            doc.text(`Unterschrift Kunde (${podpisKundeText})`, 15, y + 4);
+            doc.text(`Unterschrift Auftragnehmer (${jmeno})`, 130, y + 4);
+
+            doc.save("Tatigkeitsnachweis.pdf");
+        }
+
+        function exportAbnahmePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            
+            let jmeno = document.getElementById('cfg-jmeno').value;
+            let firma = document.getElementById('cfg-firma').value;
+            let adresa = document.getElementById('cfg-adresa').value;
+            let mesto = document.getElementById('cfg-mesto').value;
+            let podpisKundeText = document.getElementById('cfg-podpis').value || 'Name in Druckbuchstaben AG';
+
+            let bezZkousky = document.getElementById('ab-bezZkousky').checked;
+            let seZkouskou = document.getElementById('ab-seZkouskou').checked;
+            let sVadami = document.getElementById('ab-sVadami').checked;
+            let vadyText = document.getElementById('ab-vadyText').value;
+            let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '_________________________';
+
+            let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
+            let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
+            let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
+
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("ABNAHME- & FORTSCHRITTSPROTOKOLL", 105, 15, { align: 'center' });
+
+            doc.setLineWidth(0.3);
+            doc.setFontSize(9);
+            
+            doc.rect(15, 25, 90, 10); doc.text("Vorname, Name", 17, 29); doc.setFont("Helvetica", "normal"); doc.text(jmeno, 17, 33); doc.setFont("Helvetica", "bold");
+            doc.rect(105, 25, 90, 10); doc.text("Kunde", 107, 29); doc.setFont("Helvetica", "normal"); doc.text(firma, 107, 33); doc.setFont("Helvetica", "bold");
+            doc.rect(15, 35, 90, 10); doc.text("Projekt-Nr.", 17, 39); doc.setFont("Helvetica", "normal"); doc.text(cisloZ, 17, 43); doc.setFont("Helvetica", "bold");
+            doc.rect(105, 35, 90, 10); doc.text("Anschrift", 107, 39); doc.setFont("Helvetica", "normal"); doc.text(adresa, 107, 43); doc.setFont("Helvetica", "bold");
+            doc.rect(15, 45, 90, 10); doc.text("Leistungszeitraum", 17, 49); doc.setFont("Helvetica", "normal"); doc.text(`${startDatum} - ${endDatum}`, 17, 53); doc.setFont("Helvetica", "bold");
+            doc.rect(105, 45, 90, 10); doc.text("PLZ, Ort", 107, 49); doc.setFont("Helvetica", "normal"); doc.text(mesto, 107, 53);
+
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(11);
+            doc.text("Leistungsbeschreibung / Tätigkeitsbeschreibung", 15, 63);
+
+            let y = 68;
+            doc.setFillColor(230, 230, 230);
+            doc.rect(15, y, 35, 7, 'F'); doc.rect(15, y, 35, 7, 'S'); doc.text("Datum", 17, y + 5);
+            doc.rect(50, y, 120, 7, 'F'); doc.rect(50, y, 120, 7, 'S'); doc.text("Tätigkeit", 52, y + 5);
+            doc.rect(170, y, 25, 7, 'F'); doc.rect(170, y, 25, 7, 'S'); doc.text("Dauer [h]", 172, y + 5);
+
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(9);
+            let celkemHodin = 0;
+
+            vybrane.forEach(z => {
+                let h = kalkulujCisteHodiny(z);
+                celkemHodin += h;
+                y += 7;
+                doc.rect(15, y, 35, 7, 'S'); doc.text(new Date(z.datum).toLocaleDateString('de-DE'), 17, y + 5);
+                doc.rect(50, y, 120, 7, 'S'); doc.text(z.popisPrace.substring(0, 55), 52, y + 5);
+                doc.rect(170, y, 25, 7, 'S'); doc.text(h.toFixed(2), 192, y + 5, { align: 'right' });
+            });
+
+            y += 7;
+            doc.setFont("Helvetica", "bold");
+            doc.rect(15, y, 155, 7, 'S'); doc.text("Gesamt", 152, y + 5, { align: 'right' });
+            doc.rect(170, y, 25, 7, 'S'); doc.text(celkemHodin.toFixed(2), 192, y + 5, { align: 'right' });
+
+            y += 15;
+            doc.setFontSize(11);
+            doc.text("Bei der Abnahme wurde festgestellt:", 15, y);
+            
+            doc.setFontSize(10);
+            doc.setFont("Helvetica", "normal");
+            
+            y += 7;
+            doc.rect(15, y - 3, 4, 4); 
+            if(bezZkousky) { doc.text("X", 16, y); }
+            doc.text("die Leistung/en sind ohne Funktionsprüfung abgenommen", 23, y);
+
+            y += 7;
+            doc.rect(15, y - 3, 4, 4);
+            if(seZkouskou) { doc.text("X", 16, y); }
+            doc.text("die Leistung/en sind mit Funktionsprüfung abgenommen", 23, y);
+
+            y += 7;
+            doc.rect(15, y - 3, 4, 4);
+            if(sVadami) { doc.text("X", 16, y); }
+            doc.text("bis auf folgende Mängel bzw. Schäden befindet sich die Leistung/en in vertragsgemäßen Zustand:", 23, y);
+            
+            if(sVadami && vadyText) {
+                y += 6;
+                doc.setFont("Helvetica", "bold");
+                doc.text(`Závady: ${vadyText}`, 23, y);
+                doc.setFont("Helvetica", "normal");
+            }
+
+            y += 10;
+            doc.text("Mängel werden bis spätestens", 15, y);
+            doc.setFont("Helvetica", "bold");
+            doc.text(odstraneniDo, 67, y);
+            doc.setFont("Helvetica", "normal");
+            doc.text("behoben.", 115, y);
+
+            y += 20;
+            doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')}`, 15, y);
+            y += 30;
+            
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 15, y - 18, 40, 16);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 125, y - 18, 40, 16);
+
+            doc.line(15, y, 85, y);
+            doc.line(125, y, 195, y);
+            
+            doc.setFontSize(9);
+            doc.text(podpisKundeText, 15, y + 4);
+            doc.text("*Unterschrift Auftraggeber", 15, y + 8);
+            
+            doc.text(jmeno, 125, y + 4);
+            doc.text("Unterschrift Auftragnehmer", 125, y + 8);
+
+            y += 18;
+            doc.setFontSize(7);
+            doc.setFont("Helvetica", "italic");
+            doc.text("* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.", 15, y);
+
+            doc.save("AbnahmeProtokoll.pdf");
         }
 
         function checkRemoteSignMode() {
             let params = new URLSearchParams(window.location.search);
-            if (signParam) {
-    const base64Clean = signParam.replace(/ /g, '+');
-    const decodedText = decodeURIComponent(escape(atob(base64Clean)));
-    const Data = JSON.parse(decodedText);
-    try {
-        let data = Data;
-        document.getElementById('cfg-jmeno').value = data.jmeno;
+            if (params.has('sign')) {
+                try {
+                    let encodedData = params.get('sign');
+                    let jsonString = decodeURIComponent(escape(atob(encodedData)));
+                    let data = JSON.parse(jsonString);
+
+                    document.getElementById('cfg-jmeno').value = data.jmeno;
                     document.getElementById('cfg-firma').value = data.firma;
                     document.getElementById('cfg-adresa').value = data.adresa;
                     document.getElementById('cfg-mesto').value = data.mesto;
                     document.getElementById('cfg-podpis').value = data.podpisKundeText;
+                    
                     document.getElementById('ab-bezZkousky').checked = data.bezZkousky;
                     document.getElementById('ab-seZkouskou').checked = data.seZkouskou;
                     document.getElementById('ab-sVadami').checked = data.sVadami;
                     document.getElementById('ab-vadyText').value = data.vadyText;
                     document.getElementById('ab-odstraneniDo').value = data.odstraneniDo;
-                    remoteZaznamy = data.zaznamy; currentExportType = data.type;
+                    
+                    remoteZaznamy = data.zaznamy;
+                    currentExportType = data.type;
+
                     document.getElementById('view-zaznamy').classList.remove('hidden');
                     document.getElementById('export-card').classList.remove('hidden');
-                    document.getElementById('export-card-actions').innerHTML = `<button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="executePDFExport()">✔️ STÁHNOUT PDF</button>`;
-                    if(data.type === 'abnahme') document.getElementById('abnahme-fields').classList.remove('hidden');
-                    updateLivePreview(); } 
-      catch(e) { alert("Chyba načítání odkazu."); }
+                    document.getElementById('export-card-actions').innerHTML = `
+                        <button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="executePDFExport()">✔️ STÁHNOUT PODEPSANÉ PDF</button>
+                    `;
+                    
+                    if(data.type === 'abnahme') {
+                        document.getElementById('abnahme-fields').classList.remove('hidden');
+                        if(data.sVadami) document.getElementById('vady-wrapper').classList.remove('hidden');
+                    }
+
+                    updateLivePreview();
+                } catch(e) {
+                    alert("Chyba při načítání dat k podpisu. Odkaz je pravděpodobně poškozený.");
+                }
             }
         }
 
-        loadSettings(); setLanguage(currentLang); checkRemoteSignMode();
+        loadSettings();
+        setLanguage(currentLang);
+        checkRemoteSignMode();
     </script>
 </body>
 </html>
