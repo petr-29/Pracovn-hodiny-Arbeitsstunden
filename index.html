@@ -425,9 +425,12 @@
                 let nName = parts.pop() || '';
                 let vName = parts.join(' ') || '';
                 let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
+                let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
 
-                // HTML konstrukce odpovídající přesně originálnímu vzoru
-                html += `<div style="background:#fff; border:1px solid #ccc; padding:20px; font-family:sans-serif; color:#000;">`;
+                // HTML konstrukce odpovídající přesně originálnímu vzoru s přidáním KW
+                html += `<div style="position:relative; background:#fff; border:1px solid #ccc; padding:20px; font-family:sans-serif; color:#000;">`;
+                // PŘIDÁNO: KW v pravém horním rohu náhledu
+                html += `  <div style="position:absolute; top:20px; right:20px; font-weight:bold; font-size:14px; border:1px solid #000; padding:4px 8px;">KW ${kwNum}</div>`;
                 html += `  <div style="text-align:center; font-weight:bold; font-size:18px; margin-bottom: 20px;">TÄTIGKEITSNACHWEIS</div>`;
                 html += `  <div style="width:250px; margin:0 auto 20px auto; border:1px solid #000; font-size:12px;">`;
                 html += `    <div style="border-bottom:1px solid #000; padding:4px;">Kundenanschrift:</div>`;
@@ -572,7 +575,6 @@
             if(!remoteMode) closeExportCard();
         }
 
-        // OPRAVENÁ LOGIKA SDÍLENÍ - přidáno URL enkódování
         function generateRemoteSignLink() {
             let vybrane = zaznamy.filter(z => z.selected);
             let meta = {
@@ -590,7 +592,6 @@
                 zaznamy: vybrane
             };
             let jsonString = JSON.stringify(meta);
-            // Přidán encodeURIComponent kolem btoa, chrání speciální znaky v URL (Whatsapp bug fix)
             let encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
             let shareUrl = window.location.href.split('?')[0] + '?sign=' + encodedData;
             navigator.clipboard.writeText(shareUrl).then(() => {
@@ -613,11 +614,16 @@
             let nName = parts.pop() || '';
             let vName = parts.join(' ') || '';
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
+            let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
 
             // TÄTIGKEITSNACHWEIS TITLE
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(16);
             doc.text("TÄTIGKEITSNACHWEIS", 105, 25, {align: 'center'});
+
+            // PŘIDÁNO: Zobrazení KW v pravém horním rohu PDF
+            doc.setFontSize(12);
+            doc.text(`KW ${kwNum}`, 195, 25, {align: 'right'});
 
             // Box pro Kundenanschrift
             let kX = 70; let kY = 32;
@@ -904,13 +910,11 @@
             link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
         }
 
-        // OPRAVENÉ NAČÍTÁNÍ ODKAZU
         function checkRemoteSignMode() {
             let params = new URLSearchParams(window.location.search);
             if (params.has('sign')) {
                 try {
                     let encodedData = params.get('sign');
-                    // params.get() automaticky řeší dekódování URL, takže už netrpíme mezerami z WhatsAppu
                     let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
                     document.getElementById('cfg-jmeno').value = data.jmeno;
                     document.getElementById('cfg-firma').value = data.firma;
