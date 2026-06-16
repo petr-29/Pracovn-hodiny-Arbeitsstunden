@@ -313,10 +313,15 @@
     </div>
 
     <script>
-        function showApp() {
-            document.getElementById('welcome-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-        }
+function showApp() {
+    // Skryjeme uvítací obrazovku
+    document.getElementById('welcome-screen').style.display = 'none';
+    
+    // Zobrazíme hlavní aplikaci odstraněním třídy 'hidden'
+    const app = document.getElementById('main-app');
+    app.classList.remove('hidden');
+    app.style.display = 'block'; // Pro jistotu vynutíme zobrazení
+}
 
         let remoteMode = false; let remoteZaznamy = []; let currentExportType = ''; let remoteDataPayload = null;
         
