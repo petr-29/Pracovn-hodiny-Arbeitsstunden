@@ -439,6 +439,7 @@
         }
 
         let remoteMode = false; let remoteZaznamy = []; let currentExportType = ''; let remoteDataPayload = null;
+        let currentDrawSessionId = null;
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
@@ -572,7 +573,6 @@
             }
         }
 
-        // --- ZBYTEK KÓDU (PODPISY, EXPORTY, ULOŽENÍ) ZŮSTÁVÁ IDENTICKÝ ---
         function openSignatureModal(target) {
             targetSignature = target;
             let textTitle = target === 'kunde' 
@@ -1237,13 +1237,6 @@
             }
         }
 
-        loadSettings(); 
-        loadTheme();
-        setLanguage(currentLang); 
-        checkRemoteSignMode();
-    </script>
-<let currentDrawSessionId = null;
-
         function generatePhoneLink() {
             // 1. Vytvoříme unikátní ID relace
             currentDrawSessionId = Math.random().toString(36).substring(2, 10);
@@ -1307,6 +1300,11 @@
             alert("Obrázek byl odeslán do PC! (V reálné verzi přes databázi by se hned objevil v notebooku). Můžete tuto stránku zavřít.");
             document.getElementById('fs-draw-modal').classList.add('hidden');
         }
+
+        loadSettings(); 
+        loadTheme();
+        setLanguage(currentLang); 
+        checkRemoteSignMode();
 
     </script>
 </body>
