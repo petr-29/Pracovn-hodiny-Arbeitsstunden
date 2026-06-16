@@ -83,7 +83,9 @@
         body.dark-theme .tab-bar { background: #1e1e24; border-top: 1px solid var(--border); }
         body.dark-theme footer { background: #121214; color: #718093; }
         body.dark-theme .btn-sec { background: #2f3640; color: #fff; }
-        body.dark-theme .preview-container-full { background: #ffffff; color: #000000; } /* Dokumenty držíme bílé kvůli tisku */
+        body.dark-theme .preview-container-full { background: #ffffff; color: #000000; } 
+        body.dark-theme .fs-draw-modal { background: #1e1e24; }
+        body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e1e24; border-color: #2f3640; }
 
         .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
         .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
@@ -140,6 +142,13 @@
         .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 20px; text-align: center; color: #000; }
         canvas.sig-canvas { width: 100%; height: 200px; border: 1px solid #bdc3c7; background: #fafafa; border-radius: 6px; display: block; touch-action: none; margin: 15px 0; }
+        
+        /* FULLSCREEN PLÁTNO PRO KRESLENÍ */
+        .fs-draw-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; display: flex; flex-direction: column; }
+        .fs-draw-header { padding: 15px; background: var(--card-bg); text-align: center; font-weight: bold; border-bottom: 1px solid var(--border); font-size: 18px; }
+        .fs-draw-content { flex: 1; position: relative; width: 100%; background: #ffffff; }
+        canvas.fs-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+        .fs-draw-footer { padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; gap: 10px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
         
         .action-button-large { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4; }
         .action-button-large small { font-size: 12px; font-weight: normal; opacity: 0.9; }
@@ -216,10 +225,15 @@
                             <button type="button" id="btn-input-text" class="active" onclick="setInputMode('text')" data-cs="⌨️ Klávesnice" data-de="⌨️ Tastatur">⌨️ Klávesnice</button>
                             <button type="button" id="btn-input-draw" onclick="setInputMode('draw')" data-cs="✏️ Tužka / Pencil" data-de="✏️ Stift / Pencil">✏️ Tužka / Pencil</button>
                         </div>
+                        
                         <textarea id="inp-popis" rows="3"></textarea>
+                        
                         <div id="draw-popis-wrapper" class="hidden">
-                            <canvas id="canvas-popis" style="width:100%; height:130px; border:1px solid var(--border); background:#ffffff; border-radius:8px; display:block; touch-action:none;"></canvas>
-                            <button type="button" class="btn-sec" style="background:#e74c3c; color:white; width:100%; margin-top:5px; font-weight:bold;" onclick="clearPopisCanvas()" data-cs="Smazat nákres" data-de="Zeichnung löschen">Smazat nákres</button>
+                            <div id="preview-drawn-image" style="margin-bottom:10px; display:none; border:1px solid #ccc; padding:5px; background:#fff; border-radius:8px; text-align:center;">
+                                <img id="drawn-preview-img" src="" style="max-width:100%; max-height:100px; display:block; margin:0 auto;">
+                                <small style="color:#7f8c8d;" data-cs="Aktuální nákres" data-de="Aktuelle Zeichnung">Aktuální nákres</small>
+                            </div>
+                            <button type="button" class="btn-sec" style="background:#3498db; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px;" onclick="openFullscreenCanvas()" data-cs="✏️ Otevřít plátno přes celý displej" data-de="✏️ Vollbild-Leinwand öffnen">✏️ Otevřít plátno přes celý displej</button>
                         </div>
                     </div>
                     
@@ -228,7 +242,7 @@
                         <input type="number" id="inp-sazba" value="30.00" step="0.5">
                     </div>
 
-                    <button class="btn-main" onclick="ulozZaznam()" id="btn-speichern" data-cs="Uložit" data-de="Speichern">Uložit</button>
+                    <button class="btn-main" onclick="ulozZaznam()" id="btn-speichern" data-cs="Uložit Záznam" data-de="Eintrag speichern">Uložit Záznam</button>
                 </div>
             </div>
 
@@ -378,6 +392,18 @@
         </nav>
     </div>
 
+    <div id="fs-draw-modal" class="fs-draw-modal hidden">
+        <div class="fs-draw-header" data-cs="Nákres / Poznámka" data-de="Zeichnung / Notiz">Nákres / Poznámka</div>
+        <div class="fs-draw-content" id="fs-canvas-container">
+            <canvas id="fs-canvas" class="fs-canvas"></canvas>
+        </div>
+        <div class="fs-draw-footer">
+            <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()" data-cs="Smazat" data-de="Löschen">Smazat</button>
+            <button class="btn-sec" style="flex:1;" onclick="closeFullscreenCanvas()" data-cs="Zrušit" data-de="Abbrechen">Zrušit</button>
+            <button class="btn-main" style="background:#2ecc71; color:white; flex:2;" onclick="saveFullscreenCanvas()" data-cs="Uložit a hotovo" data-de="Speichern & Fertig">Uložit a hotovo</button>
+        </div>
+    </div>
+
     <script>
         function showApp() {
             const welcome = document.getElementById('welcome-screen');
@@ -387,8 +413,6 @@
                 const app = document.getElementById('main-app');
                 app.classList.remove('hidden');
                 app.style.display = 'block';
-                // Přepočítáme velikost plátna pro psaní rukou, pokud je zrovna zobrazené
-                if(currentInputMode === 'draw') resizePopisCanvas();
             }, 500);
         }
 
@@ -408,40 +432,34 @@
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         const deDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-        // PROMĚNNÉ PRO PLATNO POPISU PRÁCE (PENCIL)
-        let currentInputMode = 'text';
-        const canvasPopis = document.getElementById('canvas-popis');
-        const ctxPopis = canvasPopis.getContext('2d');
-        let isDrawingPopis = false;
-
-        function getMousePos(e) {
-            let rect = canvas.getBoundingClientRect();
+        function getMousePos(e, targetCanvas) {
+            let rect = targetCanvas.getBoundingClientRect();
             let clientX = e.clientX || (e.touches && e.touches[0].clientX);
             let clientY = e.clientY || (e.touches && e.touches[0].clientY);
             return { x: clientX - rect.left, y: clientY - rect.top };
         }
 
-        canvas.addEventListener('mousedown', (e) => { isDrawing = true; let pos = getMousePos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
-        canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; let pos = getMousePos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); });
+        // LOGIKA PRO PODPISOVÝ CANVAS (PŮVODNÍ)
+        canvas.addEventListener('mousedown', (e) => { isDrawing = true; let pos = getMousePos(e, canvas); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
+        canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); });
         canvas.addEventListener('mouseup', () => isDrawing = false);
-        canvas.addEventListener('touchstart', (e) => { isDrawing = true; let pos = getMousePos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); e.preventDefault(); });
-        canvas.addEventListener('touchmove', (e) => { if (!isDrawing) return; let pos = getMousePos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); });
+        canvas.addEventListener('touchstart', (e) => { isDrawing = true; let pos = getMousePos(e, canvas); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); e.preventDefault(); });
+        canvas.addEventListener('touchmove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); });
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        // LOGIKA KRESLENÍ PRO POPIS PRÁCE (HANDWRITING / PENCIL)
-        function getPopisMousePos(e) {
-            let rect = canvasPopis.getBoundingClientRect();
-            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        }
+        // LOGIKA PRO NOVÝ FULLSCREEN CANVAS
+        let currentInputMode = 'text';
+        let actPopisImgData = null; // Dočasné uložení nákresu před uložením záznamu
+        const fsCanvas = document.getElementById('fs-canvas');
+        const fsCtx = fsCanvas.getContext('2d');
+        let isFsDrawing = false;
 
-        canvasPopis.addEventListener('mousedown', (e) => { isDrawingPopis = true; let pos = getPopisMousePos(e); ctxPopis.beginPath(); ctxPopis.moveTo(pos.x, pos.y); });
-        canvasPopis.addEventListener('mousemove', (e) => { if (!isDrawingPopis) return; let pos = getPopisMousePos(e); ctxPopis.lineTo(pos.x, pos.y); ctxPopis.stroke(); });
-        canvasPopis.addEventListener('mouseup', () => isDrawingPopis = false);
-        canvasPopis.addEventListener('touchstart', (e) => { isDrawingPopis = true; let pos = getPopisMousePos(e); ctxPopis.beginPath(); ctxPopis.moveTo(pos.x, pos.y); e.preventDefault(); });
-        canvasPopis.addEventListener('touchmove', (e) => { if (!isDrawingPopis) return; let pos = getPopisMousePos(e); ctxPopis.lineTo(pos.x, pos.y); ctxPopis.stroke(); e.preventDefault(); });
-        canvasPopis.addEventListener('touchend', () => isDrawingPopis = false);
+        fsCanvas.addEventListener('mousedown', (e) => { isFsDrawing = true; let pos = getMousePos(e, fsCanvas); fsCtx.beginPath(); fsCtx.moveTo(pos.x, pos.y); });
+        fsCanvas.addEventListener('mousemove', (e) => { if (!isFsDrawing) return; let pos = getMousePos(e, fsCanvas); fsCtx.lineTo(pos.x, pos.y); fsCtx.stroke(); });
+        fsCanvas.addEventListener('mouseup', () => isFsDrawing = false);
+        fsCanvas.addEventListener('touchstart', (e) => { isFsDrawing = true; let pos = getMousePos(e, fsCanvas); fsCtx.beginPath(); fsCtx.moveTo(pos.x, pos.y); e.preventDefault(); });
+        fsCanvas.addEventListener('touchmove', (e) => { if (!isFsDrawing) return; let pos = getMousePos(e, fsCanvas); fsCtx.lineTo(pos.x, pos.y); fsCtx.stroke(); e.preventDefault(); });
+        fsCanvas.addEventListener('touchend', () => isFsDrawing = false);
 
         function setInputMode(mode) {
             currentInputMode = mode;
@@ -454,21 +472,64 @@
             } else {
                 document.getElementById('inp-popis').classList.add('hidden');
                 document.getElementById('draw-popis-wrapper').classList.remove('hidden');
-                resizePopisCanvas();
             }
         }
 
-        function resizePopisCanvas() {
-            canvasPopis.width = canvasPopis.offsetWidth || 300;
-            canvasPopis.height = 130;
-            ctxPopis.lineWidth = 2.5;
-            ctxPopis.lineCap = 'round';
-            ctxPopis.lineJoin = 'round';
-            ctxPopis.strokeStyle = '#0a3ca6'; 
+        // FULLSCREEN PLÁTNO FUNKCE
+        function openFullscreenCanvas() {
+            const modal = document.getElementById('fs-draw-modal');
+            modal.classList.remove('hidden');
+            
+            // Nastavení přesné velikosti kontejneru pro canvas
+            const container = document.getElementById('fs-canvas-container');
+            fsCanvas.width = container.offsetWidth;
+            fsCanvas.height = container.offsetHeight;
+            
+            fsCtx.lineWidth = 2.5;
+            fsCtx.lineCap = 'round';
+            fsCtx.lineJoin = 'round';
+            fsCtx.strokeStyle = '#0a3ca6'; 
+
+            // Pokud už existuje nákres, načteme ho zpět do plátna
+            if(actPopisImgData) {
+                let img = new Image();
+                img.onload = () => {
+                    fsCtx.drawImage(img, 0, 0);
+                };
+                img.src = actPopisImgData;
+            } else {
+                // Vyplnění bílým pozadím
+                fsCtx.fillStyle = '#ffffff';
+                fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
+            }
         }
 
-        function clearPopisCanvas() {
-            ctxPopis.clearRect(0, 0, canvasPopis.width, canvasPopis.height);
+        function closeFullscreenCanvas() {
+            document.getElementById('fs-draw-modal').classList.add('hidden');
+        }
+
+        function clearFsCanvas() {
+            fsCtx.fillStyle = '#ffffff';
+            fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
+            actPopisImgData = null;
+            document.getElementById('preview-drawn-image').style.display = 'none';
+        }
+
+        function saveFullscreenCanvas() {
+            // Kontrola jestli je plátno prázdné
+            const blank = document.createElement('canvas'); blank.width = fsCanvas.width; blank.height = fsCanvas.height;
+            const blankCtx = blank.getContext('2d'); blankCtx.fillStyle = '#ffffff'; blankCtx.fillRect(0, 0, blank.width, blank.height);
+            
+            if (fsCanvas.toDataURL() === blank.toDataURL()) {
+                actPopisImgData = null;
+                document.getElementById('preview-drawn-image').style.display = 'none';
+            } else {
+                // Uložit plátno
+                actPopisImgData = fsCanvas.toDataURL('image/png');
+                document.getElementById('drawn-preview-img').src = actPopisImgData;
+                document.getElementById('preview-drawn-image').style.display = 'block';
+            }
+            closeFullscreenCanvas();
         }
 
         // LOGIKA TMAVÉHO REŽIMU
@@ -489,6 +550,7 @@
             }
         }
 
+        // --- ZBYTEK KÓDU (PODPISY, EXPORTY, ULOŽENÍ) ZŮSTÁVÁ IDENTICKÝ ---
         function openSignatureModal(target) {
             targetSignature = target;
             let textTitle = target === 'kunde' 
@@ -661,7 +723,6 @@
                 let celkem = 0;
                 vybrane.forEach(z => {
                     let h = kalkulujCisteHodiny(z); celkem += h;
-                    // PODPORA PRO ZOBRAZENÍ NÁKRESU NEBO TEXTU V ŽIVÉM NÁHLEDU
                     let popisRender = z.popisPraceImg ? `<img src="${z.popisPraceImg}" style="max-height:25px; background:white; border-radius:4px;">` : (z.popisPrace || '---');
                     html += `  <tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${popisRender}</td><td style="text-align:right;">${h.toFixed(2)}</td></tr>`;
                 });
@@ -736,7 +797,7 @@
                 } catch (e) { console.log('Sdílení zrušeno nebo selhalo', e); }
             } else {
                 navigator.clipboard.writeText(url).then(() => {
-                    alert(currentLang === 'cs' ? "Váš prohlížeč nativní sdílení nepodporuje. Odkaz byl ale úspěšně zkopírován do schránky (můžete jej vložit do zprávy)." : "Ihr Browser unterstützt natives Teilen nicht. Der Link wurde jedoch in die Zwischenablage kopiert.");
+                    alert(currentLang === 'cs' ? "Váš prohlížeč nativní sdílení nepodporuje. Odkaz byl zkopírován do schránky." : "Link wurde in die Zwischenablage kopiert.");
                 });
             }
         }
@@ -747,9 +808,7 @@
             }
             let url = buildShareUrl();
             navigator.clipboard.writeText(url).then(() => {
-                alert(currentLang === 'cs' ? "Odkaz byl zkopírován do schránky! Nyní ho můžete kamkoliv vložit." : "Link wurde in die Zwischenablage kopiert! Sie können ihn nun überall einfügen.");
-            }).catch(err => {
-                alert(currentLang === 'cs' ? "Kopírování selhalo." : "Kopieren fehlgeschlagen.");
+                alert(currentLang === 'cs' ? "Odkaz byl zkopírován do schránky!" : "Link wurde in die Zwischenablage kopiert!");
             });
         }
 
@@ -765,8 +824,6 @@
             if(!text || text === 'Není nastaveno' || text === '') return;
             navigator.clipboard.writeText(text).then(() => {
                 alert(currentLang === 'cs' ? "Zkopírováno: " + text : "Kopiert: " + text);
-            }).catch(err => {
-                alert(currentLang === 'cs' ? "Kopírování selhalo." : "Kopieren fehlgeschlagen.");
             });
         }
 
@@ -792,7 +849,7 @@
 
         function finishRemoteSign() {
             if (!dataPodpisuKunde) {
-                alert(currentLang === 'cs' ? "Prosím, podepište dokument kliknutím na vyhrazené místo." : "Bitte unterschreiben Sie das Dokument, indem Sie auf den dafür vorgesehenen Platz klicken.");
+                alert(currentLang === 'cs' ? "Prosím, podepište dokument kliknutím na vyhrazené místo." : "Bitte unterschreiben Sie das Dokument.");
                 return;
             }
             
@@ -807,26 +864,20 @@
             successDiv.innerHTML = `
                 <div style="text-align:center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ccc; color: #000;">
                     <h2 style="color:#2ecc71; margin-bottom:5px;">${currentLang==='cs'?'Děkuji za váš podpis':'Danke für Ihre Unterschrift'}</h2>
-                    
                     <p style="margin-bottom:15px; font-size:14px; text-align:left; color:#2c3e50;">
-                        ${currentLang==='cs'?'Dokument je připraven. Můžete si vybrat, jak jej chcete nasdílet nebo uložit.':'Das PDF wurde erstellt. Sie können es nun ansehen, speichern oder direkt per E-Mail/WhatsApp teilen.'}
+                        ${currentLang==='cs'?'Dokument je připraven. Můžete si vybrat, jak jej chcete nasdílet nebo uložit.':'Das PDF wurde erstellt. Sie können es nun ansehen oder teilen.'}
                     </p>
-
                     <div style="background:#f5f6fa; border:1px solid #dcdde1; border-radius:8px; padding:15px; margin-bottom:20px; text-align:left; font-size:13px;">
                         <strong style="font-size:14px; color:#2c3e50;">${currentLang==='cs'?'Kontakty pro odeslání:':'Kontakte zum Senden:'}</strong><br>
                         <small style="color:#7f8c8d;">${currentLang==='cs'?'(Kliknutím na e-mail si jej zkopírujete)':'(Klicken zum Kopieren)'}</small><br><br>
-                        
                         ✉️ <strong>${currentLang==='cs'?'Účtárna':'Buchhaltung'}:</strong><br>
                         <span onclick="copyToClipboard('${emailU}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailU}</span><br><br>
-                        
                         ✉️ <strong>${currentLang==='cs'?'Kopie pracovník':'Mitarbeiter (Kopie)'}:</strong><br>
                         <span onclick="copyToClipboard('${emailP}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailP}</span>
                     </div>
-
                     <button class="action-button-large" style="background:#2ecc71; margin-bottom:15px;" onclick="sharePdfNative()">
                         📲 ${currentLang==='cs'?'Sdílet PDF (Mail / WhatsApp)':'PDF teilen (E-Mail / WhatsApp)'}
                     </button>
-                    
                     <button class="action-button-large" style="background:#34495e; margin-bottom:15px;" onclick="openPdfViewer()">
                         👀 ${currentLang==='cs'?'Zobrazit PDF na obrazovce':'PDF auf dem Bildschirm anzeigen'}
                     </button>
@@ -942,7 +993,6 @@
                 doc.rect(15, y, 35, 7, 'S'); doc.text(new Date(z.datum).toLocaleDateString('de-DE'), 17, y + 5);
                 doc.rect(50, y, 120, 7, 'S');
                 
-                // PODPORA TISKU NÁKRESU DO PDF
                 if (z.popisPraceImg) {
                     doc.addImage(z.popisPraceImg, 'PNG', 51, y + 0.5, 118, 6);
                 } else {
@@ -1006,7 +1056,6 @@
             document.getElementById('view-' + tabId).classList.remove('hidden');
             button.classList.add('active'); 
             if(tabId === 'zaznamy') renderZaznamy();
-            if(tabId === 'kalkulacka' && currentInputMode === 'draw') setTimeout(resizePopisCanvas, 50);
         }
 
         function kalkulujCisteHodiny(zaznam) {
@@ -1017,14 +1066,8 @@
 
         function ulozZaznam() {
             let popisText = '';
-            let popisImg = '';
             
-            if (currentInputMode === 'draw') {
-                const blank = document.createElement('canvas'); blank.width = canvasPopis.width; blank.height = canvasPopis.height;
-                if (canvasPopis.toDataURL() !== blank.toDataURL()) {
-                    popisImg = canvasPopis.toDataURL('image/png');
-                }
-            } else {
+            if (currentInputMode === 'text') {
                 popisText = document.getElementById('inp-popis').value;
             }
 
@@ -1032,7 +1075,7 @@
                 id: Date.now(), datum: document.getElementById('inp-datum').value,
                 zacatek: document.getElementById('inp-zacatek').value, konec: document.getElementById('inp-konec').value,
                 prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
-                popisPrace: popisText, popisPraceImg: popisImg, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
+                popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
                 projekt: document.getElementById('cfg-firma').value, selected: false
             };
             
@@ -1040,7 +1083,9 @@
             
             // Vyčištění polí
             document.getElementById('inp-popis').value = ''; 
-            clearPopisCanvas();
+            actPopisImgData = null;
+            document.getElementById('preview-drawn-image').style.display = 'none';
+            document.getElementById('drawn-preview-img').src = '';
             
             alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
             updateStatistiky();
@@ -1077,7 +1122,6 @@
                 let h = kalkulujCisteHodiny(z);
                 let item = document.createElement('div'); item.className = 'zaznam-item';
                 
-                // Určení zda vykreslit text nebo miniaturu nákresu rukou
                 let descPreview = z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`;
                 
                 item.innerHTML = `
@@ -1171,7 +1215,6 @@
             }
         }
 
-        // Inicializace aplikace
         loadSettings(); 
         loadTheme();
         setLanguage(currentLang); 
