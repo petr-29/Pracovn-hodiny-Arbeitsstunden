@@ -152,6 +152,15 @@
         
         .action-button-large { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4; }
         .action-button-large small { font-size: 12px; font-weight: normal; opacity: 0.9; }
+
+        /* --- NOVÉ CSS STYLY PRO QR A TELEFON --- */
+        .btn-remote-phone { display: none; background: #8e44ad; color: white; margin-top: 10px; width: 100%; font-weight: bold; padding: 12px; font-size: 15px; border: none; border-radius: 8px; cursor: pointer; }
+        @media (min-width: 768px) {
+            .btn-remote-phone { display: flex; justify-content: center; align-items: center; gap: 8px; }
+        }
+        .qr-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 4000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .qr-modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 100%; color: #000; }
+        .qr-modal-content img { width: 200px; height: 200px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -234,6 +243,9 @@
                                 <small style="color:#7f8c8d;" data-cs="Aktuální nákres" data-de="Aktuelle Zeichnung">Aktuální nákres</small>
                             </div>
                             <button type="button" class="btn-sec" style="background:#3498db; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px;" onclick="openFullscreenCanvas()" data-cs="✏️ Otevřít plátno přes celý displej" data-de="✏️ Vollbild-Leinwand öffnen">✏️ Otevřít plátno přes celý displej</button>
+                            
+                            <button type="button" class="btn-remote-phone" onclick="generatePhoneLink()" data-cs="📱 Připojit telefon pro kreslení" data-de="📱 Telefon zum Zeichnen verbinden">📱 Připojit telefon pro kreslení</button>
+
                         </div>
                     </div>
                     
@@ -404,6 +416,16 @@
         </div>
     </div>
 
+    <div id="qr-modal" class="qr-modal hidden">
+        <div class="qr-modal-content">
+            <h3 style="margin-bottom: 10px;" data-cs="Naskenujte telefonem" data-de="Mit dem Telefon scannen">Naskenujte telefonem</h3>
+            <p style="font-size: 14px; color: #7f8c8d;" data-cs="Otevřete fotoaparát na telefonu a naskenujte tento kód. Plátno se otevře v telefonu." data-de="Öffnen Sie die Kamera und scannen Sie diesen Code.">Otevřete fotoaparát na telefonu a naskenujte tento kód. Plátno se otevře v telefonu.</p>
+            <img id="qr-code-img" src="" alt="QR Code">
+            <p style="font-size: 12px; margin-bottom: 20px;" id="qr-session-id-display"></p>
+            <button class="btn-sec" style="width: 100%; padding: 12px; font-weight: bold;" onclick="closeQrModal()" data-cs="Zrušit čekání" data-de="Warten abbrechen">Zrušit čekání</button>
+        </div>
+    </div>
+
     <script>
         function showApp() {
             const welcome = document.getElementById('welcome-screen');
@@ -439,7 +461,7 @@
             return { x: clientX - rect.left, y: clientY - rect.top };
         }
 
-        // LOGIKA PRO PODPISOVÝ CANVAS (PŮVODNÍ)
+        // LOGIKA PRO PODPISOVÝ CANVAS (PŮVODNÍ OPRAVENÁ)
         canvas.addEventListener('mousedown', (e) => { isDrawing = true; let pos = getMousePos(e, canvas); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
         canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); });
         canvas.addEventListener('mouseup', () => isDrawing = false);
