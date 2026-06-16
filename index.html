@@ -1242,5 +1242,72 @@
         setLanguage(currentLang); 
         checkRemoteSignMode();
     </script>
+<let currentDrawSessionId = null;
+
+        function generatePhoneLink() {
+            // 1. Vytvoříme unikátní ID relace
+            currentDrawSessionId = Math.random().toString(36).substring(2, 10);
+            
+            // 2. Vytvoříme odkaz pro telefon (přidáme parametr ?remoteDraw=ID)
+            const baseUrl = window.location.href.split('?')[0];
+            const phoneUrl = `${baseUrl}?remoteDraw=${currentDrawSessionId}`;
+            
+            // 3. Vygenerujeme QR kód pomocí veřejné API
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
+            
+            // 4. Zobrazíme modal na PC
+            document.getElementById('qr-code-img').src = qrUrl;
+            document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId}`;
+            document.getElementById('qr-modal').classList.remove('hidden');
+
+            // TODO (Firebase Database): Zde by PC začalo poslouchat databázi
+            console.log("PC: Čekám na obrázek z telefonu pro Session ID:", currentDrawSessionId);
+        }
+
+        function closeQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+            currentDrawSessionId = null;
+        }
+
+        // 5. DETEKCE NA TELEFONU PŘI SPUŠTĚNÍ APLIKACE
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('remoteDraw')) {
+                const sessionId = urlParams.get('remoteDraw');
+                
+                // Skryjeme hlavní aplikaci a uvítací obrazovku
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('welcome-screen').style.display = 'none';
+                
+                // Upravíme tlačítka ve fullscreen plátně
+                const footer = document.querySelector('.fs-draw-footer');
+                footer.innerHTML = `
+                    <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button>
+                    <button class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${sessionId}')">Odeslat do PC</button>
+                `;
+
+                // Rovnou otevřeme plátno
+                document.getElementById('fs-draw-modal').classList.remove('hidden');
+                
+                // Zabráníme rolování obrazovky na telefonu při kreslení
+                document.body.style.overflow = 'hidden'; 
+                
+                console.log("TELEFON: Jsem připojen v režimu kreslení pro Session ID:", sessionId);
+            }
+        });
+
+        // 6. ODESLÁNÍ Z TELEFONU DO PC
+        function sendDrawToPC(sessionId) {
+            const canvasObj = document.getElementById('fs-canvas');
+            const imageData = canvasObj.toDataURL("image/png");
+            
+            // TODO (Firebase Database): Tady se obrázek odešle do cloudu pod ID 'sessionId'
+            console.log("TELEFON: Odesílám tento Base64 obrázek do DB pod ID " + sessionId);
+            
+            alert("Obrázek byl odeslán do PC! (V reálné verzi přes databázi by se hned objevil v notebooku). Můžete tuto stránku zavřít.");
+            document.getElementById('fs-draw-modal').classList.add('hidden');
+        }
+
+    </script>
 </body>
 </html>
