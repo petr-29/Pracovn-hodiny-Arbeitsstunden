@@ -233,9 +233,16 @@
                                 <img id="drawn-preview-img" src="" style="max-width:100%; max-height:100px; display:block; margin:0 auto;">
                                 <small style="color:#7f8c8d;" data-cs="Aktuální nákres" data-de="Aktuelle Zeichnung">Aktuální nákres</small>
                             </div>
-                            <button type="button" class="btn-sec" style="background:#3498db; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px;" onclick="openFullscreenCanvas()" data-cs="✏️ Otevřít plátno přes celý displej" data-de="✏️ Vollbild-Leinwand öffnen">✏️ Otevřít plátno přes celý displej</button>
-                        </div>
-                    </div>
+                     <div id="draw-popis-wrapper" class="hidden">
+    <div id="preview-drawn-image" style="margin-bottom:10px; display:none; border:1px solid #ccc; padding:5px; background:#fff; border-radius:8px; text-align:center;">
+        <img id="drawn-preview-img" src="" style="max-width:100%; max-height:100px; display:block; margin:0 auto;">
+        <small style="color:#7f8c8d;" data-cs="Aktuální nákres" data-de="Aktuelle Zeichnung">Aktuální nákres</small>
+    </div>
+    
+    <button type="button" class="btn-sec" style="background:#3498db; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px; margin-bottom:10px;" onclick="openFullscreenCanvas()" data-cs="✏️ Otevřít plátno zde" data-de="✏️ Leinwand hier öffnen">✏️ Otevřít plátno zde</button>
+    
+    <button type="button" class="btn-sec desktop-only" style="background:#9b59b6; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px;" onclick="openRemoteDrawModal()" data-cs="📱 Připojit telefon na kresbu" data-de="📱 Telefon zum Zeichnen verbinden">📱 Připojit telefon na kresbu</button>
+</div>
                     
                     <div class="form-group">
                         <label id="lbl-satz" data-cs="Sazba (€/h)" data-de="Stundensatz (€/h)">Sazba (€/h)</label>
@@ -1220,5 +1227,20 @@
         setLanguage(currentLang); 
         checkRemoteSignMode();
     </script>
+<div id="remote-draw-modal" class="qr-modal hidden">
+    <div class="qr-modal-content">
+        <h3 data-cs="Nakreslete na telefonu" data-de="Zeichnen Sie auf dem Telefon">Nakreslete na telefonu</h3>
+        <p style="margin-top:10px; font-size:14px; color:#7f8c8d;" data-cs="Naskenujte tento QR kód fotoaparátem vašeho telefonu. Otevře se plátno pro kreslení prstem." data-de="Scannen Sie diesen QR-Code mit Ihrem Telefon.">Naskenujte tento QR kód fotoaparátem vašeho telefonu. Otevře se plátno pro kreslení prstem.</p>
+        
+        <img id="qr-code-img" class="qr-image" src="" alt="QR Code">
+        
+        <div style="margin-top:20px; padding:15px; background:#f5f6fa; border-radius:8px; font-size:12px; color:#e67e22; font-weight:bold;">
+            <span data-cs="⏳ Čekám na přijetí nákresu z telefonu..." data-de="⏳ Warte auf die Zeichnung vom Telefon...">⏳ Čekám na přijetí nákresu z telefonu...</span>
+        </div>
+
+        <button class="btn-sec" style="width:100%; margin-top:20px; font-weight:bold;" onclick="closeRemoteDrawModal()" data-cs="Zrušit" data-de="Abbrechen">Zrušit</button>
+    </div>
+</div>
+            
 </body>
 </html>
