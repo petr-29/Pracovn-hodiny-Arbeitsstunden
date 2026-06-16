@@ -245,7 +245,6 @@
                             <button type="button" class="btn-sec" style="background:#3498db; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px;" onclick="openFullscreenCanvas()" data-cs="✏️ Otevřít plátno přes celý displej" data-de="✏️ Vollbild-Leinwand öffnen">✏️ Otevřít plátno přes celý displej</button>
                             
                             <button type="button" class="btn-remote-phone" onclick="generatePhoneLink()" data-cs="📱 Připojit telefon pro kreslení" data-de="📱 Telefon zum Zeichnen verbinden">📱 Připojit telefon pro kreslení</button>
-
                         </div>
                     </div>
                     
@@ -308,18 +307,20 @@
                             <span data-cs="📋 Zkopírovat samotný odkaz" data-de="📋 Nur den Link kopieren">📋 Zkopírovat samotný odkaz</span>
                         </button>
                         <button class="btn-sec" style="background:#ecf0f1; border: 1px solid #bdc3c7; padding: 12px; font-weight:bold; font-size:15px; color:#2c3e50;" onclick="openRemoteLink()">
-                            <span data-cs="👁️ Otevřít odkaz zde (otevře v prohlížeči)" data-de="👁️ Link hier öffnen (öffnet im Browser)">👁️ Otevřít odkaz zde (otevře v prohlížeči)</span>
+                            <span data-cs="👁️ Otevřít odkaz zde (otevře v prohlíči)" data-de="👁️ Link hier öffnen (öffnet im Browser)">👁️ Otevřít odkaz zde (otevře v prohlížeči)</span>
                         </button>
                     </div>
 
                     <div style="margin-bottom: 12px;" id="wrapper-kunde">
                         <label style="font-weight:bold; font-size:14px; color:#2980b9;" data-cs="1. Podpis klienta / Stavbyvedoucího:" data-de="1. Unterschrift Kunde/Bauleiter:">1. Podpis klienta / Stavbyvedoucího:</label>
-                        <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')" data-cs="Klikněte pro podepsání prstem" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání prstem</div>
+                        <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')" data-cs="Klikněte pro podepsání myší" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání myší</div>
+                        <button class="btn-sec" onclick="generateSignaturePhoneLink('kunde')" style="width:100%; margin-top:5px; background:#ecf0f1;" data-cs="📱 Podepsat přes telefon" data-de="📱 Per Telefon unterschreiben">📱 Podepsat přes telefon</button>
                     </div>
 
                     <div style="margin-bottom: 15px;" id="wrapper-ich">
                         <label style="font-weight:bold; font-size:14px; color:#27ae60;" data-cs="2. Váš podpis (Dodavatel):" data-de="2. Ihre Unterschrift (Auftragnehmer):">2. Váš podpis (Dodavatel):</label>
-                        <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')" data-cs="Klikněte pro podepsání prstem" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání prstem</div>
+                        <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')" data-cs="Klikněte pro podepsání myší" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání myší</div>
+                        <button class="btn-sec" onclick="generateSignaturePhoneLink('ich')" style="width:100%; margin-top:5px; background:#ecf0f1;" data-cs="📱 Podepsat přes telefon" data-de="📱 Per Telefon unterschreiben">📱 Podepsat přes telefon</button>
                     </div>
                     
                     <div class="row" id="export-card-actions">
@@ -455,14 +456,25 @@
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         const deDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
+        // Kód jedna: Vylepšená funkce pro získání přesných souřadnic myši/dotyku s ohledem na scale
         function getMousePos(e, targetCanvas) {
             let rect = targetCanvas.getBoundingClientRect();
-            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            return { x: clientX - rect.left, y: clientY - rect.top };
+            
+            // Získání souřadnic myši nebo dotyku
+            let clientX = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
+            let clientY = e.clientY || (e.touches && e.touches.length > 0 ? e.touches[0].clientY : 0);
+
+            // Výpočet poměru (scale) mezi vnitřním rozlišením a CSS velikostí
+            let scaleX = targetCanvas.width / rect.width;
+            let scaleY = targetCanvas.height / rect.height;
+
+            return { 
+                x: (clientX - rect.left) * scaleX, 
+                y: (clientY - rect.top) * scaleY 
+            };
         }
 
-        // LOGIKA PRO PODPISOVÝ CANVAS (PŮVODNÍ OPRAVENÁ)
+        // LOGIKA PRO PODPISOVÝ CANVAS
         canvas.addEventListener('mousedown', (e) => { isDrawing = true; let pos = getMousePos(e, canvas); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
         canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); });
         canvas.addEventListener('mouseup', () => isDrawing = false);
@@ -470,9 +482,9 @@
         canvas.addEventListener('touchmove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); });
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        // LOGIKA PRO NOVÝ FULLSCREEN CANVAS
+        // LOGIKA PRO FULLSCREEN CANVAS KRESLENÍ
         let currentInputMode = 'text';
-        let actPopisImgData = null; // Dočasné uložení nákresu před uložením záznamu
+        let actPopisImgData = null; 
         const fsCanvas = document.getElementById('fs-canvas');
         const fsCtx = fsCanvas.getContext('2d');
         let isFsDrawing = false;
@@ -498,12 +510,10 @@
             }
         }
 
-        // FULLSCREEN PLÁTNO FUNKCE
         function openFullscreenCanvas() {
             const modal = document.getElementById('fs-draw-modal');
             modal.classList.remove('hidden');
             
-            // Nastavení přesné velikosti kontejneru pro canvas
             const container = document.getElementById('fs-canvas-container');
             fsCanvas.width = container.offsetWidth;
             fsCanvas.height = container.offsetHeight;
@@ -513,23 +523,17 @@
             fsCtx.lineJoin = 'round';
             fsCtx.strokeStyle = '#0a3ca6'; 
 
-            // Pokud už existuje nákres, načteme ho zpět do plátna
             if(actPopisImgData) {
                 let img = new Image();
-                img.onload = () => {
-                    fsCtx.drawImage(img, 0, 0);
-                };
+                img.onload = () => { fsCtx.drawImage(img, 0, 0); };
                 img.src = actPopisImgData;
             } else {
-                // Vyplnění bílým pozadím
                 fsCtx.fillStyle = '#ffffff';
                 fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
             }
         }
 
-        function closeFullscreenCanvas() {
-            document.getElementById('fs-draw-modal').classList.add('hidden');
-        }
+        function closeFullscreenCanvas() { document.getElementById('fs-draw-modal').classList.add('hidden'); }
 
         function clearFsCanvas() {
             fsCtx.fillStyle = '#ffffff';
@@ -539,7 +543,6 @@
         }
 
         function saveFullscreenCanvas() {
-            // Kontrola jestli je plátno prázdné
             const blank = document.createElement('canvas'); blank.width = fsCanvas.width; blank.height = fsCanvas.height;
             const blankCtx = blank.getContext('2d'); blankCtx.fillStyle = '#ffffff'; blankCtx.fillRect(0, 0, blank.width, blank.height);
             
@@ -547,7 +550,6 @@
                 actPopisImgData = null;
                 document.getElementById('preview-drawn-image').style.display = 'none';
             } else {
-                // Uložit plátno
                 actPopisImgData = fsCanvas.toDataURL('image/png');
                 document.getElementById('drawn-preview-img').src = actPopisImgData;
                 document.getElementById('preview-drawn-image').style.display = 'block';
@@ -555,7 +557,6 @@
             closeFullscreenCanvas();
         }
 
-        // LOGIKA TMAVÉHO REŽIMU
         function toggleDarkMode() {
             const isDark = document.body.classList.toggle('dark-theme');
             localStorage.setItem('app_theme', isDark ? 'dark' : 'light');
@@ -775,8 +776,8 @@
         function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
             dataPodpisuKunde = null; dataPodpisuIch = null; dataPodpisuIchTiny = null;
-            document.getElementById('box-kunde').innerText = currentLang === 'cs' ? 'Klikněte pro podepsání prstem' : 'Klicken zum Unterschreiben';
-            document.getElementById('box-ich').innerText = currentLang === 'cs' ? 'Klikněte pro podepsání prstem' : 'Klicken zum Unterschreiben';
+            document.getElementById('box-kunde').innerText = currentLang === 'cs' ? 'Klikněte pro podepsání myší' : 'Klicken zum Unterschreiben';
+            document.getElementById('box-ich').innerText = currentLang === 'cs' ? 'Klikněte pro podepsání myší' : 'Klicken zum Unterschreiben';
             let sScreen = document.getElementById('success-screen'); if (sScreen) sScreen.remove();
             document.getElementById('document-live-preview').classList.remove('hidden');
             document.getElementById('wrapper-kunde').classList.remove('hidden');
@@ -1103,7 +1104,6 @@
             
             zaznamy.push(novy); localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
             
-            // Vyčištění polí
             document.getElementById('inp-popis').value = ''; 
             actPopisImgData = null;
             document.getElementById('preview-drawn-image').style.display = 'none';
@@ -1238,23 +1238,31 @@
         }
 
         function generatePhoneLink() {
-            // 1. Vytvoříme unikátní ID relace
             currentDrawSessionId = Math.random().toString(36).substring(2, 10);
-            
-            // 2. Vytvoříme odkaz pro telefon (přidáme parametr ?remoteDraw=ID)
             const baseUrl = window.location.href.split('?')[0];
             const phoneUrl = `${baseUrl}?remoteDraw=${currentDrawSessionId}`;
-            
-            // 3. Vygenerujeme QR kód pomocí veřejné API
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
             
-            // 4. Zobrazíme modal na PC
             document.getElementById('qr-code-img').src = qrUrl;
             document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId}`;
             document.getElementById('qr-modal').classList.remove('hidden');
 
-            // TODO (Firebase Database): Zde by PC začalo poslouchat databázi
             console.log("PC: Čekám na obrázek z telefonu pro Session ID:", currentDrawSessionId);
+        }
+
+        // Kód tři: 1. Funkce pro vygenerování QR kódu pro PODPIS na PC
+        function generateSignaturePhoneLink(target) {
+            currentDrawSessionId = Math.random().toString(36).substring(2, 10);
+            const baseUrl = window.location.href.split('?')[0];
+            
+            const phoneUrl = `${baseUrl}?remoteSig=${target}&session=${currentDrawSessionId}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
+            
+            document.getElementById('qr-code-img').src = qrUrl;
+            document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId} (${target === 'kunde' ? 'Klient' : 'Dodavatel'})`;
+            document.getElementById('qr-modal').classList.remove('hidden');
+
+            console.log("PC: Čekám na PODPIS z telefonu pro Session ID:", currentDrawSessionId);
         }
 
         function closeQrModal() {
@@ -1262,39 +1270,82 @@
             currentDrawSessionId = null;
         }
 
-        // 5. DETEKCE NA TELEFONU PŘI SPUŠTĚNÍ APLIKACE
+        // Kód tři: 2. Úprava Event Listeneru pro zachycení parametru remoteSig na mobilu
         window.addEventListener('DOMContentLoaded', (event) => {
             const urlParams = new URLSearchParams(window.location.search);
+            
+            // Zachycení stávajícího režimu pro kreslení (remoteDraw)
             if (urlParams.has('remoteDraw')) {
                 const sessionId = urlParams.get('remoteDraw');
-                
-                // Skryjeme hlavní aplikaci a uvítací obrazovku
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('welcome-screen').style.display = 'none';
                 
-                // Upravíme tlačítka ve fullscreen plátně
                 const footer = document.querySelector('.fs-draw-footer');
                 footer.innerHTML = `
                     <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button>
                     <button class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${sessionId}')">Odeslat do PC</button>
                 `;
-
-                // Rovnou otevřeme plátno
                 document.getElementById('fs-draw-modal').classList.remove('hidden');
-                
-                // Zabráníme rolování obrazovky na telefonu při kreslení
                 document.body.style.overflow = 'hidden'; 
-                
                 console.log("TELEFON: Jsem připojen v režimu kreslení pro Session ID:", sessionId);
+            }
+
+            // Nový kód pro detekci požadavku na PODPIS (remoteSig)
+            if (urlParams.has('remoteSig')) {
+                const target = urlParams.get('remoteSig');
+                const sessionId = urlParams.get('session');
+                
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('welcome-screen').style.display = 'none';
+                
+                targetSignature = target;
+                let textTitle = target === 'kunde' 
+                    ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef')
+                    : (currentLang === 'cs' ? 'Podpis: Váš' : 'Unterschrift: Ihre');
+                    
+                document.getElementById('modal-sig-title').innerText = textTitle;
+                
+                // Změníme tlačítka v modálním okně, aby místo lokálního uložení odeslala data do PC
+                const modalBtns = document.querySelector('.modal-content .row');
+                modalBtns.innerHTML = `
+                    <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button>
+                    <button class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${sessionId}', '${target}')">Odeslat do PC</button>
+                `;
+
+                document.getElementById('signature-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Zamezí scrollování při podepisování
+                
+                setTimeout(() => {
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = 200;
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = '#0a3ca6';
+                }, 100);
+                
+                console.log("TELEFON: Jsem připojen v režimu PODPISU pro Session ID:", sessionId);
             }
         });
 
-        // 6. ODESLÁNÍ Z TELEFONU DO PC
+        // Kód tři: 3. Funkce pro odeslání podpisu z mobilu do PC
+        function sendSignatureToPC(sessionId, target) {
+            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+            if (canvas.toDataURL() === blank.toDataURL()) { 
+                alert('Nejdříve se podepište!'); 
+                return; 
+            }
+            
+            const dataUrl = canvas.toDataURL('image/png');
+            console.log(`TELEFON: Odesílám podpis (${target}) do DB pod ID ` + sessionId);
+            
+            alert("Podpis byl odeslán do PC! (V reálné verzi přes databázi by se ihned zobrazil). Nyní můžete stránku zavřít.");
+            document.getElementById('signature-modal').classList.add('hidden');
+        }
+
         function sendDrawToPC(sessionId) {
             const canvasObj = document.getElementById('fs-canvas');
             const imageData = canvasObj.toDataURL("image/png");
-            
-            // TODO (Firebase Database): Tady se obrázek odešle do cloudu pod ID 'sessionId'
             console.log("TELEFON: Odesílám tento Base64 obrázek do DB pod ID " + sessionId);
             
             alert("Obrázek byl odeslán do PC! (V reálné verzi přes databázi by se hned objevil v notebooku). Můžete tuto stránku zavřít.");
@@ -1305,7 +1356,6 @@
         loadTheme();
         setLanguage(currentLang); 
         checkRemoteSignMode();
-
     </script>
 </body>
 </html>
