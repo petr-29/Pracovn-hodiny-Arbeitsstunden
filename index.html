@@ -136,14 +136,6 @@
             touch-action: none;
             margin: 15px 0;
         }
-
-        .action-button-large {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px;
-            font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4;
-        }
-        .action-button-large small { font-size: 12px; font-weight: normal; opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -152,7 +144,6 @@
         let remoteMode = false;
         let remoteZaznamy = [];
         let currentExportType = '';
-        let remoteDataPayload = null;
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
@@ -332,23 +323,7 @@
                     <label>Odpovědná osoba (Klient / Šéf)</label>
                     <input type="text" id="cfg-podpis" value="---">
                 </div>
-
-                <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
-                <div class="card-title">Kontakty pro automatické odesílání</div>
-                <div class="form-group">
-                    <label>E-mail: Účtárna (Buchhaltung)</label>
-                    <input type="email" id="cfg-email-uctarna" placeholder="např. uctarna@firma.cz">
-                </div>
-                <div class="form-group">
-                    <label>E-mail: Pracovník (Kopie pro Vás)</label>
-                    <input type="email" id="cfg-email-pracovnik" placeholder="např. petr@michalek.cz">
-                </div>
-                <div class="form-group">
-                    <label>WhatsApp: Pracovník (Kopie pro Vás)</label>
-                    <input type="text" id="cfg-wa-pracovnik" placeholder="Mezinárodní formát (např. 420123456789)">
-                </div>
-
-                <button class="btn-main" onclick="saveSettings()" style="margin-top:15px;">Uložit Nastavení</button>
+                <button class="btn-main" onclick="saveSettings()">Uložit Nastavení</button>
             </div>
         </div>
 
@@ -364,7 +339,6 @@
     <script>
         let dataPodpisuKunde = null;
         let dataPodpisuIch = null;
-        let dataPodpisuIchTiny = null; 
         let targetSignature = ''; 
 
         const canvas = document.getElementById('modal-canvas');
@@ -396,7 +370,8 @@
             ctx.lineWidth = 3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.strokeStyle = '#0a3ca6'; 
+            // Nastavení modré propisky
+            ctx.strokeStyle = '#0a3ca6';
         }
 
         function closeSignatureModal() { document.getElementById('signature-modal').classList.add('hidden'); }
@@ -407,23 +382,19 @@
             blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
             
-            const dataUrl = canvas.toDataURL('image/png');
-
+            // Komprese podpisu pro odkaz na WhatsApp (menší canvas)
             const tmpCanvas = document.createElement('canvas');
-            tmpCanvas.width = 200;
-            tmpCanvas.height = 70;
+            tmpCanvas.width = canvas.width / 2;
+            tmpCanvas.height = canvas.height / 2;
             const tCtx = tmpCanvas.getContext('2d');
-            tCtx.fillStyle = '#ffffff'; 
-            tCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
             tCtx.drawImage(canvas, 0, 0, tmpCanvas.width, tmpCanvas.height);
-            const tinyDataUrl = tmpCanvas.toDataURL('image/jpeg', 0.3); 
+            const dataUrl = tmpCanvas.toDataURL('image/png');
 
             if (targetSignature === 'kunde') {
                 dataPodpisuKunde = dataUrl;
                 document.getElementById('box-kunde').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
             } else {
                 dataPodpisuIch = dataUrl;
-                dataPodpisuIchTiny = tinyDataUrl;
                 document.getElementById('box-ich').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
             }
             closeSignatureModal();
@@ -536,7 +507,8 @@
 
                 html += `  </table>`;
                 
-                html += `  <div style="text-align:right; font-weight:bold; font-size:12px; margin-top:8px;">Gesamt: ${totalWeekHours.toFixed(2)}</div>`;
+                // Přidání součtu hodin
+                html += `  <div style="text-align:right; font-weight:bold; font-size:12px; margin-top:8px;">Gesamtstunden (Součet hodin): ${totalWeekHours.toFixed(2)} h</div>`;
                 html += `  <div style="margin-top:15px; font-size:10px;">Wir bestätigen die Richtigkeit der obigen Angaben. Gilt als verbindlicher Nachweis zur Rechnungsstellung.</div>`;
                 html += `  <div style="margin-top:40px; display:flex; justify-content:space-between; font-size:11px;">`;
                 html += `      <div style="width:45%; border-top:1px solid #000; position:relative; padding-top:4px;">`;
@@ -603,7 +575,7 @@
 
         function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
-            dataPodpisuKunde = null; dataPodpisuIch = null; dataPodpisuIchTiny = null;
+            dataPodpisuKunde = null; dataPodpisuIch = null;
             document.getElementById('box-kunde').innerText = 'Klikněte pro podepsání prstem';
             document.getElementById('box-ich').innerText = 'Klikněte pro podepsání prstem';
             let sScreen = document.getElementById('success-screen');
@@ -623,12 +595,8 @@
             if (!dataPodpisuIch) {
                 if(!confirm("Nemáte vložený Váš podpis. Chcete přesto vytvořit odkaz? (Pro šéfa bude lepší, když se tam nejprve podepíšete.)")) return;
             }
-            
             let vybrane = zaznamy.filter(z => z.selected);
-            
-            let appData = {
-                isBossMode: true,
-                isSignedReturned: false,
+            let meta = {
                 type: currentExportType,
                 jmeno: document.getElementById('cfg-jmeno').value,
                 firma: document.getElementById('cfg-firma').value,
@@ -640,40 +608,51 @@
                 sVadami: document.getElementById('ab-sVadami').checked,
                 vadyText: document.getElementById('ab-vadyText').value,
                 odstraneniDo: document.getElementById('ab-odstraneniDo').value,
-                emailUctarna: document.getElementById('cfg-email-uctarna').value,
-                emailPracovnik: document.getElementById('cfg-email-pracovnik').value,
-                waPracovnik: document.getElementById('cfg-wa-pracovnik').value,
-                dataPodpisuIch: dataPodpisuIchTiny || dataPodpisuIch, 
+                dataPodpisuIch: dataPodpisuIch, // Zabalení vlastního podpisu
                 zaznamy: vybrane
             };
-
-            try {
-                const jsonString = JSON.stringify(appData);
-                const base64Encoded = btoa(unescape(encodeURIComponent(jsonString)));
-                const baseUrl = window.location.href.split('?')[0];
-                const finalLink = `${baseUrl}?sign=${base64Encoded}`;
-
-                navigator.clipboard.writeText(finalLink).then(() => {
-                    alert('Odkaz pro šéfa zkopírován! Vlož mu ho do WhatsAppu.\nŠéf uvidí formulář k podpisu.');
-                }).catch(() => {
-                    alert('Zkopíruj tento odkaz pro šéfa:\n\n' + finalLink);
-                });
-            } catch (err) {
-                alert('Chyba při generování odkazu: ' + err.message);
-            }
-        }
-
-        // Kopírování do schránky s vizuální odezvou
-        function copyToClipboard(text) {
-            if(!text || text === 'Není nastaveno' || text === '') return;
-            navigator.clipboard.writeText(text).then(() => {
-                alert("Zkopírováno / Kopiert: " + text);
-            }).catch(err => {
-                alert("Kopírování selhalo. Zkopírujte prosím text ručně.");
+            let jsonString = JSON.stringify(meta);
+            let encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
+            let shareUrl = window.location.href.split('?')[0] + '?sign=' + encodedData;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert("Odkaz ke vzdálenému podpisu byl bezpečně zkopírován do schránky! Nyní jej můžete odeslat šéfovi (např. přes WhatsApp nebo e-mail).");
             });
         }
 
-        // Zobrazení a odeslání PDF s nativním Share Sheet (spodní menu iPhonu)
+        // Tlačítko Dokončit pro Šéfa
+        function finishRemoteSign() {
+            if (!dataPodpisuKunde) {
+                alert("Prosím, podepište dokument kliknutím na vyhrazené místo. / Bitte unterschreiben Sie das Dokument.");
+                return;
+            }
+            
+            // Schování náhledu a podpisových prvků
+            document.getElementById('document-live-preview').classList.add('hidden');
+            document.getElementById('wrapper-kunde').classList.add('hidden');
+            document.getElementById('export-card-actions').classList.add('hidden');
+            
+            // Zobrazení poděkování a odeslání
+            let successDiv = document.createElement('div');
+            successDiv.id = 'success-screen';
+            successDiv.innerHTML = `
+                <div style="text-align:center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ccc;">
+                    <h2 style="color:#2ecc71; margin-bottom:5px;">Děkuji za váš podpis</h2>
+                    <h3 style="color:#7f8c8d; margin-bottom:20px; font-weight:normal;">Danke für Ihre Unterschrift</h3>
+                    <p style="margin-bottom:25px; font-size:14px;">
+                        Podepsaný dokument prosím odešlete stisknutím tlačítka níže přes WhatsApp nebo E-mail.<br><br>
+                        Bitte senden Sie das unterschriebene Dokument über die Schaltfläche unten per WhatsApp oder E-Mail.
+                    </p>
+                    <button class="btn-main" style="background:#25D366; color:white; font-size:16px; padding:15px; margin-bottom:15px;" onclick="sharePdfNative()">
+                        📲 Odeslat dokument (WhatsApp / Mail)
+                    </button>
+                    <button class="btn-sec" style="width:100%; padding:12px;" onclick="executePDFExport()">
+                        ⬇️ Stáhnout PDF / PDF speichern
+                    </button>
+                </div>
+            `;
+            document.getElementById('export-card').appendChild(successDiv);
+        }
+
         async function sharePdfNative() {
             let blob = executePDFExport(true);
             let file = new File([blob], "Unterzeichnetes_Dokument.pdf", { type: "application/pdf" });
@@ -683,61 +662,14 @@
                     await navigator.share({
                         files: [file],
                         title: 'Unterzeichnetes Dokument',
-                        text: 'Guten Tag, anbei das Dokument. / Dobrý den, v příloze zasílám podepsaný dokument.'
+                        text: 'Dobrý den, v příloze zasílám podepsaný dokument / Hallo, anbei sende ich das unterschriebene Dokument.'
                     });
                 } catch (e) {
-                    console.log('Sdílení zrušeno uživatelem nebo selhalo', e);
+                    console.log('Sdílení zrušeno nebo selhalo', e);
                 }
             } else {
-                alert("Váš prohlížeč nepodporuje přímé sdílení. Dokument se nyní stáhne klasicky.");
+                alert("Váš prohlížeč nepodporuje přímé sdílení. Soubor se nyní stáhne do zařízení, poté jej prosím pošlete ručně.");
                 executePDFExport();
-            }
-        }
-
-        function openPdfViewer() {
-            let blob = executePDFExport(true);
-            let url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-        }
-
-        function finishRemoteSign() {
-            if (!dataPodpisuKunde) {
-                alert("Prosím, podepište dokument kliknutím na vyhrazené místo. / Bitte unterschreiben Sie das Dokument.");
-                return;
-            }
-            
-            executePDFExport();
-
-            remoteDataPayload.isBossMode = false;
-            remoteDataPayload.isSignedReturned = true;
-            remoteDataPayload.dataPodpisuKunde = dataPodpisuKunde;
-
-            try {
-                const jsonString = JSON.stringify(remoteDataPayload);
-                const base64Encoded = btoa(unescape(encodeURIComponent(jsonString)));
-                const baseUrl = window.location.href.split('?')[0];
-                const returnLink = `${baseUrl}?sign=${base64Encoded}`;
-
-                const waMessage = encodeURIComponent(`Hotovo, podepsal jsem to! Zde je potvrzení: ${returnLink}`);
-                window.location.href = `whatsapp://send?text=${waMessage}`;
-                
-                document.getElementById('document-live-preview').classList.add('hidden');
-                document.getElementById('wrapper-kunde').classList.add('hidden');
-                document.getElementById('export-card-actions').classList.add('hidden');
-                
-                let successDiv = document.createElement('div');
-                successDiv.id = 'success-screen';
-                successDiv.innerHTML = `
-                    <div style="text-align:center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ccc;">
-                        <h2 style="color:#2ecc71; margin-bottom:15px;">Děkuji, odesílám zpět na WhatsApp!</h2>
-                        <p>Pokud se WhatsApp neotevřel automaticky, zkopírujte tento odkaz a pošlete ho technikovi:</p>
-                        <textarea style="width:100%; height:120px; margin-top:10px; padding:10px;">${returnLink}</textarea>
-                    </div>
-                `;
-                document.getElementById('export-card').appendChild(successDiv);
-
-            } catch (err) {
-                alert('Chyba při generování zpětného odkazu: ' + err.message);
             }
         }
 
@@ -843,9 +775,10 @@
                 }
             }
 
+            // Přidání součtu hodin pod tabulku
             let sigY = tY + 106;
             doc.setFont("Helvetica", "bold");
-            doc.text("Gesamt: " + totalWeekHours.toFixed(2), 195, sigY, {align: 'right'});
+            doc.text("Gesamtstunden (Součet hodin): " + totalWeekHours.toFixed(2) + " h", 195, sigY, {align: 'right'});
             doc.setFont("Helvetica", "normal");
             
             sigY += 9;
@@ -858,8 +791,8 @@
             doc.text("Unterschrift und Stempel des Kunden", 15, sigY+4);
             doc.text("Datum / Unterschrift des Mitarbeiters", 130, sigY+4);
 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 20, sigY-15, 50, 14);
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 135, sigY-15, 50, 14);
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 20, sigY-15, 50, 14);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 135, sigY-15, 50, 14);
 
             doc.text(new Date().toLocaleDateString('de-DE'), 130, sigY-2);
 
@@ -937,8 +870,8 @@
             y += 15; doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')}`, 15, y);
 
             y += 30;
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 15, y - 18, 40, 16);
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 125, y - 18, 40, 16);
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 15, y - 18, 40, 16);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 125, y - 18, 40, 16);
 
             doc.line(15, y, 85, y); doc.line(125, y, 195, y);
             doc.setFontSize(9); doc.text(podpisKundeText, 15, y + 4); doc.text("*Unterschrift Auftraggeber", 15, y + 8);
@@ -1030,10 +963,6 @@
             localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value);
             localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
             localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value);
-            
-            localStorage.setItem('cfg_email_uctarna', document.getElementById('cfg-email-uctarna').value);
-            localStorage.setItem('cfg_email_pracovnik', document.getElementById('cfg-email-pracovnik').value);
-            localStorage.setItem('cfg_wa_pracovnik', document.getElementById('cfg-wa-pracovnik').value);
             alert('Nastavení uloženo!');
         }
 
@@ -1043,10 +972,6 @@
             if(localStorage.getItem('cfg_adresa')) document.getElementById('cfg-adresa').value = localStorage.getItem('cfg_adresa');
             if(localStorage.getItem('cfg_mesto')) document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto');
             if(localStorage.getItem('cfg_podpis')) document.getElementById('cfg-podpis').value = localStorage.getItem('cfg_podpis');
-            
-            if(localStorage.getItem('cfg_email_uctarna')) document.getElementById('cfg-email-uctarna').value = localStorage.getItem('cfg_email_uctarna');
-            if(localStorage.getItem('cfg_email_pracovnik')) document.getElementById('cfg-email-pracovnik').value = localStorage.getItem('cfg_email_pracovnik');
-            if(localStorage.getItem('cfg_wa_pracovnik')) document.getElementById('cfg-wa-pracovnik').value = localStorage.getItem('cfg_wa_pracovnik');
         }
 
         function exportCSV() {
@@ -1066,29 +991,29 @@
                     let encodedData = params.get('sign');
                     let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
                     
-                    remoteDataPayload = data; 
+                    document.getElementById('cfg-jmeno').value = data.jmeno;
+                    document.getElementById('cfg-firma').value = data.firma;
+                    document.getElementById('cfg-adresa').value = data.adresa;
+                    document.getElementById('cfg-mesto').value = data.mesto;
+                    document.getElementById('cfg-podpis').value = data.podpisKundeText;
+                    document.getElementById('ab-bezZkousky').checked = data.bezZkousky;
+                    document.getElementById('ab-seZkouskou').checked = data.seZkouskou;
+                    document.getElementById('ab-sVadami').checked = data.sVadami;
+                    document.getElementById('ab-vadyText').value = data.vadyText;
+                    document.getElementById('ab-odstraneniDo').value = data.odstraneniDo;
                     
-                    document.getElementById('cfg-jmeno').value = data.jmeno || '';
-                    document.getElementById('cfg-firma').value = data.firma || '';
-                    document.getElementById('cfg-adresa').value = data.adresa || '';
-                    document.getElementById('cfg-mesto').value = data.mesto || '';
-                    document.getElementById('cfg-podpis').value = data.podpisKundeText || '';
-                    document.getElementById('ab-bezZkousky').checked = data.bezZkousky || false;
-                    document.getElementById('ab-seZkouskou').checked = data.seZkouskou || false;
-                    document.getElementById('ab-sVadami').checked = data.sVadami || false;
-                    document.getElementById('ab-vadyText').value = data.vadyText || '';
-                    document.getElementById('ab-odstraneniDo').value = data.odstraneniDo || '';
-                    
-                    remoteZaznamy = data.zaznamy || []; 
-                    currentExportType = data.type || 'standard';
-                    dataPodpisuIch = data.dataPodpisuIch || null;
+                    remoteZaznamy = data.zaznamy; 
+                    currentExportType = data.type;
+                    dataPodpisuIch = data.dataPodpisuIch || null; // Natažení vlastního podpisu
 
                     document.getElementById('view-zaznamy').classList.remove('hidden');
                     document.getElementById('export-card').classList.remove('hidden');
                     
+                    // Schování prvků, které šéf nemá vidět
                     if(document.getElementById('abnahme-fields')) document.getElementById('abnahme-fields').classList.add('hidden');
                     if(document.getElementById('wrapper-ich')) document.getElementById('wrapper-ich').classList.add('hidden');
                     
+                    // Přidání speciálního tlačítka pro dokončení u šéfa
                     document.getElementById('export-card-actions').innerHTML = `
                         <button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="finishRemoteSign()">✔️ ULOŽIT A ODESLAT ZPĚT</button>
                     `;
