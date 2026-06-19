@@ -84,8 +84,9 @@
         body.dark-theme footer { background: #121214; color: #718093; }
         body.dark-theme .btn-sec { background: #2f3640; color: #fff; }
         body.dark-theme .preview-container-full { background: #ffffff; color: #000000; } 
-        body.dark-theme .fs-draw-modal { background: #1e1e24; }
+        body.dark-theme .fs-draw-modal, body.dark-theme .signature-modal .modal-content { background: #1e1e24; }
         body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e1e24; border-color: #2f3640; }
+        body.dark-theme .signature-modal .modal-content { color: #f5f6fa; }
 
         .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
         .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
@@ -141,7 +142,7 @@
         .signature-display-img { max-height: 70px; display: block; margin: 0 auto; }
         .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 20px; text-align: center; color: #000; }
-        canvas.sig-canvas { width: 100%; height: 200px; border: 1px solid #bdc3c7; background: #fafafa; border-radius: 6px; display: block; touch-action: none; margin: 15px 0; }
+        canvas.sig-canvas { width: 100%; height: 200px; border: 1px solid #bdc3c7; background: #ffffff; border-radius: 6px; display: block; touch-action: none; margin: 15px 0; }
         
         /* FULLSCREEN PLÁTNO PRO KRESLENÍ */
         .fs-draw-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; display: flex; flex-direction: column; }
@@ -329,18 +330,6 @@
                 <div class="card" id="seznam-container"></div>
             </div>
 
-            <div id="signature-modal" class="signature-modal hidden">
-                <div class="modal-content">
-                    <h3 id="modal-sig-title">Podpis</h3>
-                    <canvas id="modal-canvas" class="sig-canvas"></canvas>
-                    <div class="row">
-                        <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()" data-cs="Smazat" data-de="Löschen">Smazat</button>
-                        <button class="btn-sec" onclick="closeSignatureModal()" data-cs="Zavřít" data-de="Schließen">Zavřít</button>
-                        <button class="btn-main" style="background:#2ecc71; color:white;" onclick="saveModalSignature()" data-cs="Uložit podpis" data-de="Unterschrift保存">Uložit podpis</button>
-                    </div>
-                </div>
-            </div>
-
             <div id="view-nastaveni" class="tab-content hidden">
                 <div class="card">
                     <div class="card-title" data-cs="Vzhled aplikace" data-de="App-Design">Vzhled aplikace</div>
@@ -400,6 +389,16 @@
             <button class="tab-item" onclick="switchTab('zaznamy', this)"><span>🕒</span><span id="tab-list" data-cs="Záznamy" data-de="Einträge">Záznamy</span></button>
             <button class="tab-item" onclick="switchTab('nastaveni', this)"><span>⚙️</span><span id="tab-sett" data-cs="Nastavení" data-de="Einstellungen">Nastavení</span></button>
         </nav>
+    </div> <div id="signature-modal" class="signature-modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-sig-title">Podpis</h3>
+            <canvas id="modal-canvas" class="sig-canvas"></canvas>
+            <div class="row">
+                <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()" data-cs="Smazat" data-de="Löschen">Smazat</button>
+                <button class="btn-sec" onclick="closeSignatureModal()" data-cs="Zavřít" data-de="Schließen">Zavřít</button>
+                <button class="btn-main" id="btn-save-sig-modal" style="background:#2ecc71; color:white;" onclick="saveModalSignature()" data-cs="Uložit podpis" data-de="Unterschrift speichern">Uložit podpis</button>
+            </div>
+        </div>
     </div>
 
     <div id="fs-draw-modal" class="fs-draw-modal hidden">
@@ -438,7 +437,7 @@
 
         let remoteMode = false; let remoteZaznamy = []; let currentExportType = ''; let remoteDataPayload = null;
         let currentDrawSessionId = null; let qrInterval = null;
-        const KVDB_BUCKET = "pm_hours_share_2026"; // Unikátní veřejný bucket pro ukládání stavu real-time přenosu
+        const KVDB_BUCKET = "pm_hours_share_2026"; 
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
@@ -453,6 +452,24 @@
         let dataPodpisuKunde = null; let dataPodpisuIch = null; let dataPodpisuIchTiny = null; let targetSignature = ''; 
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         const deDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
+        // OPRAVA 2: Funkce pro zmenšení a kompresi obrázku před odesláním do KVDB
+        function compressImage(canvasObj, maxWidth = 600, quality = 0.5) {
+            let width = canvasObj.width;
+            let height = canvasObj.height;
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.fillStyle = '#ffffff'; // Vyplnění bílou zamezí černé obrazovce
+            tCtx.fillRect(0, 0, width, height);
+            tCtx.drawImage(canvasObj, 0, 0, width, height);
+            return tempCanvas.toDataURL('image/jpeg', quality);
+        }
 
         function getMousePos(e, targetCanvas) {
             let rect = targetCanvas.getBoundingClientRect();
@@ -502,14 +519,13 @@
             const container = document.getElementById('fs-canvas-container');
             fsCanvas.width = container.offsetWidth;
             fsCanvas.height = container.offsetHeight;
+            fsCtx.fillStyle = '#ffffff'; fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
             fsCtx.lineWidth = 2.5; fsCtx.lineCap = 'round'; fsCtx.lineJoin = 'round'; fsCtx.strokeStyle = '#0a3ca6'; 
 
             if(actPopisImgData) {
                 let img = new Image();
                 img.onload = () => { fsCtx.drawImage(img, 0, 0); };
                 img.src = actPopisImgData;
-            } else {
-                fsCtx.fillStyle = '#ffffff'; fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
             }
         }
 
@@ -551,16 +567,28 @@
                 ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef')
                 : (currentLang === 'cs' ? 'Podpis: Petr Michálek' : 'Unterschrift: Petr Michálek');
             document.getElementById('modal-sig-title').innerText = textTitle;
+            
+            // Tlačítko pro uložení lokálního podpisu
+            const saveBtn = document.getElementById('btn-save-sig-modal');
+            saveBtn.setAttribute('onclick', 'saveModalSignature()');
+            saveBtn.innerText = currentLang === 'cs' ? 'Uložit podpis' : 'Unterschrift speichern';
+
             document.getElementById('signature-modal').classList.remove('hidden');
             canvas.width = canvas.offsetWidth; canvas.height = 200;
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); // Zaručení bílého pozadí i u běžného podpisu
             ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6'; 
         }
 
         function closeSignatureModal() { document.getElementById('signature-modal').classList.add('hidden'); }
-        function clearModalCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function clearModalCanvas() { 
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height); 
+        }
 
         function saveModalSignature() {
             const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+            const bCtx = blank.getContext('2d'); bCtx.fillStyle = '#ffffff'; bCtx.fillRect(0, 0, blank.width, blank.height);
+
             if (canvas.toDataURL() === blank.toDataURL()) { alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); return; }
             const dataUrl = canvas.toDataURL('image/png');
             processSignatureData(dataUrl, targetSignature);
@@ -943,6 +971,10 @@
             if(matchedBtn) matchedBtn.classList.add('active');
             document.querySelectorAll('[data-cs]').forEach(el => { el.innerHTML = el.getAttribute('data-' + lang); });
             document.querySelectorAll('[data-ph-cs]').forEach(el => { el.setAttribute('placeholder', el.getAttribute('data-ph-' + lang)); });
+            
+            if (document.getElementById('btn-save-sig-modal')) {
+                document.getElementById('btn-save-sig-modal').innerText = lang === 'cs' ? 'Uložit podpis' : 'Unterschrift speichern';
+            }
             if(remoteMode) return; updateStatistiky(); renderZaznamy();
         }
 
@@ -1089,12 +1121,11 @@
                                 actPopisImgData = data.img;
                                 document.getElementById('drawn-preview-img').src = actPopisImgData;
                                 document.getElementById('preview-drawn-image').style.display = 'block';
-                                alert("Nákres z telefonu úspěšně stažen do PC!");
+                                alert(currentLang === 'cs' ? "Nákres z telefonu úspěšně stažen do PC!" : "Zeichnung vom Telefon erfolgreich heruntergeladen!");
                             } else if (type === 'kunde' || type === 'ich') {
                                 processSignatureData(data.img, type);
-                                alert("Podpis z telefonu úspěšně stažen do PC!");
+                                alert(currentLang === 'cs' ? "Podpis z telefonu úspěšně stažen do PC!" : "Unterschrift vom Telefon erfolgreich heruntergeladen!");
                             }
-                            // Vyčištění cloudu
                             fetch(`https://kvdb.io/${KVDB_BUCKET}/${sessionId}`, { method: 'DELETE' }).catch(e => {});
                         }
                     }
@@ -1129,11 +1160,15 @@
             if(qrInterval) clearInterval(qrInterval); currentDrawSessionId = null;
         }
 
-        // TELEFON - ODESÍLÁNÍ DATA NA PC (ZÁPIS DO KVDB.IO CLOUDU)
+        // TELEFON - ODESÍLÁNÍ DATA NA PC (ZÁPIS DO KVDB.IO CLOUDU) - OPRAVENO PRO KOMPRESI
         async function sendSignatureToPC(sessionId, target) {
             const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
-            if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
-            const dataUrl = canvas.toDataURL('image/png');
+            const bCtx = blank.getContext('2d'); bCtx.fillStyle = '#ffffff'; bCtx.fillRect(0, 0, blank.width, blank.height);
+            
+            if (canvas.toDataURL() === blank.toDataURL()) { alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); return; }
+            
+            // Komprese a zmenšení pro spolehlivý přenos
+            const dataUrl = compressImage(canvas, 400, 0.5); 
             
             try {
                 let res = await fetch(`https://kvdb.io/${KVDB_BUCKET}/${sessionId}`, {
@@ -1141,25 +1176,26 @@
                     body: JSON.stringify({ img: dataUrl })
                 });
                 if(res.ok) {
-                    alert("Podpis byl úspěšně přenesen do vašeho PC! Nyní můžete toto okno zavřít.");
+                    alert(currentLang === 'cs' ? "Podpis byl úspěšně přenesen do vašeho PC! Nyní můžete toto okno zavřít." : "Unterschrift erfolgreich an PC gesendet! Fenster kann geschlossen werden.");
                     document.getElementById('signature-modal').classList.add('hidden');
-                } else { alert("Chyba při přenosu."); }
-            } catch(e) { alert("Selhalo připojení k serveru."); }
+                } else { alert("Chyba při přenosu. / Übertragungsfehler."); }
+            } catch(e) { alert("Selhalo připojení k serveru. / Verbindungsfehler."); }
         }
 
         async function sendDrawToPC(sessionId) {
             const canvasObj = document.getElementById('fs-canvas');
-            const imageData = canvasObj.toDataURL("image/png");
+            // Komprese a zmenšení pro spolehlivý přenos bez překročení limitů KVDB
+            const imageData = compressImage(canvasObj, 600, 0.5); 
             try {
                 let res = await fetch(`https://kvdb.io/${KVDB_BUCKET}/${sessionId}`, {
                     method: 'POST',
                     body: JSON.stringify({ img: imageData })
                 });
                 if(res.ok) {
-                    alert("Nákres byl úspěšně přenesen do vašeho PC! Nyní můžete toto okno zavřít.");
+                    alert(currentLang === 'cs' ? "Nákres byl úspěšně přenesen do vašeho PC! Nyní můžete toto okno zavřít." : "Zeichnung erfolgreich an PC gesendet! Fenster kann geschlossen werden.");
                     document.getElementById('fs-draw-modal').classList.add('hidden');
-                } else { alert("Chyba při přenosu."); }
-            } catch(e) { alert("Selhalo připojení k serveru."); }
+                } else { alert("Chyba při přenosu. / Übertragungsfehler."); }
+            } catch(e) { alert("Selhalo připojení k serveru. / Verbindungsfehler."); }
         }
 
         window.addEventListener('DOMContentLoaded', (event) => {
@@ -1168,30 +1204,58 @@
                 const sessionId = urlParams.get('remoteDraw');
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('welcome-screen').style.display = 'none';
+                
+                // Překlad pro mobilní verzi
+                let isCs = localStorage.getItem('app_lang') !== 'de';
+                let btnSmazatTxt = isCs ? 'Smazat' : 'Löschen';
+                let btnOdeslatTxt = isCs ? 'Odeslat do PC' : 'An PC senden';
+                
                 const footer = document.querySelector('.fs-draw-footer');
                 footer.innerHTML = `
-                    <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button>
-                    <button class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${sessionId}')">Odeslat do PC</button>
+                    <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">${btnSmazatTxt}</button>
+                    <button class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${sessionId}')">${btnOdeslatTxt}</button>
                 `;
                 document.getElementById('fs-draw-modal').classList.remove('hidden');
                 document.body.style.overflow = 'hidden'; 
-                setTimeout(() => { fsCanvas.width = window.innerWidth; fsCanvas.height = window.innerHeight - 100; fsCtx.lineWidth = 2.5; fsCtx.strokeStyle = '#0a3ca6'; }, 200);
+                setTimeout(() => { 
+                    fsCanvas.width = window.innerWidth; 
+                    fsCanvas.height = window.innerHeight - 100; 
+                    // Bílé pozadí
+                    fsCtx.fillStyle = '#ffffff'; 
+                    fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
+                    
+                    fsCtx.lineWidth = 2.5; fsCtx.strokeStyle = '#0a3ca6'; 
+                }, 200);
             }
 
             if (urlParams.has('remoteSig')) {
                 const target = urlParams.get('remoteSig'); const sessionId = urlParams.get('session');
                 document.getElementById('main-app').classList.add('hidden'); document.getElementById('welcome-screen').style.display = 'none';
                 targetSignature = target;
-                let textTitle = target === 'kunde' ? 'Podpis: Kunde / Šéf' : 'Podpis: Váš';
+                
+                let isCs = localStorage.getItem('app_lang') !== 'de';
+                let textTitle = target === 'kunde' ? (isCs ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (isCs ? 'Podpis: Váš' : 'Unterschrift: Ihre');
                 document.getElementById('modal-sig-title').innerText = textTitle;
+                
+                let btnSmazatTxt = isCs ? 'Smazat' : 'Löschen';
+                let btnOdeslatTxt = isCs ? 'Odeslat do PC' : 'An PC senden';
+                
                 const modalBtns = document.querySelector('.modal-content .row');
                 modalBtns.innerHTML = `
-                    <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button>
-                    <button class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${sessionId}', '${target}')">Odeslat do PC</button>
+                    <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">${btnSmazatTxt}</button>
+                    <button class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${sessionId}', '${target}')">${btnOdeslatTxt}</button>
                 `;
                 document.getElementById('signature-modal').classList.remove('hidden');
                 document.body.style.overflow = 'hidden'; 
-                setTimeout(() => { canvas.width = canvas.offsetWidth; canvas.height = 200; ctx.lineWidth = 3; ctx.strokeStyle = '#0a3ca6'; }, 200);
+                setTimeout(() => { 
+                    canvas.width = canvas.offsetWidth; 
+                    canvas.height = 200; 
+                    // Bílé pozadí
+                    ctx.fillStyle = '#ffffff'; 
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.lineWidth = 3; ctx.strokeStyle = '#0a3ca6'; 
+                }, 200);
             }
         });
 
@@ -1199,4 +1263,3 @@
     </script>
 </body>
 </html>
-
