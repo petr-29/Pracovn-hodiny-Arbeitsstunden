@@ -955,22 +955,21 @@
             let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
 
             // Červený blok nahoře vpravo
-            doc.setFillColor(179, 57, 57); // Red color from image
-            doc.rect(110, 10, 90, 25, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(20);
-            doc.text(`Faktura č. ${cisloFaktury}`, 195, 22, {align: 'right'});
-            doc.setFont("Helvetica", "italic");
-            doc.setFontSize(10);
-            doc.text("Neplátce DPH", 195, 29, {align: 'right'});
+    doc.setFillColor(179, 57, 57);
+    doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text(`Faktura č. ${document.getElementById('fak-cislo').value}`, 205, 15, {align: 'right'});
+    doc.setFontSize(10);
+    doc.text("Neplátce DPH", 205, 22, {align: 'right'});
 
             // Modré nadpisy
             doc.setTextColor(41, 128, 185); // Blue color
             doc.setFont("Courier", "normal");
             doc.setFontSize(18);
-            doc.text("Dodavatel", 15, 50);
-            doc.text("Odběratel", 110, 50);
+            doc.text("Dodavatel", 15, 45);
+            doc.text("Odběratel", 110, 45);
 
             // Informace
             doc.setTextColor(0, 0, 0);
