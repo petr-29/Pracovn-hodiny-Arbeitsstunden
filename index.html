@@ -161,6 +161,16 @@
         .qr-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 4000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .qr-modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 100%; color: #000; }
         .qr-modal-content img { width: 200px; height: 200px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
+        
+        /* Faktura Preview Specific */
+        .faktura-box { border: 1px solid #ccc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .faktura-red-header { background-color: #b33939; color: white; padding: 20px; text-align: right; }
+        .faktura-modry-text { color: #2980b9; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+        .faktura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; font-size: 12px; }
+        .faktura-gray-bar { background-color: #f2f2f2; padding: 10px 20px; font-size: 12px; border-bottom: 1px solid #e0e0e0; border-top: 1px solid #e0e0e0; display:flex; justify-content: space-between;}
+        .faktura-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .faktura-table th { background-color: #b33939; color: white; padding: 8px; text-align: left; }
+        .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -260,14 +270,36 @@
             <div id="view-zaznamy" class="tab-content hidden">
                 <div class="action-toolbar" id="records-toolbar">
                     <button class="btn-sec" onclick="selectAllZaznamy()" id="btn-all" data-cs="Vše" data-de="Alle">Vše</button>
-                    <button class="btn-sec" onclick="exportCSV()" id="btn-csv-exp">CSV Export</button>
+                    <button class="btn-sec" onclick="exportCSV()" id="btn-csv-exp">CSV</button>
                     <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">Standard PDF</button>
                     <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
+                    <!-- NOVÉ TLAČÍTKO FAKTURA -->
+                    <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">Faktura PDF</button>
                 </div>
 
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
                     <div class="card-title" data-cs="Kontrola dokumentu před podpisem" data-de="Dokumentprüfung vor Unterschrift">Kontrola dokumentu před podpisem</div>
                     
+                    <div id="faktura-fields" class="hidden">
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Číslo faktury (např. 2026/0001)</label>
+                                <input type="text" id="fak-cislo" value="2026/0001" oninput="updateLivePreview()">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Datum vystavení</label>
+                                <input type="date" id="fak-vystaveni" onchange="updateLivePreview()">
+                            </div>
+                            <div class="form-group">
+                                <label>Datum splatnosti</label>
+                                <input type="date" id="fak-splatnost" onchange="updateLivePreview()">
+                            </div>
+                        </div>
+                        <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
+                    </div>
+
                     <div id="document-live-preview" class="preview-container-full"></div>
 
                     <div id="abnahme-fields" class="hidden">
@@ -360,20 +392,43 @@
                         <input type="text" id="cfg-jmeno" value="Petr Michálek">
                     </div>
                     <div class="form-group">
-                        <label data-cs="Název projektu / Klienta" data-de="Projektname / Kunde">Název projektu / Klienta</label>
-                        <input type="text" id="cfg-firma" value="Netzsch, Sedanstrasse 70 D – 95100 Selb">
+                        <label data-cs="Název projektu / Klienta" data-de="Projektname / Kunde">Název projektu / Klienta (Fakturační Odběratel)</label>
+                        <textarea id="cfg-firma" rows="2">Consilium Pro s. r. o.&#10;Albert Orság</textarea>
                     </div>
                     <div class="form-group">
-                        <label data-cs="Adresa" data-de="Adresse">Adresa</label>
-                        <input type="text" id="cfg-adresa" value="Goethestraße 3">
+                        <label data-cs="Adresa" data-de="Adresse">Ulice a číslo popisné</label>
+                        <input type="text" id="cfg-adresa" value="Piaristická 276/46">
                     </div>
                     <div class="form-group">
-                        <label data-cs="Město a PSČ" data-de="PLZ und Ort">Město a PSČ</label>
-                        <input type="text" id="cfg-mesto" value="94577 Winzer">
+                        <label data-cs="Město a PSČ" data-de="PLZ und Ort">Město, PSČ a stát</label>
+                        <input type="text" id="cfg-mesto" value="91101 Trenčín, Slovenská republika">
+                    </div>
+                    <div class="form-group">
+                        <label data-cs="IČO / DIČ Odběratele" data-de="IČO / DIČ">IČO / DIČ Odběratele</label>
+                        <input type="text" id="cfg-ico-odberatel" value="IČO: 51452227, IČ DPH: SK2120718523">
                     </div>
                     <div class="form-group">
                         <label data-cs="Odpovědná osoba (Klient / Šéf)" data-de="Verantwortliche Person (Kunde / Chef)">Odpovědná osoba (Klient / Šéf)</label>
                         <input type="text" id="cfg-podpis" value="---">
+                    </div>
+
+                    <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
+                    <div class="card-title">Dodavatel (Fakturační údaje)</div>
+                    <div class="form-group">
+                        <label>Ulice, Město, Stát</label>
+                        <textarea id="cfg-dod-adresa" rows="3">Nám. Prokopa Holého 11&#10;350 02 Cheb&#10;Česká republika</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>IČO</label>
+                        <input type="text" id="cfg-dod-ico" value="64837530">
+                    </div>
+                    <div class="form-group">
+                        <label>IBAN a SWIFT/BIC</label>
+                        <input type="text" id="cfg-dod-banka" value="IBAN: LT163250076086088383 | SWIFT: REVOLT21">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon a E-mail</label>
+                        <input type="text" id="cfg-dod-kontakt" value="Tel: +420 601 515 360 | Email: el.michalekpetr@gmail.com">
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
@@ -437,6 +492,10 @@
                 app.classList.remove('hidden');
                 app.style.display = 'block';
             }, 500);
+            document.getElementById('fak-vystaveni').valueAsDate = new Date();
+            let tydenDate = new Date();
+            tydenDate.setDate(tydenDate.getDate() + 14);
+            document.getElementById('fak-splatnost').valueAsDate = tydenDate;
         }
 
         let remoteMode = false; let remoteZaznamy = []; let currentExportType = ''; let remoteDataPayload = null;
@@ -456,25 +515,15 @@
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         const deDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-        // Kód jedna: Vylepšená funkce pro získání přesných souřadnic myši/dotyku s ohledem na scale
         function getMousePos(e, targetCanvas) {
             let rect = targetCanvas.getBoundingClientRect();
-            
-            // Získání souřadnic myši nebo dotyku
             let clientX = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
             let clientY = e.clientY || (e.touches && e.touches.length > 0 ? e.touches[0].clientY : 0);
-
-            // Výpočet poměru (scale) mezi vnitřním rozlišením a CSS velikostí
             let scaleX = targetCanvas.width / rect.width;
             let scaleY = targetCanvas.height / rect.height;
-
-            return { 
-                x: (clientX - rect.left) * scaleX, 
-                y: (clientY - rect.top) * scaleY 
-            };
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
         }
 
-        // LOGIKA PRO PODPISOVÝ CANVAS
         canvas.addEventListener('mousedown', (e) => { isDrawing = true; let pos = getMousePos(e, canvas); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
         canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); });
         canvas.addEventListener('mouseup', () => isDrawing = false);
@@ -482,7 +531,6 @@
         canvas.addEventListener('touchmove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); });
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        // LOGIKA PRO FULLSCREEN CANVAS KRESLENÍ
         let currentInputMode = 'text';
         let actPopisImgData = null; 
         const fsCanvas = document.getElementById('fs-canvas');
@@ -627,15 +675,32 @@
             }
             currentExportType = type;
             document.getElementById('export-card').classList.remove('hidden');
+            
+            document.getElementById('abnahme-fields').classList.add('hidden');
+            document.getElementById('faktura-fields').classList.add('hidden');
+            document.getElementById('remote-share-wrapper').classList.remove('hidden');
+            document.getElementById('wrapper-kunde').classList.remove('hidden');
+
             if (type === 'abnahme') {
                 document.getElementById('abnahme-fields').classList.remove('hidden');
                 document.getElementById('btn-execute-export').style.background = '#3498db';
+                document.getElementById('btn-execute-export').innerText = "Místní uložení PDF";
+            } else if (type === 'faktura') {
+                document.getElementById('faktura-fields').classList.remove('hidden');
+                document.getElementById('btn-execute-export').style.background = '#e74c3c';
+                document.getElementById('btn-execute-export').innerText = "Stáhnout Fakturu PDF";
+                document.getElementById('remote-share-wrapper').classList.add('hidden');
+                document.getElementById('wrapper-kunde').classList.add('hidden'); // Fakturu podepisujete jen vy, nebo je tam razitko rovnou
             } else {
-                document.getElementById('abnahme-fields').classList.add('hidden');
                 document.getElementById('btn-execute-export').style.background = '#f39c12';
+                document.getElementById('btn-execute-export').innerText = "Místní uložení PDF";
             }
             updateLivePreview();
             window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function formatMena(castka) {
+            return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'EUR' }).format(castka);
         }
 
         function updateLivePreview() {
@@ -646,11 +711,81 @@
             let firma = document.getElementById('cfg-firma').value;
             let adresa = document.getElementById('cfg-adresa').value;
             let mesto = document.getElementById('cfg-mesto').value;
+            let icoOdberatel = document.getElementById('cfg-ico-odberatel').value || '';
             let pKunde = document.getElementById('cfg-podpis').value || '---';
 
             let html = '';
             
-            if (currentExportType === 'standard') {
+            if (currentExportType === 'faktura') {
+                let cisloFaktury = document.getElementById('fak-cislo').value;
+                let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
+                let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
+                
+                let dodIco = document.getElementById('cfg-dod-ico').value;
+                let dodAdresa = document.getElementById('cfg-dod-adresa').value.replace(/\n/g, "<br>");
+                let dodBanka = document.getElementById('cfg-dod-banka').value;
+                let dodKontakt = document.getElementById('cfg-dod-kontakt').value;
+
+                let sumEUR = 0;
+                vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
+
+                html += `<div class="faktura-box">`;
+                html += `  <div class="faktura-red-header">`;
+                html += `    <div style="font-size: 24px; font-weight: bold;">Faktura č. ${cisloFaktury}</div>`;
+                html += `    <div style="font-size: 14px; font-weight: normal; margin-top: 5px;">Neplátce DPH</div>`;
+                html += `  </div>`;
+                
+                html += `  <div class="faktura-grid">`;
+                html += `    <div>`;
+                html += `      <div class="faktura-modry-text">Dodavatel</div>`;
+                html += `      <strong>${jmeno}</strong><br>${dodAdresa}<br>IČO: ${dodIco}<br><br>${dodBanka}<br>Vystavil: ${jmeno}<br>${dodKontakt}`;
+                html += `    </div>`;
+                html += `    <div>`;
+                html += `      <div class="faktura-modry-text">Odběratel</div>`;
+                html += `      <strong>${firma.replace(/\n/g, "<br>")}</strong><br>${adresa}<br>${mesto}<br><br>${icoOdberatel}`;
+                html += `    </div>`;
+                html += `  </div>`;
+
+                html += `  <div class="faktura-gray-bar">`;
+                html += `    <div>Způsob platby: Bankovní převod</div>`;
+                html += `  </div>`;
+
+                html += `  <div style="padding: 20px; font-size: 12px; display:flex; justify-content: space-between;">`;
+                html += `    <div>`;
+                html += `      <div style="color: #2980b9; margin-bottom: 10px;">DATUM VYSTAVENÍ: <strong>${datumVystaveni ? datumVystaveni.toLocaleDateString('cs-CZ') : ''}</strong></div>`;
+                html += `      <div style="color: #2980b9;">DATUM SPLATNOSTI: <strong>${datumSplatnosti ? datumSplatnosti.toLocaleDateString('cs-CZ') : ''}</strong></div>`;
+                html += `    </div>`;
+                html += `    <div style="text-align: right; color: #2980b9; font-weight: bold; font-size: 14px;">CELKEM K ÚHRADĚ:<br><span style="color:#000; font-size:18px;">${formatMena(sumEUR)}</span></div>`;
+                html += `  </div>`;
+
+                html += `  <table class="faktura-table">`;
+                html += `    <tr><th>Popis</th><th>Množství</th><th>Cena za mj.</th><th style="text-align:right;">Celkem</th></tr>`;
+                
+                let totalH = 0;
+                vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
+                let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
+                
+                html += `    <tr>`;
+                html += `      <td>Pracovní hodiny dle výkazu (${startDatum(vybrane)} - ${endDatum(vybrane)})</td>`;
+                html += `      <td>${totalH.toFixed(2)} h</td>`;
+                html += `      <td>${typSazby} €</td>`;
+                html += `      <td style="text-align:right;">${formatMena(sumEUR)}</td>`;
+                html += `    </tr>`;
+                html += `  </table>`;
+
+                html += `  <div style="padding: 20px; text-align: right;">`;
+                html += `    <div style="font-size: 20px; font-weight: bold;">Celkem k úhradě: ${formatMena(sumEUR)}</div>`;
+                html += `    <div style="margin-top: 40px; display:inline-block; width: 250px; text-align:center; border-top: 1px solid #000; padding-top:5px; position:relative;">`;
+                if(dataPodpisuIch) {
+                    html += `      <img src="${dataPodpisuIch}" style="max-height:50px; position:absolute; bottom: 25px; right: 20px;">`;
+                }
+                html += `       Podpis`;
+                html += `    </div>`;
+                html += `  </div>`;
+                html += `  <div style="padding: 20px; font-size: 10px; color: #555;">Podnikatel je zapsán v živnostenském rejstříku.</div>`;
+                html += `</div>`;
+
+            } else if (currentExportType === 'standard') {
                 let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
                 let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
                 let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
@@ -660,7 +795,7 @@
                 html += `  <div style="text-align:center; font-weight:bold; font-size:18px; margin-bottom: 20px;">TÄTIGKEITSNACHWEIS</div>`;
                 html += `  <div style="width:250px; margin:0 auto 20px auto; border:1px solid #000; font-size:12px;">`;
                 html += `    <div style="border-bottom:1px solid #000; padding:4px;">Kundenanschrift:</div>`;
-                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${firma}</div>`;
+                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${firma.replace(/\n/g, ", ")}</div>`;
                 html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${adresa}</div>`;
                 html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${mesto}</div>`;
                 html += `    <div style="padding:4px; height:20px;"></div>`;
@@ -672,7 +807,7 @@
                 html += `      <td colspan="4" style="text-align:left; padding:4px;">Mitarbeiter bitte ankreuzen:</td>`;
                 html += `    </tr>`;
                 html += `    <tr>`;
-                html += `      <td colspan="6" style="text-align:left; padding:4px;">Baustelle<br><b>${cisloZ || firma || ''}</b></td>`;
+                html += `      <td colspan="6" style="text-align:left; padding:4px;">Baustelle<br><b>${cisloZ || firma.replace(/\n/g, " ") || ''}</b></td>`;
                 html += `      <td rowspan="3" style="width:12%;">Gesamt<br>ohne<br>Pause</td>`;
                 html += `      <td colspan="2" style="width:10%;">Tägliche<br>Heimfahrt?</td>`;
                 html += `      <td colspan="2" style="width:10%;">Übernachtung<br>am Einsatzort?</td>`;
@@ -727,17 +862,17 @@
                 let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
                 let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
                 let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
-                let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
-                let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
+                let startD = startDatum(vybrane);
+                let endD = endDatum(vybrane);
                 let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
 
                 html += `<div class="preview-header-full">ABNAHME- & FORTSCHRITTSPROTOKOLL</div>`;
                 html += `<div class="preview-meta-grid">`;
                 html += `  <div class="preview-meta-item"><strong>Vorname, Name:</strong><br>${jmeno}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Kunde:</strong><br>${firma}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Kunde:</strong><br>${firma.replace(/\n/g, ", ")}</div>`;
                 html += `  <div class="preview-meta-item"><strong>Projekt-Nr:</strong><br>${cisloZ}</div>`;
                 html += `  <div class="preview-meta-item"><strong>Anschrift:</strong><br>${adresa}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Leistungszeitraum:</strong><br>${startDatum} - ${endDatum}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Leistungszeitraum:</strong><br>${startD} - ${endD}</div>`;
                 html += `  <div class="preview-meta-item"><strong>PLZ, Ort:</strong><br>${mesto}</div>`;
                 html += `</div>`;
                 html += `<p style="font-weight:bold; margin-top:10px;">Leistungsbeschreibung / Tätigkeitsbeschreibung</p>`;
@@ -773,6 +908,13 @@
             document.getElementById('document-live-preview').innerHTML = html;
         }
 
+        function startDatum(vybrane) {
+            return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
+        }
+        function endDatum(vybrane) {
+            return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
+        }
+
         function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
             dataPodpisuKunde = null; dataPodpisuIch = null; dataPodpisuIchTiny = null;
@@ -786,7 +928,166 @@
 
         function executePDFExport(returnBlob = false) {
             if (currentExportType === 'abnahme') return exportAbnahmePDF(returnBlob);
+            else if (currentExportType === 'faktura') return exportFakturaPDF(returnBlob);
             else return exportStandardPDF(returnBlob);
+        }
+
+        function exportFakturaPDF(returnBlob = false) {
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); 
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            
+            let jmeno = document.getElementById('cfg-jmeno').value; 
+            let firma = document.getElementById('cfg-firma').value.replace(/\n/g, ", ");
+            let adresa = document.getElementById('cfg-adresa').value; 
+            let mesto = document.getElementById('cfg-mesto').value;
+            let icoOdberatel = document.getElementById('cfg-ico-odberatel').value;
+
+            let dodIco = document.getElementById('cfg-dod-ico').value;
+            let dodAdresaObj = document.getElementById('cfg-dod-adresa').value.split('\n');
+            let dodBanka = document.getElementById('cfg-dod-banka').value;
+            let dodKontakt = document.getElementById('cfg-dod-kontakt').value;
+
+            let cisloFaktury = document.getElementById('fak-cislo').value;
+            let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
+            let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
+
+            // Červený blok nahoře vpravo
+            doc.setFillColor(179, 57, 57); // Red color from image
+            doc.rect(110, 10, 90, 25, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(20);
+            doc.text(`Faktura č. ${cisloFaktury}`, 195, 22, {align: 'right'});
+            doc.setFont("Helvetica", "italic");
+            doc.setFontSize(10);
+            doc.text("Neplátce DPH", 195, 29, {align: 'right'});
+
+            // Modré nadpisy
+            doc.setTextColor(41, 128, 185); // Blue color
+            doc.setFont("Courier", "normal");
+            doc.setFontSize(18);
+            doc.text("Dodavatel", 15, 50);
+            doc.text("Odběratel", 110, 50);
+
+            // Informace
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9);
+            
+            // Dodavatel
+            let yL = 55;
+            doc.text(jmeno, 15, yL); yL+=4;
+            doc.setFont("Helvetica", "normal");
+            dodAdresaObj.forEach(line => { doc.text(line, 15, yL); yL+=4; });
+            doc.text(`IČO: ${dodIco}`, 15, yL); yL+=4;
+            let bankParts = dodBanka.split('|');
+            if(bankParts.length > 0) { doc.text(bankParts[0].trim(), 15, yL); yL+=4; }
+            if(bankParts.length > 1) { doc.text(bankParts[1].trim(), 15, yL); yL+=4; }
+            doc.text(`Vystavil: ${jmeno}`, 15, yL); yL+=4;
+            let kontParts = dodKontakt.split('|');
+            if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=4; }
+            if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=4; }
+
+            // Odberatel
+            let yR = 55;
+            doc.setFont("Helvetica", "bold");
+            let fSplit = document.getElementById('cfg-firma').value.split('\n');
+            fSplit.forEach(line => { doc.text(line, 110, yR); yR+=4; });
+            doc.setFont("Helvetica", "normal");
+            doc.text(adresa, 110, yR); yR+=4;
+            doc.text(mesto, 110, yR); yR+=4;
+            let icoParts = icoOdberatel.split(',');
+            icoParts.forEach(line => { doc.text(line.trim(), 110, yR); yR+=4; });
+
+            // Šedý pruh
+            let grayY = 95;
+            doc.setFillColor(242, 242, 242);
+            doc.rect(15, grayY, 180, 10, 'F');
+            doc.setFont("Helvetica", "normal");
+            doc.setTextColor(100, 100, 100);
+            doc.text("Způsob platby: Bankovní převod", 20, grayY+6);
+
+            // Údaje k platbě (modře nadpisy)
+            let dateY = 115;
+            doc.setTextColor(41, 128, 185);
+            doc.setFontSize(10);
+            doc.text("DATUM VYSTAVENÍ", 20, dateY);
+            doc.text("DATUM SPLATNOSTI", 70, dateY);
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("Helvetica", "bold");
+            if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
+            if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
+
+            // Součet
+            let sumEUR = 0;
+            vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
+
+            doc.setTextColor(41, 128, 185);
+            doc.setFontSize(10);
+            doc.text("CELKEM K ÚHRADĚ", 130, dateY-10);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(16);
+            doc.text(formatMena(sumEUR), 130, dateY-2);
+
+            // Tabulka položek (červený pruh)
+            let tableY = 135;
+            doc.setFillColor(179, 57, 57);
+            doc.rect(15, tableY, 180, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9);
+            doc.text("Popis", 20, tableY+5.5);
+            doc.text("Množství", 120, tableY+5.5, {align:'center'});
+            doc.text("Cena za mj.", 150, tableY+5.5, {align:'center'});
+            doc.text("Celkem", 190, tableY+5.5, {align:'right'});
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("Helvetica", "normal");
+            let itemY = tableY + 12;
+
+            let totalH = 0;
+            vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
+            let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
+
+            doc.text(`Pracovní hodiny dle výkazu (${startDatum(vybrane)} - ${endDatum(vybrane)})`, 20, itemY);
+            doc.text(`${totalH.toFixed(2)} h`, 120, itemY, {align:'center'});
+            doc.text(`${typSazby} €`, 150, itemY, {align:'center'});
+            doc.text(formatMena(sumEUR), 190, itemY, {align:'right'});
+            
+            doc.setDrawColor(200, 200, 200);
+            doc.line(15, itemY+3, 195, itemY+3);
+
+            // Patička a Celkem k úhradě dole
+            let footerY = 220;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text(`Celkem k úhradě:`, 130, footerY);
+            doc.text(formatMena(sumEUR), 190, footerY, {align:'right'});
+
+            doc.setDrawColor(0, 0, 0);
+            doc.line(125, footerY+5, 195, footerY+5);
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(9);
+            
+            if(dataPodpisuIch) {
+                doc.addImage(dataPodpisuIch, 'JPEG', 135, footerY+15, 45, 15);
+            }
+            doc.line(125, footerY+35, 195, footerY+35);
+            doc.text("Podpis", 160, footerY+40, {align:'center'});
+
+            doc.setFontSize(8);
+            doc.text("Podnikatel je zapsán v živnostenském rejstříku.", 15, footerY+40);
+            doc.setTextColor(150, 150, 150);
+            doc.text("Vystaveno v systému aplikace", 15, 285);
+            doc.text("Strana 1/1", 195, 285, {align: 'right'});
+
+            if(returnBlob) return doc.output('blob');
+            doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
+            if(!remoteMode) closeExportCard();
         }
 
         function buildShareUrl() {
@@ -852,12 +1153,13 @@
 
         async function sharePdfNative() {
             let blob = executePDFExport(true);
-            let file = new File([blob], "Unterzeichnetes_Dokument.pdf", { type: "application/pdf" });
+            let fname = currentExportType === 'faktura' ? "Faktura.pdf" : "Unterzeichnetes_Dokument.pdf";
+            let file = new File([blob], fname, { type: "application/pdf" });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
-                        files: [file], title: 'Unterzeichnetes Dokument',
-                        text: currentLang === 'cs' ? 'Dobrý den, v příloze zasílám podepsaný dokument.' : 'Guten Tag, anbei das unterschriebene Dokument.'
+                        files: [file], title: 'Dokument',
+                        text: currentLang === 'cs' ? 'Dobrý den, v příloze zasílám dokument.' : 'Guten Tag, anbei das Dokument.'
                     });
                 } catch (e) { console.log('Sdílení selhalo', e); }
             } else {
@@ -912,7 +1214,7 @@
         function exportStandardPDF(returnBlob = false) {
             const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value;
+            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value.replace(/\n/g, ", ");
             let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
             let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : ''; let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
@@ -937,7 +1239,7 @@
             doc.setFontSize(8); doc.text("Name", cols[0]+2, tY+4); doc.setFont("Helvetica", "bold"); doc.text(nName, cols[0]+15, tY+8); doc.setFont("Helvetica", "normal");
             doc.text("Vorname", 77, tY+4); doc.setFont("Helvetica", "bold"); doc.text(vName, 90, tY+8); doc.setFont("Helvetica", "normal");
             doc.text("Mitarbeiter bitte ankreuzen:", cols[7]+2, tY+4);
-            doc.text("Baustelle", cols[0]+2, tY+14); doc.setFont("Helvetica", "bold"); doc.text(cisloZ || firma, cols[0]+20, tY+18); doc.setFont("Helvetica", "normal");
+            doc.text("Baustelle", cols[0]+2, tY+14); doc.setFont("Helvetica", "bold"); doc.text(cisloZ || firma.substring(0,25), cols[0]+20, tY+18); doc.setFont("Helvetica", "normal");
             doc.text("Gesamt", cols[6]+12, tY+13, {align:'center'}); doc.text("ohne", cols[6]+12, tY+16, {align:'center'}); doc.text("Pause", cols[6]+12, tY+19, {align:'center'});
             doc.text("Tägliche", cols[7]+11, tY+14, {align:'center'}); doc.text("Heimfahrt?", cols[7]+11, tY+18, {align:'center'});
             doc.text("Übernachtung", cols[9]+11, tY+14, {align:'center'}); doc.text("am Einsatzort?", cols[9]+11, tY+18, {align:'center'});
@@ -982,7 +1284,7 @@
         function exportAbnahmePDF(returnBlob = false) {
             const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value;
+            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value.replace(/\n/g, ", ");
             let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
             let podpisKundeText = document.getElementById('cfg-podpis').value || '---';
 
@@ -990,8 +1292,8 @@
             let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
             let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
 
-            let startDatum = vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---';
-            let endDatum = vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---';
+            let startD = startDatum(vybrane);
+            let endD = endDatum(vybrane);
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
 
             doc.setFont("Helvetica", "bold"); doc.setFontSize(14); doc.text("ABNAHME- & FORTSCHRITTSPROTOKOLL", 105, 15, { align: 'center' });
@@ -1000,7 +1302,7 @@
             doc.rect(105, 25, 90, 10); doc.text("Kunde", 107, 29); doc.setFont("Helvetica", "normal"); doc.text(firma, 107, 33); doc.setFont("Helvetica", "bold");
             doc.rect(15, 35, 90, 10); doc.text("Projekt-Nr.", 17, 39); doc.setFont("Helvetica", "normal"); doc.text(cisloZ, 17, 43); doc.setFont("Helvetica", "bold");
             doc.rect(105, 35, 90, 10); doc.text("Anschrift", 107, 39); doc.setFont("Helvetica", "normal"); doc.text(adresa, 107, 43); doc.setFont("Helvetica", "bold");
-            doc.rect(15, 45, 90, 10); doc.text("Leistungszeitraum", 17, 49); doc.setFont("Helvetica", "normal"); doc.text(`${startDatum} - ${endDatum}`, 17, 53); doc.setFont("Helvetica", "bold");
+            doc.rect(15, 45, 90, 10); doc.text("Leistungszeitraum", 17, 49); doc.setFont("Helvetica", "normal"); doc.text(`${startD} - ${endD}`, 17, 53); doc.setFont("Helvetica", "bold");
             doc.rect(105, 45, 90, 10); doc.text("PLZ, Ort", 107, 49); doc.setFont("Helvetica", "normal"); doc.text(mesto, 107, 53);
 
             doc.setFont("Helvetica", "bold"); doc.setFontSize(11); doc.text("Leistungsbeschreibung / Tätigkeitsbeschreibung", 15, 63);
@@ -1174,6 +1476,13 @@
             localStorage.setItem('cfg_email_uctarna', document.getElementById('cfg-email-uctarna').value);
             localStorage.setItem('cfg_email_pracovnik', document.getElementById('cfg-email-pracovnik').value);
             localStorage.setItem('cfg_wa_pracovnik', document.getElementById('cfg-wa-pracovnik').value);
+            localStorage.setItem('cfg_ico_odberatel', document.getElementById('cfg-ico-odberatel').value);
+
+            localStorage.setItem('cfg_dod_adresa', document.getElementById('cfg-dod-adresa').value);
+            localStorage.setItem('cfg_dod_ico', document.getElementById('cfg-dod-ico').value);
+            localStorage.setItem('cfg_dod_banka', document.getElementById('cfg-dod-banka').value);
+            localStorage.setItem('cfg_dod_kontakt', document.getElementById('cfg-dod-kontakt').value);
+
             alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
         }
 
@@ -1186,6 +1495,12 @@
             if(localStorage.getItem('cfg_email_uctarna')) document.getElementById('cfg-email-uctarna').value = localStorage.getItem('cfg_email_uctarna');
             if(localStorage.getItem('cfg_email_pracovnik')) document.getElementById('cfg-email-pracovnik').value = localStorage.getItem('cfg_email_pracovnik');
             if(localStorage.getItem('cfg_wa_pracovnik')) document.getElementById('cfg-wa-pracovnik').value = localStorage.getItem('cfg_wa_pracovnik');
+            if(localStorage.getItem('cfg_ico_odberatel')) document.getElementById('cfg-ico-odberatel').value = localStorage.getItem('cfg_ico_odberatel');
+
+            if(localStorage.getItem('cfg_dod_adresa')) document.getElementById('cfg-dod-adresa').value = localStorage.getItem('cfg_dod_adresa');
+            if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
+            if(localStorage.getItem('cfg_dod_banka')) document.getElementById('cfg-dod-banka').value = localStorage.getItem('cfg_dod_banka');
+            if(localStorage.getItem('cfg_dod_kontakt')) document.getElementById('cfg-dod-kontakt').value = localStorage.getItem('cfg_dod_kontakt');
         }
 
         function exportCSV() {
@@ -1250,7 +1565,6 @@
             console.log("PC: Čekám na obrázek z telefonu pro Session ID:", currentDrawSessionId);
         }
 
-        // Kód tři: 1. Funkce pro vygenerování QR kódu pro PODPIS na PC
         function generateSignaturePhoneLink(target) {
             currentDrawSessionId = Math.random().toString(36).substring(2, 10);
             const baseUrl = window.location.href.split('?')[0];
@@ -1270,11 +1584,9 @@
             currentDrawSessionId = null;
         }
 
-        // Kód tři: 2. Úprava Event Listeneru pro zachycení parametru remoteSig na mobilu
         window.addEventListener('DOMContentLoaded', (event) => {
             const urlParams = new URLSearchParams(window.location.search);
             
-            // Zachycení stávajícího režimu pro kreslení (remoteDraw)
             if (urlParams.has('remoteDraw')) {
                 const sessionId = urlParams.get('remoteDraw');
                 document.getElementById('main-app').classList.add('hidden');
@@ -1290,7 +1602,6 @@
                 console.log("TELEFON: Jsem připojen v režimu kreslení pro Session ID:", sessionId);
             }
 
-            // Nový kód pro detekci požadavku na PODPIS (remoteSig)
             if (urlParams.has('remoteSig')) {
                 const target = urlParams.get('remoteSig');
                 const sessionId = urlParams.get('session');
@@ -1305,7 +1616,6 @@
                     
                 document.getElementById('modal-sig-title').innerText = textTitle;
                 
-                // Změníme tlačítka v modálním okně, aby místo lokálního uložení odeslala data do PC
                 const modalBtns = document.querySelector('.modal-content .row');
                 modalBtns.innerHTML = `
                     <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button>
@@ -1313,7 +1623,7 @@
                 `;
 
                 document.getElementById('signature-modal').classList.remove('hidden');
-                document.body.style.overflow = 'hidden'; // Zamezí scrollování při podepisování
+                document.body.style.overflow = 'hidden'; 
                 
                 setTimeout(() => {
                     canvas.width = canvas.offsetWidth;
@@ -1328,7 +1638,6 @@
             }
         });
 
-        // Kód tři: 3. Funkce pro odeslání podpisu z mobilu do PC
         function sendSignatureToPC(sessionId, target) {
             const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { 
