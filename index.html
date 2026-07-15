@@ -431,6 +431,21 @@
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
+                    <div class="card-title" data-cs="Firemní identita" data-de="Firmenidentität">Firemní identita (Logo a Razítko)</div>
+                    <div class="form-group">
+                        <label>Logo (zobrazí se vlevo nahoře na faktuře)</label>
+                        <input type="file" id="inp-logo" accept="image/png, image/jpeg" onchange="nahratObrazek(this, 'cfg_logo', 'preview-logo')">
+                        <img id="preview-logo" style="max-height: 50px; margin-top: 10px; display: none;">
+                        <button class="btn-sec" style="margin-top:5px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_logo', 'preview-logo', 'inp-logo')">Smazat logo</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Razítko (zobrazí se u podpisu)</label>
+                        <input type="file" id="inp-razitko" accept="image/png, image/jpeg" onchange="nahratObrazek(this, 'cfg_razitko', 'preview-razitko')">
+                        <img id="preview-razitko" style="max-height: 50px; margin-top: 10px; display: none;">
+                        <button class="btn-sec" style="margin-top:5px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_razitko', 'preview-razitko', 'inp-razitko')">Smazat razítko</button>
+                    </div>
+
+                    <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
                     <div class="card-title" data-cs="Kontakty pro automatické odesílání" data-de="Kontakte für automatischen Versand">Kontakty pro automatické odesílání</div>
                     <div class="form-group">
                         <label data-cs="E-mail: Účtárna (Buchhaltung)" data-de="E-Mail: Buchhaltung">E-mail: Účtárna (Buchhaltung)</label>
@@ -486,6 +501,29 @@
         function bezDiakritiky(text) {
             if (!text) return '';
             return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
+        // FUNKCE PRO NAHRÁNÍ OBRÁZKU DO LOCALSTORAGE
+        function nahratObrazek(input, storageKey, previewId) {
+            if (input.files && input.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem(storageKey, e.target.result);
+                    let img = document.getElementById(previewId);
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // FUNKCE PRO SMAZÁNÍ OBRÁZKU Z LOCALSTORAGE
+        function smazatObrazek(storageKey, previewId, inputId) {
+            localStorage.removeItem(storageKey);
+            let img = document.getElementById(previewId);
+            img.src = '';
+            img.style.display = 'none';
+            document.getElementById(inputId).value = '';
         }
 
         function showApp() {
@@ -704,9 +742,11 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
+        // TADY JE KLÍČOVÁ OPRAVA: Odstranění "nezlomitelné mezery" (NBSP), 
+        // se kterou má jsPDF problémy a kvůli které dochází k překrývání textu!
         function formatMena(castka) {
             let text = new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'EUR' }).format(castka);
-            return text.replace('€', 'EUR'); // Základní PDF fonty neumí znak €
+            return text.replace('€', 'EUR').replace(/\u00A0/g, ' ').replace(/\s/g, ' '); 
         }
 
         function updateLivePreview() {
@@ -947,7 +987,6 @@
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); 
             vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             
-            // Použití filtru pro odstranění diakritiky
             let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
             let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
             let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); 
@@ -962,6 +1001,15 @@
             let cisloFaktury = bezDiakritiky(document.getElementById('fak-cislo').value);
             let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
             let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
+
+            // Zkusíme vložit logo, pokud existuje
+            let logoData = localStorage.getItem('cfg_logo');
+            if (logoData) {
+                try {
+                    let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+                    doc.addImage(logoData, imgType, 15, 10, 40, 15, '', 'FAST');
+                } catch(e) { console.error('Chyba při vkládání loga:', e); }
+            }
 
             // Červený blok nahoře vpravo
             doc.setFillColor(179, 57, 57); 
@@ -1075,9 +1123,20 @@
             doc.setFont("Helvetica", "normal");
             doc.setFontSize(9);
             
+            // Zkusíme vložit razítko (nejdřív razítko, ať je podpis "přes něj")
+            let razitkoData = localStorage.getItem('cfg_razitko');
+            if (razitkoData) {
+                try {
+                    let imgType = razitkoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+                    doc.addImage(razitkoData, imgType, 135, footerY+7, 28, 28, '', 'FAST');
+                } catch(e) { console.error('Chyba při vkládání razítka:', e); }
+            }
+
+            // Pak samotný podpis
             if(dataPodpisuIch) {
                 doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY+15, 40, 15);
             }
+
             doc.line(130, footerY+35, 195, footerY+35);
             doc.text("Podpis", 162.5, footerY+40, {align:'center'});
 
@@ -1503,6 +1562,16 @@
             if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
             if(localStorage.getItem('cfg_dod_banka')) document.getElementById('cfg-dod-banka').value = localStorage.getItem('cfg_dod_banka');
             if(localStorage.getItem('cfg_dod_kontakt')) document.getElementById('cfg-dod-kontakt').value = localStorage.getItem('cfg_dod_kontakt');
+
+            // Načtení firemní identity
+            if(localStorage.getItem('cfg_logo')) {
+                document.getElementById('preview-logo').src = localStorage.getItem('cfg_logo');
+                document.getElementById('preview-logo').style.display = 'block';
+            }
+            if(localStorage.getItem('cfg_razitko')) {
+                document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko');
+                document.getElementById('preview-razitko').style.display = 'block';
+            }
         }
 
         function exportCSV() {
