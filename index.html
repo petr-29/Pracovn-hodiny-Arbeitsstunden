@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -762,7 +761,7 @@
                 html += `      <div style="color: #2980b9; margin-bottom: 10px;">DATUM VYSTAVENÍ: <strong>${datumVystaveni ? datumVystaveni.toLocaleDateString('cs-CZ') : ''}</strong></div>`;
                 html += `      <div style="color: #2980b9;">DATUM SPLATNOSTI: <strong>${datumSplatnosti ? datumSplatnosti.toLocaleDateString('cs-CZ') : ''}</strong></div>`;
                 html += `    </div>`;
-                html += `    <div style="text-align: right; color: #2980b9; font-weight: bold; font-size: 14px;">CELKEM K ÚHRADĚ:<br><span style="color:#000; font-size:18px;">${formatMena(sumEUR)}</span></div>`;
+                html += `    <div></div>`;
                 html += `  </div>`;
 
                 html += `  <table class="faktura-table">`;
@@ -782,14 +781,16 @@
 
                 html += `  <div style="padding: 20px; text-align: right;">`;
                 html += `    <div style="font-size: 20px; font-weight: bold;">Celkem k úhradě: ${formatMena(sumEUR)}</div>`;
-                html += `    <div style="margin-top: 40px; display:inline-block; width: 250px; text-align:center; border-top: 1px solid #000; padding-top:5px; position:relative;">`;
+                html += `    <div style="margin-top: 40px; display:flex; justify-content:flex-end;">`;
+                html += `      <div style="width: 250px; text-align:center; border-top: 1px solid #000; padding-top:5px; position:relative;">`;
                 if(dataPodpisuIch) {
-                    html += `      <img src="${dataPodpisuIch}" style="max-height:50px; position:absolute; bottom: 25px; right: 20px;">`;
+                    html += `        <img src="${dataPodpisuIch}" style="max-height:50px; position:absolute; bottom: 25px; left: 50%; transform: translateX(-50%);">`;
                 }
-                html += `       Podpis`;
+                html += `         Podpis`;
+                html += `      </div>`;
                 html += `    </div>`;
                 html += `  </div>`;
-                html += `  <div style="padding: 20px; font-size: 10px; color: #555;">Podnikatel je zapsán v živnostenském rejstříku.</div>`;
+                html += `  <div style="padding: 20px; font-size: 10px; color: #555; text-align:left;">Podnikatel je zapsán v živnostenském rejstříku.</div>`;
                 html += `</div>`;
 
             } else if (currentExportType === 'standard') {
@@ -1030,16 +1031,8 @@
             if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
             if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
 
-            // Součet
             let sumEUR = 0;
             vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
-
-            doc.setTextColor(41, 128, 185);
-            doc.setFontSize(10);
-            doc.text("CELKEM K UHRADE", 130, dateY-10);
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(16);
-            doc.text(formatMena(sumEUR), 130, dateY-2);
 
             // Tabulka položek (červený pruh)
             let tableY = 145;
@@ -1074,19 +1067,19 @@
             let footerY = 220;
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(16);
-            doc.text(`Celkem k uhrade:`, 130, footerY);
-            doc.text(formatMena(sumEUR), 190, footerY, {align:'right'});
+            doc.text("Celkem k uhrade:", 130, footerY);
+            doc.text(formatMena(sumEUR), 195, footerY, {align:'right'});
 
             doc.setDrawColor(0, 0, 0);
-            doc.line(125, footerY+5, 195, footerY+5);
+            doc.line(130, footerY+5, 195, footerY+5);
             doc.setFont("Helvetica", "normal");
             doc.setFontSize(9);
             
             if(dataPodpisuIch) {
-                doc.addImage(dataPodpisuIch, 'JPEG', 135, footerY+15, 45, 15);
+                doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY+15, 40, 15);
             }
-            doc.line(125, footerY+35, 195, footerY+35);
-            doc.text("Podpis", 160, footerY+40, {align:'center'});
+            doc.line(130, footerY+35, 195, footerY+35);
+            doc.text("Podpis", 162.5, footerY+40, {align:'center'});
 
             doc.setFontSize(8);
             doc.text("Podnikatel je zapsan v zivnostenskem rejstriku.", 15, footerY+40);
@@ -1677,5 +1670,3 @@
     </script>
 </body>
 </html>
-
-
