@@ -1003,13 +1003,14 @@
             let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
 
             // Zkusíme vložit logo, pokud existuje
-            let logoData = localStorage.getItem('cfg_logo');
-            if (logoData) {
-                try {
-                    let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
-                    doc.addImage(logoData, imgType, 15, 10, 40, 15, '', 'FAST');
-                } catch(e) { console.error('Chyba při vkládání loga:', e); }
-            }
+          const logo = localStorage.getItem('cfg_logo');
+    if (logo) {
+        try {
+            doc.addImage(logo, 'PNG', 10, 10, 40, 40); 
+        } catch (e) {
+            console.error("Chyba při vkládání loga:", e);
+        }
+    }
 
             // Červený blok nahoře vpravo
             doc.setFillColor(179, 57, 57); 
@@ -1124,13 +1125,14 @@
             doc.setFontSize(9);
             
             // Zkusíme vložit razítko (nejdřív razítko, ať je podpis "přes něj")
-            let razitkoData = localStorage.getItem('cfg_razitko');
-            if (razitkoData) {
-                try {
-                    let imgType = razitkoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
-                    doc.addImage(razitkoData, imgType, 135, footerY+7, 28, 28, '', 'FAST');
-                } catch(e) { console.error('Chyba při vkládání razítka:', e); }
-            }
+          const razitko = localStorage.getItem('cfg_razitko');
+    if (razitko) {
+        try {
+            doc.addImage(razitko, 'PNG', 150, 250, 40, 40); 
+        } catch (e) {
+            console.error("Chyba při vkládání razítka:", e);
+        }
+    }
 
             // Pak samotný podpis
             if(dataPodpisuIch) {
@@ -1736,6 +1738,46 @@
         loadTheme();
         setLanguage(currentLang); 
         checkRemoteSignMode();
+  function nahratObrazek(input, storageKey, previewId) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // uložíme obrázek do localStorage
+        localStorage.setItem(storageKey, e.target.result);
+
+        // zobrazíme náhled
+        const preview = document.getElementById(previewId);
+        preview.src = e.target.result;
+        preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+}
+    // LOGO vlevo nahoře
+    const logo = localStorage.getItem('cfg_logo');
+    if (logo) {
+        try {
+            doc.addImage(logo, 'PNG', 10, 10, 40, 40);
+        } catch (e) {
+            console.error("Chyba při vkládání loga:", e);
+        }
+    }
+
+    // RAZÍTKO u podpisu
+    const razitko = localStorage.getItem('cfg_razitko');
+    if (razitko) {
+        try {
+            doc.addImage(razitko, 'PNG', 150, 250, 40, 40);
+        } catch (e) {
+            console.error("Chyba při vkládání razítka:", e);
+        }
+    }
+    
+    
     </script>
+
+   
+
 </body>
 </html>
