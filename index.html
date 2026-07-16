@@ -3,40 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Marker Feit - Správa hodin</title>
+    <title>Království Pracovních Hodin</title>
     <!-- Knihovny -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
         /* MODERNÍ VÝCHOZÍ PÍSMO PRO UI */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        /* STYLY PRO MODERNÍ ÚVODNÍ OBRAZOVKU */
+
+        /* --- EPICKÁ ANIMACE ÚVODNÍ OBRAZOVKY --- */
         #welcome-screen {
             position: fixed; top: 0; left: 0; height: 100vh; width: 100%;
             background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
             color: #ffffff; display: flex; flex-direction: column; justify-content: center;
             align-items: center; text-align: center; padding: 20px; z-index: 9999;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        #welcome-screen h1 {
-            font-size: 2.6em; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px;
-            background: linear-gradient(45deg, #ff9f43, #f1c40f);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: none;
+        #anim-scene {
+            font-size: 90px; height: 150px; display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 20px;
         }
-        #welcome-screen p { font-size: 1.1em; color: #cbd5e1; margin-bottom: 35px; max-width: 450px; font-weight: 300; line-height: 1.6; }
-        .enter-btn {
-            padding: 16px 45px; font-size: 1.1em; background: linear-gradient(135deg, #f39c12, #e67e22);
-            color: #ffffff; border: none; border-radius: 30px; cursor: pointer; font-weight: 700;
-            box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4); transition: all 0.3s ease; font-family: inherit;
+        .anim-hand { position: absolute; transform-origin: bottom right; animation: write 0.8s infinite alternate ease-in-out; text-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .anim-paper { position: absolute; transform: translateX(-30px); font-size: 80px; }
+        
+        .anim-plane {
+            position: absolute; display: none; opacity: 0;
+            animation: flight 1.8s forwards cubic-bezier(0.25, 1, 0.5, 1);
+            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6));
         }
-        .enter-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(230, 126, 34, 0.6); background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; }
+        
+        .anim-final-paper { position: absolute; display: none; opacity: 0; animation: unfold 1s forwards ease-out; font-size: 100px; }
 
-        /* GLOBÁLNÍ PROMĚNNÉ */
+        @keyframes write { 0% { transform: rotate(0deg) translate(0, 0); } 100% { transform: rotate(-25deg) translate(-20px, -10px); } }
+        @keyframes flight { 
+            0% { transform: translate(-150vw, 150vh) scale(0.1) rotate(45deg); opacity: 1; } 
+            60% { transform: translate(10px, -20px) scale(1.5) rotate(-10deg); opacity: 1; }
+            100% { transform: translate(0, 0) scale(0); opacity: 0; }
+        }
+        @keyframes unfold { 0% { transform: scale(0.2) rotateX(90deg); opacity: 0; } 100% { transform: scale(1) rotateX(0deg); opacity: 1; } }
+        @keyframes glowText { 0% { text-shadow: 0 0 10px rgba(241,196,15,0.5); } 100% { text-shadow: 0 0 30px rgba(241,196,15,1), 0 0 40px rgba(243,156,18,0.8); } }
+
+        #welcome-screen h1 {
+            font-size: 2.8em; font-weight: 900; margin-bottom: 10px; letter-spacing: -1px;
+            background: linear-gradient(45deg, #ff9f43, #f1c40f, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            opacity: 0; transform: translateY(30px); transition: all 1s ease-out; line-height: 1.1;
+        }
+        #welcome-screen h1.show { opacity: 1; transform: translateY(0); animation: glowText 2s infinite alternate ease-in-out; }
+        
+        .enter-btn {
+            padding: 18px 50px; font-size: 1.2em; background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: #ffffff; border: none; border-radius: 30px; cursor: pointer; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4); transition: all 0.3s ease; opacity: 0; margin-top: 30px; transform: scale(0.9);
+        }
+        .enter-btn.show { opacity: 1; transform: scale(1); }
+        .enter-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 12px 30px rgba(230, 126, 34, 0.7); background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; }
+
+        /* GLOBÁLNÍ PROMĚNNÉ A STYLY */
         :root { --primary: #f39c12; --primary-hover: #d35400; --bg: #f5f6fa; --card-bg: #ffffff; --text: #2c3e50; --border: #dcdde1; }
         body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; transition: background-color 0.3s, color 0.3s; }
         .hidden { display: none !important; }
         
-        /* STYLY PRO TMAVÝ REŽIM (DARK MODE) */
         body.dark-theme { --bg: #121214; --card-bg: #1e1e24; --text: #f5f6fa; --border: #2f3640; }
         body.dark-theme .lang-bar { background: #1e1e24; border-bottom: 1px solid var(--border); }
         body.dark-theme .lang-btn { color: #a5b1c2; }
@@ -55,11 +80,11 @@
         body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e1e24; border-color: #2f3640; }
 
         .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
-        .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s; font-family: inherit;}
+        .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
         .lang-btn.active { background: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
         header { background: var(--card-bg); padding: 15px; text-align: center; border-bottom: 1px solid var(--border); }
-        h1 { font-weight: bold; font-size: 22px; }
+        h1.main-title { font-weight: bold; font-size: 22px; }
         
         .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -68,35 +93,35 @@
         .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
         .form-group.inline { flex-direction: row; align-items: center; gap: 10px; }
         label { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
-        input, select, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; font-family: inherit;}
+        input, select, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         
         .row { display: flex; gap: 10px; }
         .row .form-group { flex: 1; }
         
-        button.btn-main { background: var(--primary); color: #000; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-family: inherit;}
+        button.btn-main { background: var(--primary); color: #000; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button.btn-main:hover { background: var(--primary-hover); color: #fff; }
         
         .stats-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .earnings { font-size: 28px; font-weight: bold; color: #2ecc71; }
         .segmented-control { display: flex; background: #eee; border-radius: 8px; padding: 2px; margin-top: 10px; }
-        .segmented-control button { flex: 1; border: none; padding: 8px; background: transparent; cursor: pointer; border-radius: 6px; font-weight: bold; font-family: inherit;}
+        .segmented-control button { flex: 1; border: none; padding: 8px; background: transparent; cursor: pointer; border-radius: 6px; font-weight: bold; }
         .segmented-control button.active { background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        .zaznam-item, .faktura-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f2f6; }
+        .zaznam-item, .faktura-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f2f6; }
         .zaznam-item:last-child, .faktura-item:last-child { border-bottom: none; }
         .checkbox-container { display: flex; align-items: center; gap: 10px; }
         
         .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .tab-item { background: none; border: none; color: #7f8c8d; display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; font-family: inherit; font-weight: bold;}
+        .tab-item { background: none; border: none; color: #7f8c8d; display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; font-weight: bold;}
         .tab-item.active { color: var(--primary); }
         
         footer { text-align: center; font-size: 11px; color: #95a5a6; padding: 15px 0; background: #eee; border-radius: 0 0 12px 12px; margin-top: 10px; }
         .action-toolbar { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
-        .btn-sec { background: #e0e0e0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: bold;}
+        .btn-sec { background: #e0e0e0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;}
         
         /* NÁHLED STRÁNKY */
-        .preview-container-full { background: #ffffff; border: 1px solid #bdc3c7; padding: 20px; border-radius: 8px; font-size: 13px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); color: #000000; overflow-x: auto; }
+        .preview-container-full { background: #ffffff; border: 1px solid #bdc3c7; padding: 20px; border-radius: 8px; font-size: 13px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); color: #000000; overflow-x: auto; font-family: 'Courier New', Courier, monospace;}
         .preview-header-full { font-weight: bold; text-align: center; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
         .preview-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
         .preview-meta-item { line-height: 1.4; }
@@ -104,25 +129,23 @@
         .preview-table th, .preview-table td { border: 1px solid #000000; padding: 8px; text-align: left; font-size: 12px; color: #000; }
         .preview-table th { background-color: #f2f2f2; font-weight: bold; }
         
-        .signature-placeholder { border: 2px dashed #3498db; background: #ecf0f1; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 5px; font-weight: bold; color: #2980b9; }
+        .signature-placeholder { border: 2px dashed #3498db; background: #ecf0f1; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 5px; font-weight: bold; color: #2980b9; font-family: sans-serif;}
         .signature-display-img { max-height: 70px; display: block; margin: 0 auto; }
-        .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; font-family: sans-serif;}
         .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 20px; text-align: center; color: #000; }
         canvas.sig-canvas { width: 100%; height: 200px; border: 1px solid #bdc3c7; background: #fafafa; border-radius: 6px; display: block; touch-action: none; margin: 15px 0; }
         
         /* FULLSCREEN PLÁTNO PRO KRESLENÍ */
-        .fs-draw-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; display: flex; flex-direction: column; }
+        .fs-draw-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; display: flex; flex-direction: column; font-family: sans-serif;}
         .fs-draw-header { padding: 15px; background: var(--card-bg); text-align: center; font-weight: bold; border-bottom: 1px solid var(--border); font-size: 18px; }
         .fs-draw-content { flex: 1; position: relative; width: 100%; background: #ffffff; }
         canvas.fs-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
         .fs-draw-footer { padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; gap: 10px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
         
-        .action-button-large { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4; font-family: inherit;}
+        .action-button-large { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; line-height: 1.4; }
         
-        .btn-remote-phone { display: none; background: #8e44ad; color: white; margin-top: 10px; width: 100%; font-weight: bold; padding: 12px; font-size: 15px; border: none; border-radius: 8px; cursor: pointer; font-family: inherit;}
-        @media (min-width: 768px) { .btn-remote-phone { display: flex; justify-content: center; align-items: center; gap: 8px; } }
         .qr-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 4000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        .qr-modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 100%; color: #000; }
+        .qr-modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 100%; color: #000; font-family: sans-serif;}
         .qr-modal-content img { width: 200px; height: 200px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
         
         /* Faktura Preview Specific */
@@ -138,10 +161,16 @@
 </head>
 <body>
 
+    <!-- ÚVODNÍ ANIMACE -->
     <div id="welcome-screen">
-        <h1>Vítejte v Království Práce</h1>
-        <p>Profesionální správa a evidence pracovních hodin pro specialisty</p>
-        <button class="enter-btn" onclick="showApp()">Vstoupit do aplikace</button>
+        <div id="anim-scene">
+            <div id="a-paper" class="anim-paper">📋</div>
+            <div id="a-hand" class="anim-hand">✍️</div>
+            <div id="a-plane" class="anim-plane">✈️</div>
+            <div id="a-final" class="anim-final-paper">📄</div>
+        </div>
+        <h1 id="welcome-title">Vítejte v Království<br>pracovních hodin</h1>
+        <button id="welcome-btn" class="enter-btn" onclick="showApp()">Vstoupit do aplikace</button>
     </div>
 
     <div id="main-app" class="hidden">
@@ -152,7 +181,7 @@
         </div>
 
         <header>
-            <h1 id="app-title" data-cs="Pracovní hodiny" data-de="Arbeitsstunden">Pracovní hodiny</h1>
+            <h1 class="main-title" id="app-title" data-cs="Pracovní hodiny" data-de="Arbeitsstunden">Pracovní hodiny</h1>
         </header>
 
         <div class="container">
@@ -217,7 +246,7 @@
                             </div>
                             <button type="button" class="btn-sec" style="background:#3498db; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px;" onclick="openFullscreenCanvas()" data-cs="✏️ Otevřít plátno přes celý displej" data-de="✏️ Vollbild-Leinwand öffnen">✏️ Otevřít plátno přes celý displej</button>
                             
-                            <button type="button" class="btn-remote-phone" onclick="generatePhoneLink()" data-cs="📱 Připojit telefon pro kreslení" data-de="📱 Telefon zum Zeichnen verbinden">📱 Připojit telefon pro kreslení</button>
+                            <button type="button" class="btn-sec" style="background:#8e44ad; color:white; width:100%; font-weight:bold; padding:15px; font-size:16px; margin-top:10px;" onclick="generatePhoneLink()" data-cs="📱 Připojit telefon pro kreslení" data-de="📱 Telefon zum Zeichnen verbinden">📱 Připojit telefon pro kreslení</button>
                         </div>
                     </div>
                     
@@ -259,9 +288,15 @@
                                 <input type="date" id="fak-splatnost" onchange="updateLivePreview()">
                             </div>
                         </div>
-                        <div class="form-group inline" style="background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #dcdde1; margin-top: 10px;">
-                            <input type="checkbox" id="fak-priloha" checked style="width: auto;">
-                            <label for="fak-priloha" style="margin: 0; color: #2c3e50; font-weight: bold;" data-cs="Připojit pracovní výkaz jako 2. stranu (Příloha)" data-de="Tätigkeitsnachweis als Seite 2 anhängen (Anlage)">Připojit pracovní výkaz jako 2. stranu (Příloha)</label>
+                        
+                        <!-- NOVÝ VÝBĚR PŘÍLOH K FAKTUŘE -->
+                        <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dcdde1; margin-top: 10px;">
+                            <label style="color: #2c3e50; font-weight: bold; margin-bottom: 10px; display: block;" data-cs="Vyberte přílohu k faktuře:" data-de="Anlage zur Rechnung auswählen:">Vyberte přílohu k faktuře:</label>
+                            <div style="display:flex; flex-direction:column; gap: 10px;">
+                                <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;"><input type="radio" name="fak-priloha-typ" value="none" onchange="updateLivePreview()"> Bez přílohy (Jen čistá faktura)</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;"><input type="radio" name="fak-priloha-typ" value="standard" checked onchange="updateLivePreview()"> Standardní výkaz hodin (Doporučeno)</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;"><input type="radio" name="fak-priloha-typ" value="abnahme" onchange="updateLivePreview()"> Abnahme Protokoll</label>
+                            </div>
                         </div>
                         <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
                     </div>
@@ -330,7 +365,7 @@
                 <div class="card" id="seznam-container"></div>
             </div>
 
-            <!-- NOVÁ ZÁLOŽKA PRO FAKTURY -->
+            <!-- ZÁLOŽKA FAKTURY (ARCHIV) -->
             <div id="view-faktury" class="tab-content hidden">
                 <div class="card">
                     <div class="card-title" data-cs="Uložené faktury (Archiv)" data-de="Gespeicherte Rechnungen (Archiv)">Uložené faktury (Archiv)</div>
@@ -450,11 +485,10 @@
         </nav>
     </div>
 
+    <!-- OSTATNÍ MODALY -->
     <div id="fs-draw-modal" class="fs-draw-modal hidden">
         <div class="fs-draw-header" data-cs="Nákres / Poznámka" data-de="Zeichnung / Notiz">Nákres / Poznámka</div>
-        <div class="fs-draw-content" id="fs-canvas-container">
-            <canvas id="fs-canvas" class="fs-canvas"></canvas>
-        </div>
+        <div class="fs-draw-content" id="fs-canvas-container"><canvas id="fs-canvas" class="fs-canvas"></canvas></div>
         <div class="fs-draw-footer">
             <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()" data-cs="Smazat" data-de="Löschen">Smazat</button>
             <button class="btn-sec" style="flex:1;" onclick="closeFullscreenCanvas()" data-cs="Zrušit" data-de="Abbrechen">Zrušit</button>
@@ -465,7 +499,7 @@
     <div id="qr-modal" class="qr-modal hidden">
         <div class="qr-modal-content">
             <h3 style="margin-bottom: 10px;" data-cs="Naskenujte telefonem" data-de="Mit dem Telefon scannen">Naskenujte telefonem</h3>
-            <p style="font-size: 14px; color: #7f8c8d;" data-cs="Otevřete fotoaparát na telefonu a naskenujte tento kód. Plátno se otevře v telefonu." data-de="Öffnen Sie die Kamera und scannen Sie diesen Code.">Otevřete fotoaparát na telefonu a naskenujte tento kód. Plátno se otevře v telefonu.</p>
+            <p style="font-size: 14px; color: #7f8c8d;" data-cs="Otevřete fotoaparát a naskenujte kód." data-de="Öffnen Sie die Kamera und scannen Sie diesen Code.">Otevřete fotoaparát a naskenujte kód.</p>
             <img id="qr-code-img" src="" alt="QR Code">
             <p style="font-size: 12px; margin-bottom: 20px;" id="qr-session-id-display"></p>
             <button class="btn-sec" style="width: 100%; padding: 12px; font-weight: bold;" onclick="closeQrModal()" data-cs="Zrušit čekání" data-de="Warten abbrechen">Zrušit čekání</button>
@@ -473,11 +507,28 @@
     </div>
 
     <script>
-        // Pomocná funkce pro odstranění háčků a čárek (pro bezproblémové PDF)
-        function bezDiakritiky(text) {
-            if (!text) return '';
-            return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
+        // SPUŠTĚNÍ ÚVODNÍ ANIMACE
+        window.addEventListener('load', () => {
+            if(window.location.search.includes('sign=')) return; // Neukazovat animaci pokud se otevírá vzdálený odkaz
+            
+            setTimeout(() => {
+                document.getElementById('a-hand').style.display = 'none';
+                document.getElementById('a-paper').style.display = 'none';
+                document.getElementById('a-plane').style.display = 'block';
+                
+                setTimeout(() => {
+                    document.getElementById('a-plane').style.display = 'none';
+                    document.getElementById('a-final').style.display = 'block';
+                    
+                    setTimeout(() => {
+                        document.getElementById('welcome-title').classList.add('show');
+                        document.getElementById('welcome-btn').classList.add('show');
+                    }, 500);
+                }, 1700); // Konec letu vlaštovky
+            }, 2000); // Konec psaní rukou
+        });
+
+        function bezDiakritiky(text) { if (!text) return ''; return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
         function nahratObrazek(input, storageKey, previewId) {
             if (input.files && input.files[0]) {
@@ -485,8 +536,7 @@
                 reader.onload = function(e) {
                     localStorage.setItem(storageKey, e.target.result);
                     let img = document.getElementById(previewId);
-                    img.src = e.target.result;
-                    img.style.display = 'block';
+                    img.src = e.target.result; img.style.display = 'block';
                 }
                 reader.readAsDataURL(input.files[0]);
             }
@@ -495,8 +545,7 @@
         function smazatObrazek(storageKey, previewId, inputId) {
             localStorage.removeItem(storageKey);
             let img = document.getElementById(previewId);
-            img.src = '';
-            img.style.display = 'none';
+            img.src = ''; img.style.display = 'none';
             document.getElementById(inputId).value = '';
         }
 
@@ -506,25 +555,19 @@
             setTimeout(() => {
                 welcome.style.display = 'none';
                 const app = document.getElementById('main-app');
-                app.classList.remove('hidden');
-                app.style.display = 'block';
+                app.classList.remove('hidden'); app.style.display = 'block';
             }, 500);
             document.getElementById('fak-vystaveni').valueAsDate = new Date();
-            let tydenDate = new Date();
-            tydenDate.setDate(tydenDate.getDate() + 14);
+            let tydenDate = new Date(); tydenDate.setDate(tydenDate.getDate() + 14);
             document.getElementById('fak-splatnost').valueAsDate = tydenDate;
         }
 
-        let remoteMode = false; let remoteZaznamy = []; let currentExportType = ''; let remoteDataPayload = null;
-        let currentDrawSessionId = null;
+        let remoteMode = false; let remoteZaznamy = []; let currentExportType = ''; let remoteDataPayload = null; let currentDrawSessionId = null;
         
         if (window.location.search.includes('sign=')) {
             remoteMode = true;
             const style = document.createElement('style');
-            style.innerHTML = `
-                #main-lang-bar, #view-kalkulacka, #view-nastaveni, 
-                #records-toolbar, #remote-share-wrapper, #main-tab-bar, #app-footer { display: none !important; }
-            `;
+            style.innerHTML = `#main-lang-bar, #view-kalkulacka, #view-nastaveni, #records-toolbar, #remote-share-wrapper, #main-tab-bar, #app-footer { display: none !important; }`;
             document.head.appendChild(style);
         }
 
@@ -535,9 +578,7 @@
             let rect = targetCanvas.getBoundingClientRect();
             let clientX = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
             let clientY = e.clientY || (e.touches && e.touches.length > 0 ? e.touches[0].clientY : 0);
-            let scaleX = targetCanvas.width / rect.width;
-            let scaleY = targetCanvas.height / rect.height;
-            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+            return { x: (clientX - rect.left) * (targetCanvas.width / rect.width), y: (clientY - rect.top) * (targetCanvas.height / rect.height) };
         }
 
         canvas.addEventListener('mousedown', (e) => { isDrawing = true; let pos = getMousePos(e, canvas); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
@@ -547,8 +588,7 @@
         canvas.addEventListener('touchmove', (e) => { if (!isDrawing) return; let pos = getMousePos(e, canvas); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); });
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        let currentInputMode = 'text';
-        let actPopisImgData = null; 
+        let currentInputMode = 'text'; let actPopisImgData = null; 
         const fsCanvas = document.getElementById('fs-canvas'); const fsCtx = fsCanvas.getContext('2d'); let isFsDrawing = false;
 
         fsCanvas.addEventListener('mousedown', (e) => { isFsDrawing = true; let pos = getMousePos(e, fsCanvas); fsCtx.beginPath(); fsCtx.moveTo(pos.x, pos.y); });
@@ -563,11 +603,9 @@
             document.getElementById('btn-input-text').classList.toggle('active', mode === 'text');
             document.getElementById('btn-input-draw').classList.toggle('active', mode === 'draw');
             if(mode === 'text') {
-                document.getElementById('inp-popis').classList.remove('hidden');
-                document.getElementById('draw-popis-wrapper').classList.add('hidden');
+                document.getElementById('inp-popis').classList.remove('hidden'); document.getElementById('draw-popis-wrapper').classList.add('hidden');
             } else {
-                document.getElementById('inp-popis').classList.add('hidden');
-                document.getElementById('draw-popis-wrapper').classList.remove('hidden');
+                document.getElementById('inp-popis').classList.add('hidden'); document.getElementById('draw-popis-wrapper').classList.remove('hidden');
             }
         }
 
@@ -576,28 +614,19 @@
             const container = document.getElementById('fs-canvas-container');
             fsCanvas.width = container.offsetWidth; fsCanvas.height = container.offsetHeight;
             fsCtx.lineWidth = 2.5; fsCtx.lineCap = 'round'; fsCtx.lineJoin = 'round'; fsCtx.strokeStyle = '#0a3ca6'; 
-            if(actPopisImgData) {
-                let img = new Image(); img.onload = () => { fsCtx.drawImage(img, 0, 0); }; img.src = actPopisImgData;
-            } else {
-                fsCtx.fillStyle = '#ffffff'; fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
-            }
+            if(actPopisImgData) { let img = new Image(); img.onload = () => { fsCtx.drawImage(img, 0, 0); }; img.src = actPopisImgData; } 
+            else { fsCtx.fillStyle = '#ffffff'; fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height); }
         }
 
         function closeFullscreenCanvas() { document.getElementById('fs-draw-modal').classList.add('hidden'); }
-        function clearFsCanvas() {
-            fsCtx.fillStyle = '#ffffff'; fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
-            actPopisImgData = null; document.getElementById('preview-drawn-image').style.display = 'none';
-        }
-
+        function clearFsCanvas() { fsCtx.fillStyle = '#ffffff'; fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height); actPopisImgData = null; document.getElementById('preview-drawn-image').style.display = 'none'; }
+        
         function saveFullscreenCanvas() {
             const blank = document.createElement('canvas'); blank.width = fsCanvas.width; blank.height = fsCanvas.height;
             const blankCtx = blank.getContext('2d'); blankCtx.fillStyle = '#ffffff'; blankCtx.fillRect(0, 0, blank.width, blank.height);
-            if (fsCanvas.toDataURL() === blank.toDataURL()) {
-                actPopisImgData = null; document.getElementById('preview-drawn-image').style.display = 'none';
-            } else {
-                actPopisImgData = fsCanvas.toDataURL('image/png');
-                document.getElementById('drawn-preview-img').src = actPopisImgData;
-                document.getElementById('preview-drawn-image').style.display = 'block';
+            if (fsCanvas.toDataURL() === blank.toDataURL()) { actPopisImgData = null; document.getElementById('preview-drawn-image').style.display = 'none'; } 
+            else {
+                actPopisImgData = fsCanvas.toDataURL('image/png'); document.getElementById('drawn-preview-img').src = actPopisImgData; document.getElementById('preview-drawn-image').style.display = 'block';
             }
             closeFullscreenCanvas();
         }
@@ -610,22 +639,16 @@
 
         function loadTheme() {
             const savedTheme = localStorage.getItem('app_theme');
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-theme'); document.getElementById('btn-toggle-dark').innerText = '☀️ ON';
-            } else {
-                document.body.classList.remove('dark-theme'); document.getElementById('btn-toggle-dark').innerText = '🌙 OFF';
-            }
+            if (savedTheme === 'dark') { document.body.classList.add('dark-theme'); document.getElementById('btn-toggle-dark').innerText = '☀️ ON'; } 
+            else { document.body.classList.remove('dark-theme'); document.getElementById('btn-toggle-dark').innerText = '🌙 OFF'; }
         }
 
         function openSignatureModal(target) {
             targetSignature = target;
-            let textTitle = target === 'kunde' 
-                ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef')
-                : (currentLang === 'cs' ? 'Podpis: Petr Michálek' : 'Unterschrift: Petr Michálek');
+            let textTitle = target === 'kunde' ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (currentLang === 'cs' ? 'Podpis: Petr Michálek' : 'Unterschrift: Petr Michálek');
             document.getElementById('modal-sig-title').innerText = textTitle;
             document.getElementById('signature-modal').classList.remove('hidden');
-            canvas.width = canvas.offsetWidth; canvas.height = 200;
-            ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6'; 
+            canvas.width = canvas.offsetWidth; canvas.height = 200; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6'; 
         }
 
         function closeSignatureModal() { document.getElementById('signature-modal').classList.add('hidden'); }
@@ -640,13 +663,8 @@
             tCtx.drawImage(canvas, 0, 0, tmpCanvas.width, tmpCanvas.height);
             const tinyDataUrl = tmpCanvas.toDataURL('image/jpeg', 0.3); 
 
-            if (targetSignature === 'kunde') {
-                dataPodpisuKunde = dataUrl;
-                document.getElementById('box-kunde').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
-            } else {
-                dataPodpisuIch = dataUrl; dataPodpisuIchTiny = tinyDataUrl;
-                document.getElementById('box-ich').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
-            }
+            if (targetSignature === 'kunde') { dataPodpisuKunde = dataUrl; document.getElementById('box-kunde').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`; } 
+            else { dataPodpisuIch = dataUrl; dataPodpisuIchTiny = tinyDataUrl; document.getElementById('box-ich').innerHTML = `<img src="${dataUrl}" class="signature-display-img">`; }
             closeSignatureModal(); updateLivePreview();
         }
 
@@ -664,18 +682,21 @@
                 document.getElementById('faktura-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#e74c3c';
                 document.getElementById('btn-execute-export').innerText = "Stáhnout Fakturu PDF";
                 document.getElementById('remote-share-wrapper').classList.add('hidden'); document.getElementById('wrapper-kunde').classList.add('hidden');
+                // Pro fakturu chceme skrýt Abnahme položky (bez zkoušky atd.), i když vybereme přílohu Abnahme. Ty se natáhnou na pozadí, 
+                // ale aby to uživatele nemátlo, schováme je na úvodní obrazovce faktury.
+                document.getElementById('abnahme-fields').classList.add('hidden'); 
             } else {
                 document.getElementById('btn-execute-export').style.background = '#f39c12'; document.getElementById('btn-execute-export').innerText = "Místní uložení PDF";
             }
             updateLivePreview(); window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        function formatMena(castka) {
-            let parts = castka.toFixed(2).split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-            return parts.join(',') + ' EUR';
-        }
+        function formatMena(castka) { let parts = castka.toFixed(2).split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " "); return parts.join(',') + ' EUR'; }
+        
+        function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
+        function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
 
+        // --- ŽIVÝ NÁHLED (OPRAVENÝ PRO VŠECHNY TYPY) ---
         function updateLivePreview() {
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected);
             vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
@@ -751,6 +772,21 @@
                 html += `  </div>`;
                 html += `  <div style="padding: 20px; font-size: 10px; color: #555; text-align:left;">Podnikatel je zapsán v živnostenském rejstříku.</div>`;
                 html += `</div>`;
+                
+                // Upozornění na vybranou přílohu
+                let vybranaPriloha = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
+                if(vybranaPriloha !== 'none') {
+                    html += `<div style="margin-top: 10px; padding: 10px; background: #e8f4f8; color: #2980b9; border-radius: 6px; font-family: sans-serif; text-align: center; font-weight: bold;">`;
+                    html += `ℹ️ PDF bude obsahovat druhou stranu: ${vybranaPriloha === 'standard' ? 'Standardní výkaz' : 'Abnahme Protokoll'}.`;
+                    html += `</div>`;
+                }
+                
+                // Pokud uživatel vybral Abnahme přílohu u faktury, ukážeme mu nastavení zkoušek atd.
+                if(vybranaPriloha === 'abnahme') {
+                    document.getElementById('abnahme-fields').classList.remove('hidden');
+                } else {
+                    document.getElementById('abnahme-fields').classList.add('hidden');
+                }
 
             } else if (currentExportType === 'standard') {
                 let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
@@ -768,7 +804,6 @@
                 html += `    <div style="padding:4px; height:20px;"></div>`;
                 html += `  </div>`;
                 html += `  <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center;">`;
-                // ... (standardní hlavička tabulky zjednodušeně pro náhled)
                 html += `    <tr><th>Tage</th><th>Datum</th><th>von</th><th>bis</th><th>Gesamt</th><th>Pause</th><th>Netto</th></tr>`;
                 
                 let dayRecords = new Array(7).fill(null); let totalWeekHours = 0;
@@ -798,13 +833,53 @@
                 html += `  </div>`;
                 html += `</div>`;
             } else {
-                html += `<div class="preview-header-full">ABNAHME- PROTOKOLL</div><p>Náhled pro Abnahme PDF...</p>`;
+                // OPRAVENO: Náhled pro Abnahme PDF
+                let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
+                let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
+                let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
+                let startD = startDatum(vybrane); let endD = endDatum(vybrane);
+                let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
+
+                html += `<div class="preview-header-full">ABNAHME- & FORTSCHRITTSPROTOKOLL</div>`;
+                html += `<div class="preview-meta-grid" style="font-family:'Courier New', Courier, monospace;">`;
+                html += `  <div class="preview-meta-item"><strong>Vorname, Name:</strong><br>${jmeno}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Kunde:</strong><br>${firma.replace(/\n/g, ", ")}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Projekt-Nr:</strong><br>${cisloZ}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Anschrift:</strong><br>${adresa}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Leistungszeitraum:</strong><br>${startD} - ${endD}</div>`;
+                html += `  <div class="preview-meta-item"><strong>PLZ, Ort:</strong><br>${mesto}</div>`;
+                html += `</div>`;
+                html += `<p style="font-weight:bold; margin-top:10px; font-family:'Courier New', Courier, monospace;">Leistungsbeschreibung / Tätigkeitsbeschreibung</p>`;
+                html += `<table class="preview-table" style="font-family:'Courier New', Courier, monospace;">`;
+                html += `  <tr><th>Datum</th><th>Tätigkeit</th><th style="text-align:right;">Dauer [h]</th></tr>`;
+                let celkem = 0;
+                vybrane.forEach(z => {
+                    let h = kalkulujCisteHodiny(z); celkem += h;
+                    let popisRender = z.popisPraceImg ? `<img src="${z.popisPraceImg}" style="max-height:25px; background:white; border-radius:4px;">` : (z.popisPrace || '---');
+                    html += `  <tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${popisRender}</td><td style="text-align:right;">${h.toFixed(2)}</td></tr>`;
+                });
+                html += `  <tr><td colspan="2" style="text-align:right; font-weight:bold;">Gesamt:</td><td style="text-align:right; font-weight:bold;">${celkem.toFixed(2)}</td></tr>`;
+                html += `</table>`;
+                html += `<div style="margin-top:15px; font-size:12px; line-height:1.6; font-family:'Courier New', Courier, monospace;">`;
+                html += `  <strong>Bei der Abnahme wurde festgestellt:</strong><br>`;
+                html += `  [${bezZkousky ? 'X' : ' '}] die Leistung/en sind ohne Funktionsprüfung abgenommen<br>`;
+                html += `  [${seZkouskou ? 'X' : ' '}] die Leistung/en sind mit Funktionsprüfung abgenommen<br>`;
+                html += `  [${sVadami ? 'X' : ' '}] Mängel festgestellt: ${sVadami ? vadyText : 'Nein'}<br>`;
+                if(sVadami) html += `  Mängel werden bis spätestens <strong>${odstraneniDo}</strong> behoben.<br>`;
+                html += `</div>`;
+                html += `<div style="margin-top:40px; display:flex; justify-content:space-between; font-family:'Courier New', Courier, monospace;">`;
+                html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
+                if(dataPodpisuKunde) html += `<img src="${dataPodpisuKunde}" style="max-height:40px; margin-bottom:5px;"><br>`;
+                html += `    <strong>${pKunde}</strong><br><span style="font-size:9px; color:#555;">*Unterschrift Auftraggeber</span>`;
+                html += `  </div>`;
+                html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
+                if(dataPodpisuIch) html += `<img src="${dataPodpisuIch}" style="max-height:40px; margin-bottom:5px;"><br>`;
+                html += `    <strong>${jmeno}</strong><br><span style="font-size:9px; color:#555;">Unterschrift Auftragnehmer</span>`;
+                html += `  </div>`;
+                html += `</div>`;
             }
             document.getElementById('document-live-preview').innerHTML = html;
         }
-
-        function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
-        function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
 
         function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
@@ -817,29 +892,33 @@
             document.getElementById('export-card-actions').classList.remove('hidden');
         }
 
-        // GENERÁTOR QR KÓDU PRO SPAYD
+        // --- EXPORTOVACÍ FUNKCE (S ODDĚLENÝM VYKRESLENÍM VÝKAZŮ) ---
         function getQrBase64(iban, amount, vs) {
             let spayd = `SPD*1.0*ACC:${iban}*AM:${amount}*CC:EUR*X-VS:${vs}`;
             let qr = new QRious({ value: spayd, size: 250 });
             return qr.toDataURL('image/png');
         }
 
-        // UKLÁDÁNÍ DO ARCHIVU FAKTUR
-        function ulozitFakturuDoArchivu(cislo, odberatel, suma) {
+        function ulozitFakturuDoArchivu(cislo, odberatel, suma, base64Pdf) {
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            // Zkontrolujeme jestli už neexistuje
+            
+            // Ochrana paměti (LocalStorage limit cca 5MB) - necháme posledních 30 faktur
+            if(archiv.length >= 30) { archiv.shift(); }
+
             if(!archiv.find(f => f.cislo === cislo)) {
-                archiv.push({ 
-                    id: Date.now(), cislo: cislo, odberatel: odberatel, 
-                    suma: suma, datum: new Date().toISOString() 
-                });
-                localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
-                renderArchivFaktur();
+                try {
+                    archiv.push({ id: Date.now(), cislo: cislo, odberatel: odberatel, suma: suma, datum: new Date().toISOString(), pdfData: base64Pdf });
+                    localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
+                    renderArchivFaktur();
+                } catch(e) {
+                    alert("Paměť pro ukládání faktur je plná. Smažte staré faktury z archivu.");
+                }
             }
         }
 
-        // REUSABLE FUNKCE NA VYKRESLENÍ STANDARDNÍHO VÝKAZU (STRANA 2)
-        function drawStandardReportToDoc(doc, vybrane, jmeno, firma, adresa, mesto) {
+        function drawStandardReportToDoc(doc, vybrane) {
+            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value.replace(/\n/g, ", ");
+            let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
             let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
             let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
@@ -848,8 +927,8 @@
             doc.setFontSize(12); doc.text(`KW ${kwNum}`, 195, 25, {align: 'right'});
             let kX = 70; let kY = 32; doc.setFontSize(8); doc.setFont("courier", "normal"); doc.rect(kX, kY, 70, 25);
             for(let i=1; i<=4; i++) doc.line(kX, kY + i*5, kX+70, kY + i*5);
-            doc.text("Kundenanschrift:", kX+2, kY+4); doc.text(firma.substring(0, 45), kX+2, kY+9);
-            doc.text(adresa.substring(0, 45), kX+2, kY+14); doc.text(mesto.substring(0, 45), kX+2, kY+19);
+            doc.text("Kundenanschrift:", kX+2, kY+4); doc.text(bezDiakritiky(firma.substring(0, 45)), kX+2, kY+9);
+            doc.text(bezDiakritiky(adresa.substring(0, 45)), kX+2, kY+14); doc.text(bezDiakritiky(mesto.substring(0, 45)), kX+2, kY+19);
 
             let tY = 65; let cols = [15, 39, 63, 79, 95, 111, 127, 151, 162, 173, 184, 195];
             for(let i=0; i<=3; i++) doc.line(15, tY + i*10, 195, tY + i*10); 
@@ -866,8 +945,8 @@
             doc.text("Mitarbeiter bitte ankreuzen:", cols[7]+2, tY+4);
             doc.text("Baustelle", cols[0]+2, tY+14); doc.setFont("courier", "bold"); doc.text(bezDiakritiky(cisloZ || firma.substring(0,25)), cols[0]+20, tY+18); doc.setFont("courier", "normal");
             doc.text("Gesamt", cols[6]+12, tY+13, {align:'center'}); doc.text("ohne", cols[6]+12, tY+16, {align:'center'}); doc.text("Pause", cols[6]+12, tY+19, {align:'center'});
-            doc.text("Tägliche", cols[7]+11, tY+14, {align:'center'}); doc.text("Heimfahrt?", cols[7]+11, tY+18, {align:'center'});
-            doc.text("Übernachtung", cols[9]+11, tY+14, {align:'center'}); doc.text("am Einsatzort?", cols[9]+11, tY+18, {align:'center'});
+            doc.text("Tagliche", cols[7]+11, tY+14, {align:'center'}); doc.text("Heimfahrt?", cols[7]+11, tY+18, {align:'center'});
+            doc.text("Ubernachtung", cols[9]+11, tY+14, {align:'center'}); doc.text("am Einsatzort?", cols[9]+11, tY+18, {align:'center'});
             doc.text("Tage", cols[0]+12, tY+26, {align:'center'}); doc.text("Datum", cols[1]+12, tY+26, {align:'center'});
             doc.text("Arb.-Zeit", cols[2]+16, tY+23, {align:'center'}); doc.text("von", cols[2]+8, tY+29, {align:'center'}); doc.text("bis", cols[3]+8, tY+29, {align:'center'});
             doc.text("Gesamt", cols[4]+8, tY+26, {align:'center'}); doc.text("Pause", cols[5]+8, tY+26, {align:'center'});
@@ -903,224 +982,7 @@
             doc.text(new Date().toLocaleDateString('de-DE'), 130, sigY-2);
         }
 
-        function executePDFExport(returnBlob = false) {
-            if (currentExportType === 'abnahme') return exportAbnahmePDF(returnBlob);
-            else if (currentExportType === 'faktura') return exportFakturaPDF(returnBlob);
-            else return exportStandardPDF(returnBlob);
-        }
-
-        function exportFakturaPDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf; 
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            
-            // NASTAVENÍ PÍSMA NA COURIER
-            doc.setFont("courier", "normal");
-
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); 
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            
-            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
-            let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
-            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); 
-            let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
-            let icoOdberatel = bezDiakritiky(document.getElementById('cfg-ico-odberatel').value);
-
-            let dodIco = bezDiakritiky(document.getElementById('cfg-dod-ico').value);
-            let dodAdresaObj = bezDiakritiky(document.getElementById('cfg-dod-adresa').value).split('\n');
-            let dodBanka = bezDiakritiky(document.getElementById('cfg-dod-banka').value);
-            let dodKontakt = bezDiakritiky(document.getElementById('cfg-dod-kontakt').value);
-
-            let cisloFaktury = bezDiakritiky(document.getElementById('fak-cislo').value);
-            let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
-            let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
-
-            let attachReport = document.getElementById('fak-priloha').checked;
-
-            let logoData = localStorage.getItem('cfg_logo');
-            if (logoData) {
-                try {
-                    let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
-                    let props = doc.getImageProperties(logoData);
-                    let ratio = props.width / props.height;
-                    let targetHeight = 15; let targetWidth = targetHeight * ratio;
-                    if(targetWidth > 50) { targetWidth = 50; targetHeight = targetWidth / ratio; }
-                    doc.addImage(logoData, imgType, 15, 10, targetWidth, targetHeight, '', 'FAST');
-                } catch(e) { console.error('Chyba při vkládání loga:', e); }
-            }
-
-            doc.setFillColor(179, 57, 57); doc.rect(110, 10, 90, 25, 'F'); doc.setTextColor(255, 255, 255);
-            doc.setFont("courier", "bold"); doc.setFontSize(20);
-            doc.text(`Faktura c. ${cisloFaktury}`, 195, 22, {align: 'right'});
-            doc.setFont("courier", "normal"); doc.setFontSize(10);
-            doc.text("Neplatce DPH", 195, 29, {align: 'right'});
-
-            doc.setTextColor(41, 128, 185); doc.setFontSize(18);
-            doc.text("Dodavatel", 15, 50); doc.text("Odberatel", 110, 50);
-
-            doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold"); doc.setFontSize(9);
-            
-            // Dodavatel
-            let yL = 55; doc.text(jmeno, 15, yL); yL+=6; doc.setFont("courier", "normal");
-            dodAdresaObj.forEach(line => { doc.text(line, 15, yL); yL+=6; });
-            doc.text(`ICO: ${dodIco}`, 15, yL); yL+=6;
-            let bankParts = dodBanka.split('|');
-            if(bankParts.length > 0) { doc.text(bankParts[0].trim(), 15, yL); yL+=6; }
-            if(bankParts.length > 1) { doc.text(bankParts[1].trim(), 15, yL); yL+=6; }
-            doc.text(`Vystavil: ${jmeno}`, 15, yL); yL+=6;
-            let kontParts = dodKontakt.split('|');
-            if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=6; }
-            if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=6; }
-
-            // Odberatel
-            let yR = 55; doc.setFont("courier", "bold");
-            let fSplit = firma.split(', '); fSplit.forEach(line => { doc.text(line, 110, yR); yR+=6; });
-            doc.setFont("courier", "normal"); doc.text(adresa, 110, yR); yR+=6; doc.text(mesto, 110, yR); yR+=6;
-            let icoParts = icoOdberatel.split(','); icoParts.forEach(line => { doc.text(line.trim(), 110, yR); yR+=6; });
-
-            let grayY = 105; doc.setFillColor(242, 242, 242); doc.rect(15, grayY, 180, 10, 'F');
-            doc.setTextColor(100, 100, 100); doc.text("Zpusob platby: Bankovni prevod", 20, grayY+6);
-
-            let dateY = 125; doc.setTextColor(41, 128, 185); doc.setFontSize(10);
-            doc.text("DATUM VYSTAVENI", 20, dateY); doc.text("DATUM SPLATNOSTI", 70, dateY);
-            doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold");
-            if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
-            if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
-
-            let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
-
-            let tableY = 145; doc.setFillColor(179, 57, 57); doc.rect(15, tableY, 180, 8, 'F');
-            doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(9);
-            doc.text("Popis", 20, tableY+5.5); doc.text("Mnozstvi", 120, tableY+5.5, {align:'center'});
-            doc.text("Cena za mj.", 150, tableY+5.5, {align:'center'}); doc.text("Celkem", 190, tableY+5.5, {align:'right'});
-
-            doc.setTextColor(0, 0, 0); doc.setFont("courier", "normal"); let itemY = tableY + 10;
-            let totalH = 0; vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
-            let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
-
-            let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
-            doc.text(`Pracovni hodiny dle vykazu (${dateStr})`, 20, itemY);
-            doc.text(`${totalH.toFixed(2)} h`, 120, itemY, {align:'center'});
-            doc.text(`${typSazby} EUR`, 150, itemY, {align:'center'});
-            doc.text(formatMena(sumEUR), 190, itemY, {align:'right'});
-            doc.setDrawColor(200, 200, 200); doc.line(15, itemY+5, 195, itemY+5);
-
-            let footerY = 220; doc.setFont("courier", "bold"); doc.setFontSize(16);
-            doc.text(`Celkem k uhrade: ${formatMena(sumEUR)}`, 195, footerY, {align:'right'});
-            doc.setDrawColor(0, 0, 0); doc.line(130, footerY+35, 195, footerY+35);
-            doc.setFont("courier", "normal"); doc.setFontSize(9);
-            
-            // --- GENEROVÁNÍ A VLOŽENÍ QR KÓDU PRO BANKU ---
-            // Zkusíme najít IBAN v řetězci pomocí Regexu
-            let cleanIbanMatch = dodBanka.replace(/\s/g, '').match(/[A-Za-z]{2}[0-9A-Za-z]{13,32}/);
-            if (cleanIbanMatch) {
-                let iban = cleanIbanMatch[0].toUpperCase();
-                let vs = cisloFaktury.replace(/\D/g, ''); // Vyjme jen čísla z čísla faktury pro VS
-                let qrData = getQrBase64(iban, sumEUR.toFixed(2), vs);
-                
-                doc.addImage(qrData, 'PNG', 15, footerY - 5, 30, 30);
-                doc.setFontSize(8); doc.setFont("courier", "bold");
-                doc.text("QR Platba", 30, footerY + 28, {align: 'center'});
-                doc.setFontSize(9); doc.setFont("courier", "normal");
-            }
-            // ----------------------------------------------
-
-            let razitkoData = localStorage.getItem('cfg_razitko');
-            if (razitkoData) {
-                try {
-                    let imgType = razitkoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
-                    let props = doc.getImageProperties(razitkoData); let ratio = props.width / props.height;
-                    let targetWidth = 35; let targetHeight = targetWidth / ratio;
-                    if (targetHeight > 25) { targetHeight = 25; targetWidth = targetHeight * ratio; }
-                    let xPos = 162.5 - (targetWidth / 2); let yPos = footerY + 33 - targetHeight;
-                    doc.addImage(razitkoData, imgType, xPos, yPos, targetWidth, targetHeight, '', 'FAST');
-                } catch(e) {}
-            }
-
-            if(dataPodpisuIch) { doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY+15, 40, 15); }
-            doc.text("Podpis", 162.5, footerY+40, {align:'center'});
-
-            doc.setFontSize(8); doc.text("Podnikatel je zapsan v zivnostenskem rejstriku.", 15, footerY+40);
-            doc.setTextColor(150, 150, 150); doc.text("Vystaveno v systemu aplikace", 15, 285);
-            
-            // PŘIPOJENÍ PRACOVNÍHO VÝKAZU JAKO 2. STRANY
-            if(attachReport) {
-                doc.text("Strana 1/2", 195, 285, {align: 'right'});
-                doc.addPage();
-                doc.setTextColor(0, 0, 0); // Reset barvy
-                drawStandardReportToDoc(doc, vybrane, jmeno, firma, adresa, mesto);
-                doc.setFontSize(8); doc.setTextColor(150, 150, 150);
-                doc.text("Vystaveno v systemu aplikace", 15, 285);
-                doc.text("Strana 2/2", 195, 285, {align: 'right'});
-            } else {
-                doc.text("Strana 1/1", 195, 285, {align: 'right'});
-            }
-
-            // ULOŽENÍ DO ARCHIVU
-            if(!returnBlob) {
-                ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR);
-            }
-
-            if(returnBlob) return doc.output('blob');
-            doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
-            if(!remoteMode) closeExportCard();
-        }
-
-        // ARCHIV FAKTUR - VYKRESLENÍ
-        function renderArchivFaktur() {
-            let container = document.getElementById('archiv-faktur-container');
-            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            container.innerHTML = '';
-            
-            if (archiv.length === 0) { 
-                container.innerHTML = `<p style="text-align:center;padding:20px;">Zatím nemáš uložené žádné faktury.</p>`; 
-                return; 
-            }
-            
-            // Řazení od nejnovějších
-            archiv.sort((a,b) => new Date(b.datum) - new Date(a.datum));
-            
-            archiv.forEach(f => {
-                let item = document.createElement('div'); item.className = 'faktura-item';
-                let datumFmt = new Date(f.datum).toLocaleDateString();
-                item.innerHTML = `
-                    <div>
-                        <div style="font-weight:bold; color:#2980b9;">Faktura ${f.cislo}</div>
-                        <div style="font-size:12px;">${f.odberatel} | ${datumFmt}</div>
-                        <div style="font-weight:bold; color:#2ecc71;">${f.suma.toFixed(2)} EUR</div>
-                    </div>
-                    <button class="btn-sec" style="background:#e74c3c; color:white; padding: 6px 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button>
-                `;
-                container.appendChild(item);
-            });
-        }
-        
-        function smazatFakturuZArchivu(id) {
-            if(confirm("Opravdu smazat z archivu? Záznamy práce ti zůstanou.")) {
-                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-                archiv = archiv.filter(f => f.id !== id);
-                localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
-                renderArchivFaktur();
-            }
-        }
-
-        // --- PŮVODNÍ EXPORTY ---
-        function exportStandardPDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value.replace(/\n/g, ", ");
-            let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
-            
-            drawStandardReportToDoc(doc, vybrane, jmeno, firma, adresa, mesto);
-
-            if(returnBlob) return doc.output('blob');
-            doc.save("Tatigkeitsnachweis.pdf");
-        }
-
-        function exportAbnahmePDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            doc.setFont("courier", "normal");
-            
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+        function drawAbnahmeReportToDoc(doc, vybrane) {
             let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); let firma = bezDiakritiky(document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
             let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
             let podpisKundeText = bezDiakritiky(document.getElementById('cfg-podpis').value || '---');
@@ -1182,12 +1044,214 @@
             doc.line(15, y, 85, y); doc.line(125, y, 195, y);
             doc.setFontSize(9); doc.text(podpisKundeText, 15, y + 4); doc.text("*Unterschrift Auftraggeber", 15, y + 8);
             doc.text(jmeno, 125, y + 4); doc.text("Unterschrift Auftragnehmer", 125, y + 8);
+        }
 
+        function executePDFExport(returnBlob = false) {
+            if (currentExportType === 'abnahme') return exportAbnahmePDF(returnBlob);
+            else if (currentExportType === 'faktura') return exportFakturaPDF(returnBlob);
+            else return exportStandardPDF(returnBlob);
+        }
+
+        function exportFakturaPDF(returnBlob = false) {
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            
+            doc.setFont("courier", "normal");
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); 
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            
+            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
+            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
+            let icoOdberatel = bezDiakritiky(document.getElementById('cfg-ico-odberatel').value);
+
+            let dodIco = bezDiakritiky(document.getElementById('cfg-dod-ico').value); let dodAdresaObj = bezDiakritiky(document.getElementById('cfg-dod-adresa').value).split('\n');
+            let dodBanka = bezDiakritiky(document.getElementById('cfg-dod-banka').value); let dodKontakt = bezDiakritiky(document.getElementById('cfg-dod-kontakt').value);
+
+            let cisloFaktury = bezDiakritiky(document.getElementById('fak-cislo').value);
+            let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate; let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
+
+            let logoData = localStorage.getItem('cfg_logo');
+            if (logoData) {
+                try {
+                    let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+                    let props = doc.getImageProperties(logoData); let ratio = props.width / props.height;
+                    let targetHeight = 15; let targetWidth = targetHeight * ratio;
+                    if(targetWidth > 50) { targetWidth = 50; targetHeight = targetWidth / ratio; }
+                    doc.addImage(logoData, imgType, 15, 10, targetWidth, targetHeight, '', 'FAST');
+                } catch(e) {}
+            }
+
+            doc.setFillColor(179, 57, 57); doc.rect(110, 10, 90, 25, 'F'); doc.setTextColor(255, 255, 255);
+            doc.setFont("courier", "bold"); doc.setFontSize(20);
+            doc.text(`Faktura c. ${cisloFaktury}`, 195, 22, {align: 'right'});
+            doc.setFont("courier", "normal"); doc.setFontSize(10); doc.text("Neplatce DPH", 195, 29, {align: 'right'});
+
+            doc.setTextColor(41, 128, 185); doc.setFontSize(18); doc.text("Dodavatel", 15, 50); doc.text("Odberatel", 110, 50);
+
+            doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold"); doc.setFontSize(9);
+            let yL = 55; doc.text(jmeno, 15, yL); yL+=6; doc.setFont("courier", "normal");
+            dodAdresaObj.forEach(line => { doc.text(line, 15, yL); yL+=6; });
+            doc.text(`ICO: ${dodIco}`, 15, yL); yL+=6;
+            let bankParts = dodBanka.split('|'); if(bankParts.length > 0) { doc.text(bankParts[0].trim(), 15, yL); yL+=6; }
+            if(bankParts.length > 1) { doc.text(bankParts[1].trim(), 15, yL); yL+=6; }
+            doc.text(`Vystavil: ${jmeno}`, 15, yL); yL+=6;
+            let kontParts = dodKontakt.split('|'); if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=6; }
+            if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=6; }
+
+            let yR = 55; doc.setFont("courier", "bold");
+            let fSplit = firma.split(', '); fSplit.forEach(line => { doc.text(line, 110, yR); yR+=6; });
+            doc.setFont("courier", "normal"); doc.text(adresa, 110, yR); yR+=6; doc.text(mesto, 110, yR); yR+=6;
+            let icoParts = icoOdberatel.split(','); icoParts.forEach(line => { doc.text(line.trim(), 110, yR); yR+=6; });
+
+            let grayY = 105; doc.setFillColor(242, 242, 242); doc.rect(15, grayY, 180, 10, 'F');
+            doc.setTextColor(100, 100, 100); doc.text("Zpusob platby: Bankovni prevod", 20, grayY+6);
+
+            let dateY = 125; doc.setTextColor(41, 128, 185); doc.setFontSize(10);
+            doc.text("DATUM VYSTAVENI", 20, dateY); doc.text("DATUM SPLATNOSTI", 70, dateY);
+            doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold");
+            if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
+            if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
+
+            let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
+
+            let tableY = 145; doc.setFillColor(179, 57, 57); doc.rect(15, tableY, 180, 8, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(9);
+            doc.text("Popis", 20, tableY+5.5); doc.text("Mnozstvi", 120, tableY+5.5, {align:'center'});
+            doc.text("Cena za mj.", 150, tableY+5.5, {align:'center'}); doc.text("Celkem", 190, tableY+5.5, {align:'right'});
+
+            doc.setTextColor(0, 0, 0); doc.setFont("courier", "normal"); let itemY = tableY + 10;
+            let totalH = 0; vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
+            let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
+
+            let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
+            doc.text(`Pracovni hodiny dle vykazu (${dateStr})`, 20, itemY);
+            doc.text(`${totalH.toFixed(2)} h`, 120, itemY, {align:'center'});
+            doc.text(`${typSazby} EUR`, 150, itemY, {align:'center'});
+            doc.text(formatMena(sumEUR), 190, itemY, {align:'right'});
+            doc.setDrawColor(200, 200, 200); doc.line(15, itemY+5, 195, itemY+5);
+
+            let footerY = 220; doc.setFont("courier", "bold"); doc.setFontSize(16);
+            doc.text(`Celkem k uhrade: ${formatMena(sumEUR)}`, 195, footerY, {align:'right'});
+            doc.setDrawColor(0, 0, 0); doc.line(130, footerY+35, 195, footerY+35);
+            doc.setFont("courier", "normal"); doc.setFontSize(9);
+            
+            // GENERACE QR SPAYD
+            let cleanIbanMatch = dodBanka.replace(/\s/g, '').match(/[A-Za-z]{2}[0-9A-Za-z]{13,32}/);
+            if (cleanIbanMatch) {
+                let iban = cleanIbanMatch[0].toUpperCase(); let vs = cisloFaktury.replace(/\D/g, ''); 
+                let qrData = getQrBase64(iban, sumEUR.toFixed(2), vs);
+                doc.addImage(qrData, 'PNG', 15, footerY - 5, 30, 30);
+                doc.setFontSize(8); doc.setFont("courier", "bold"); doc.text("QR Platba", 30, footerY + 28, {align: 'center'});
+                doc.setFontSize(9); doc.setFont("courier", "normal");
+            }
+
+            let razitkoData = localStorage.getItem('cfg_razitko');
+            if (razitkoData) {
+                try {
+                    let imgType = razitkoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+                    let props = doc.getImageProperties(razitkoData); let ratio = props.width / props.height;
+                    let targetWidth = 35; let targetHeight = targetWidth / ratio;
+                    if (targetHeight > 25) { targetHeight = 25; targetWidth = targetHeight * ratio; }
+                    let xPos = 162.5 - (targetWidth / 2); let yPos = footerY + 33 - targetHeight;
+                    doc.addImage(razitkoData, imgType, xPos, yPos, targetWidth, targetHeight, '', 'FAST');
+                } catch(e) {}
+            }
+
+            if(dataPodpisuIch) { doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY+15, 40, 15); }
+            doc.text("Podpis", 162.5, footerY+40, {align:'center'});
+            doc.setFontSize(8); doc.text("Podnikatel je zapsan v zivnostenskem rejstriku.", 15, footerY+40);
+            
+            let prilohaTyp = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
+            doc.setTextColor(150, 150, 150);
+            
+            if (prilohaTyp !== 'none') {
+                doc.text("Vystaveno v systemu aplikace", 15, 285);
+                doc.text("Strana 1/2", 195, 285, {align: 'right'});
+                
+                doc.addPage();
+                doc.setTextColor(0, 0, 0); 
+                if (prilohaTyp === 'standard') { drawStandardReportToDoc(doc, vybrane); }
+                else if (prilohaTyp === 'abnahme') { drawAbnahmeReportToDoc(doc, vybrane); }
+                
+                doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+                doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 2/2", 195, 285, {align: 'right'});
+            } else {
+                doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 1/1", 195, 285, {align: 'right'});
+            }
+
+            // ULOŽENÍ DO ARCHIVU (Base64)
+            if(!returnBlob) {
+                let base64Pdf = doc.output('datauristring');
+                ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, base64Pdf);
+            }
+
+            if(returnBlob) return doc.output('blob');
+            doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
+            if(!remoteMode) closeExportCard();
+        }
+
+        function exportStandardPDF(returnBlob = false) {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' }); doc.setFont("courier", "normal");
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            drawStandardReportToDoc(doc, vybrane);
+            if(returnBlob) return doc.output('blob');
+            doc.save("Tatigkeitsnachweis.pdf");
+        }
+
+        function exportAbnahmePDF(returnBlob = false) {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' }); doc.setFont("courier", "normal");
+            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            drawAbnahmeReportToDoc(doc, vybrane);
             if(returnBlob) return doc.output('blob');
             doc.save("AbnahmeProtokoll.pdf");
             if(!remoteMode) closeExportCard();
         }
 
+        function renderArchivFaktur() {
+            let container = document.getElementById('archiv-faktur-container');
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            container.innerHTML = '';
+            
+            if (archiv.length === 0) { container.innerHTML = `<p style="text-align:center;padding:20px;">Zatím nemáš uložené žádné faktury.</p>`; return; }
+            archiv.sort((a,b) => new Date(b.datum) - new Date(a.datum));
+            
+            archiv.forEach(f => {
+                let item = document.createElement('div'); item.className = 'faktura-item';
+                let datumFmt = new Date(f.datum).toLocaleDateString();
+                item.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight:bold; color:#2980b9;">Faktura ${f.cislo}</div>
+                        <div style="font-size:12px;">${f.odberatel} | ${datumFmt}</div>
+                        <div style="font-weight:bold; color:#2ecc71;">${f.suma.toFixed(2)} EUR</div>
+                    </div>
+                    <div style="display:flex; gap: 5px;">
+                        <button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">⬇️ PDF</button>
+                        <button class="btn-sec" style="background:#e74c3c; color:white; padding: 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+        
+        function stahnoutFakturuZArchivu(id) {
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            let f = archiv.find(x => x.id === id);
+            if(f && f.pdfData) {
+                let link = document.createElement('a'); link.href = f.pdfData; link.download = `Faktura_${f.cislo.replace('/','-')}_Archiv.pdf`; link.click();
+            } else {
+                alert("Data PDF pro tuto fakturu chybí (byla pravděpodobně uložena ve starší verzi).");
+            }
+        }
+
+        function smazatFakturuZArchivu(id) {
+            if(confirm("Opravdu smazat z archivu? Tvé záznamy práce ti zůstanou, ale toto PDF bude ztraceno.")) {
+                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+                archiv = archiv.filter(f => f.id !== id);
+                localStorage.setItem('archiv_faktur', JSON.stringify(archiv)); renderArchivFaktur();
+            }
+        }
+
+        // --- ZBÝVAJÍCÍ ZÁKLADNÍ FUNKCE (Ukládání záznamů, filtry atd.) ---
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let currentLang = localStorage.getItem('app_lang') || 'cs';
         let filterMode = 'week'; let maskEarnings = false;
@@ -1198,10 +1262,8 @@
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
             const matchedBtn = document.querySelector(`.lang-btn[onclick="setLanguage('${lang}')"]`);
             if(matchedBtn) matchedBtn.classList.add('active');
-
             document.querySelectorAll('[data-cs]').forEach(el => { el.innerHTML = el.getAttribute('data-' + lang); });
             document.querySelectorAll('[data-ph-cs]').forEach(el => { el.setAttribute('placeholder', el.getAttribute('data-ph-' + lang)); });
-
             if(remoteMode) return;
             updateStatistiky(); renderZaznamy(); renderArchivFaktur();
         }
@@ -1209,8 +1271,7 @@
         function switchTab(tabId, button) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
-            document.getElementById('view-' + tabId).classList.remove('hidden');
-            button.classList.add('active'); 
+            document.getElementById('view-' + tabId).classList.remove('hidden'); button.classList.add('active'); 
             if(tabId === 'zaznamy') renderZaznamy();
             if(tabId === 'faktury') renderArchivFaktur();
         }
@@ -1222,29 +1283,19 @@
         }
 
         function ulozZaznam() {
-            let popisText = '';
-            if (currentInputMode === 'text') { popisText = document.getElementById('inp-popis').value; }
+            let popisText = ''; if (currentInputMode === 'text') { popisText = document.getElementById('inp-popis').value; }
             let novy = {
-                id: Date.now(), datum: document.getElementById('inp-datum').value,
-                zacatek: document.getElementById('inp-zacatek').value, konec: document.getElementById('inp-konec').value,
-                prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
+                id: Date.now(), datum: document.getElementById('inp-datum').value, zacatek: document.getElementById('inp-zacatek').value,
+                konec: document.getElementById('inp-konec').value, prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
                 popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
                 projekt: document.getElementById('cfg-firma').value, selected: false
             };
             zaznamy.push(novy); localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-            document.getElementById('inp-popis').value = ''; actPopisImgData = null;
-            document.getElementById('preview-drawn-image').style.display = 'none';
-            document.getElementById('drawn-preview-img').src = '';
-            alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
-            updateStatistiky();
+            document.getElementById('inp-popis').value = ''; actPopisImgData = null; document.getElementById('preview-drawn-image').style.display = 'none'; document.getElementById('drawn-preview-img').src = '';
+            alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); updateStatistiky();
         }
 
-        function getWeekNumber(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-            return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7);
-        }
-
+        function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
         function setFilterMode(mode) { filterMode = mode; updateStatistiky(); }
         function toggleEarningsMask() { maskEarnings = !maskEarnings; updateStatistiky(); }
         
@@ -1262,20 +1313,14 @@
         function renderZaznamy() {
             if(remoteMode) return;
             let container = document.getElementById('seznam-container'); container.innerHTML = '';
-            if (zaznamy.length === 0) { 
-                container.innerHTML = `<p style="text-align:center;padding:20px;">${currentLang === 'cs' ? 'Žádné záznamy' : 'Keine Einträge'}</p>`; return; 
-            }
+            if (zaznamy.length === 0) { container.innerHTML = `<p style="text-align:center;padding:20px;">${currentLang === 'cs' ? 'Žádné záznamy' : 'Keine Einträge'}</p>`; return; }
             zaznamy.forEach((z, index) => {
-                let h = kalkulujCisteHodiny(z);
-                let item = document.createElement('div'); item.className = 'zaznam-item';
+                let h = kalkulujCisteHodiny(z); let item = document.createElement('div'); item.className = 'zaznam-item';
                 let descPreview = z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`;
                 item.innerHTML = `
                     <div class="checkbox-container">
                         <input type="checkbox" ${z.selected ? 'checked' : ''} onchange="zaznamy[${index}].selected=!zaznamy[${index}].selected; localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy));">
-                        <div>
-                            <div><strong>${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>
-                            ${descPreview}
-                        </div>
+                        <div><div><strong>${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>${descPreview}</div>
                     </div>
                     <button class="btn-sec" style="background:#ff7675; color:white;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy();">🗑️</button>
                 `;
@@ -1289,22 +1334,13 @@
         }
 
         function saveSettings() {
-            localStorage.setItem('cfg_jmeno', document.getElementById('cfg-jmeno').value);
-            localStorage.setItem('cfg_firma', document.getElementById('cfg-firma').value);
-            localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value);
-            localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
-            localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value);
-            localStorage.setItem('cfg_email_uctarna', document.getElementById('cfg-email-uctarna').value);
-            localStorage.setItem('cfg_email_pracovnik', document.getElementById('cfg-email-pracovnik').value);
-            localStorage.setItem('cfg_wa_pracovnik', document.getElementById('cfg-wa-pracovnik').value);
-            localStorage.setItem('cfg_ico_odberatel', document.getElementById('cfg-ico-odberatel').value);
-
-            localStorage.setItem('cfg_dod_adresa', document.getElementById('cfg-dod-adresa').value);
-            localStorage.setItem('cfg_dod_ico', document.getElementById('cfg-dod-ico').value);
-            localStorage.setItem('cfg_dod_banka', document.getElementById('cfg-dod-banka').value);
-            localStorage.setItem('cfg_dod_kontakt', document.getElementById('cfg-dod-kontakt').value);
-
-            alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
+            localStorage.setItem('cfg_jmeno', document.getElementById('cfg-jmeno').value); localStorage.setItem('cfg_firma', document.getElementById('cfg-firma').value);
+            localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value); localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
+            localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value); localStorage.setItem('cfg_email_uctarna', document.getElementById('cfg-email-uctarna').value);
+            localStorage.setItem('cfg_email_pracovnik', document.getElementById('cfg-email-pracovnik').value); localStorage.setItem('cfg_wa_pracovnik', document.getElementById('cfg-wa-pracovnik').value);
+            localStorage.setItem('cfg_ico_odberatel', document.getElementById('cfg-ico-odberatel').value); localStorage.setItem('cfg_dod_adresa', document.getElementById('cfg-dod-adresa').value);
+            localStorage.setItem('cfg_dod_ico', document.getElementById('cfg-dod-ico').value); localStorage.setItem('cfg_dod_banka', document.getElementById('cfg-dod-banka').value);
+            localStorage.setItem('cfg_dod_kontakt', document.getElementById('cfg-dod-kontakt').value); alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
         }
 
         function loadSettings() {
@@ -1317,12 +1353,10 @@
             if(localStorage.getItem('cfg_email_pracovnik')) document.getElementById('cfg-email-pracovnik').value = localStorage.getItem('cfg_email_pracovnik');
             if(localStorage.getItem('cfg_wa_pracovnik')) document.getElementById('cfg-wa-pracovnik').value = localStorage.getItem('cfg_wa_pracovnik');
             if(localStorage.getItem('cfg_ico_odberatel')) document.getElementById('cfg-ico-odberatel').value = localStorage.getItem('cfg_ico_odberatel');
-
             if(localStorage.getItem('cfg_dod_adresa')) document.getElementById('cfg-dod-adresa').value = localStorage.getItem('cfg_dod_adresa');
             if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
             if(localStorage.getItem('cfg_dod_banka')) document.getElementById('cfg-dod-banka').value = localStorage.getItem('cfg_dod_banka');
             if(localStorage.getItem('cfg_dod_kontakt')) document.getElementById('cfg-dod-kontakt').value = localStorage.getItem('cfg_dod_kontakt');
-
             if(localStorage.getItem('cfg_logo')) { document.getElementById('preview-logo').src = localStorage.getItem('cfg_logo'); document.getElementById('preview-logo').style.display = 'block'; }
             if(localStorage.getItem('cfg_razitko')) { document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko'); document.getElementById('preview-razitko').style.display = 'block'; }
         }
@@ -1330,38 +1364,27 @@
         function exportCSV() {
             let csv = "Datum;Beginn;Ende;Pause;Stunden\n";
             zaznamy.filter(z => z.selected).forEach(z => { csv += `${z.datum};${z.zacatek};${z.konec};${z.prestavka};${kalkulujCisteHodiny(z).toFixed(2)}\n`; });
-            let blob = new Blob([csv], { type: 'text/csv;' }); let link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
+            let blob = new Blob([csv], { type: 'text/csv;' }); let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
         }
 
         function checkRemoteSignMode() {
             let params = new URLSearchParams(window.location.search);
             if (params.has('sign')) {
                 try {
-                    let encodedData = params.get('sign'); let data = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
-                    remoteDataPayload = data; 
-                    
+                    let encodedData = params.get('sign'); let data = JSON.parse(decodeURIComponent(escape(atob(encodedData)))); remoteDataPayload = data; 
                     document.getElementById('cfg-jmeno').value = data.jmeno || ''; document.getElementById('cfg-firma').value = data.firma || '';
                     document.getElementById('cfg-adresa').value = data.adresa || ''; document.getElementById('cfg-mesto').value = data.mesto || '';
                     document.getElementById('cfg-podpis').value = data.podpisKundeText || '';
                     document.getElementById('ab-bezZkousky').checked = data.bezZkousky || false; document.getElementById('ab-seZkouskou').checked = data.seZkouskou || false;
                     document.getElementById('ab-sVadami').checked = data.sVadami || false; document.getElementById('ab-vadyText').value = data.vadyText || '';
                     document.getElementById('ab-odstraneniDo').value = data.odstraneniDo || '';
-                    
                     remoteZaznamy = data.zaznamy || []; currentExportType = data.type || 'standard'; dataPodpisuIch = data.dataPodpisuIch || null;
-
                     document.getElementById('view-zaznamy').classList.remove('hidden'); document.getElementById('export-card').classList.remove('hidden');
-                    
                     if(document.getElementById('abnahme-fields')) document.getElementById('abnahme-fields').classList.add('hidden');
                     if(document.getElementById('wrapper-ich')) document.getElementById('wrapper-ich').classList.add('hidden');
-                    
-                    document.getElementById('export-card-actions').innerHTML = `
-                        <button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="finishRemoteSign()">
-                            ${currentLang === 'cs' ? '✔️ ULOŽIT A ODESLAT ZPĚT' : '✔️ SPEICHERN & ZURÜCKSENDEN'}
-                        </button>
-                    `;
+                    document.getElementById('export-card-actions').innerHTML = `<button class="btn-main" style="background:#2ecc71; color:white; font-size:18px; padding:15px;" onclick="finishRemoteSign()">${currentLang === 'cs' ? '✔️ ULOŽIT A ODESLAT ZPĚT' : '✔️ SPEICHERN & ZURÜCKSENDEN'}</button>`;
                     updateLivePreview();
-                } catch(e) { alert("Chyba načítání odkazu. / Fehler beim Laden des Links."); }
+                } catch(e) {}
             }
         }
 
@@ -1369,163 +1392,105 @@
             currentDrawSessionId = Math.random().toString(36).substring(2, 10);
             const baseUrl = window.location.href.split('?')[0]; const phoneUrl = `${baseUrl}?remoteDraw=${currentDrawSessionId}`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-            
-            document.getElementById('qr-code-img').src = qrUrl; document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId}`;
-            document.getElementById('qr-modal').classList.remove('hidden');
+            document.getElementById('qr-code-img').src = qrUrl; document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId}`; document.getElementById('qr-modal').classList.remove('hidden');
         }
 
         function generateSignaturePhoneLink(target) {
             currentDrawSessionId = Math.random().toString(36).substring(2, 10);
             const baseUrl = window.location.href.split('?')[0]; const phoneUrl = `${baseUrl}?remoteSig=${target}&session=${currentDrawSessionId}`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-            
-            document.getElementById('qr-code-img').src = qrUrl; document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId} (${target === 'kunde' ? 'Klient' : 'Dodavatel'})`;
-            document.getElementById('qr-modal').classList.remove('hidden');
+            document.getElementById('qr-code-img').src = qrUrl; document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId} (${target === 'kunde' ? 'Klient' : 'Dodavatel'})`; document.getElementById('qr-modal').classList.remove('hidden');
         }
 
         function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); currentDrawSessionId = null; }
 
         window.addEventListener('DOMContentLoaded', (event) => {
             const urlParams = new URLSearchParams(window.location.search);
-            
             if (urlParams.has('remoteDraw')) {
                 const sessionId = urlParams.get('remoteDraw'); document.getElementById('main-app').classList.add('hidden'); document.getElementById('welcome-screen').style.display = 'none';
-                
                 const footer = document.querySelector('.fs-draw-footer');
-                footer.innerHTML = `
-                    <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button>
-                    <button class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${sessionId}')">Odeslat do PC</button>
-                `;
+                footer.innerHTML = `<button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button><button class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${sessionId}')">Odeslat do PC</button>`;
                 document.getElementById('fs-draw-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; 
             }
-
             if (urlParams.has('remoteSig')) {
                 const target = urlParams.get('remoteSig'); const sessionId = urlParams.get('session');
-                
                 document.getElementById('main-app').classList.add('hidden'); document.getElementById('welcome-screen').style.display = 'none';
-                targetSignature = target;
-                let textTitle = target === 'kunde' ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (currentLang === 'cs' ? 'Podpis: Váš' : 'Unterschrift: Ihre');
+                targetSignature = target; let textTitle = target === 'kunde' ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (currentLang === 'cs' ? 'Podpis: Váš' : 'Unterschrift: Ihre');
                 document.getElementById('modal-sig-title').innerText = textTitle;
-                
                 const modalBtns = document.querySelector('.modal-content .row');
-                modalBtns.innerHTML = `
-                    <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button>
-                    <button class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${sessionId}', '${target}')">Odeslat do PC</button>
-                `;
+                modalBtns.innerHTML = `<button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button><button class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${sessionId}', '${target}')">Odeslat do PC</button>`;
                 document.getElementById('signature-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; 
-                
-                setTimeout(() => {
-                    canvas.width = canvas.offsetWidth; canvas.height = 200; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6';
-                }, 100);
+                setTimeout(() => { canvas.width = canvas.offsetWidth; canvas.height = 200; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6'; }, 100);
             }
         });
 
         function sendSignatureToPC(sessionId, target) {
             const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
-            alert("Podpis byl odeslán do PC! (V reálné verzi přes databázi by se ihned zobrazil). Nyní můžete stránku zavřít.");
-            document.getElementById('signature-modal').classList.add('hidden');
+            alert("Podpis byl odeslán do PC!"); document.getElementById('signature-modal').classList.add('hidden');
         }
 
-        function sendDrawToPC(sessionId) {
-            alert("Obrázek byl odeslán do PC! (V reálné verzi přes databázi by se hned objevil v notebooku). Můžete tuto stránku zavřít.");
-            document.getElementById('fs-draw-modal').classList.add('hidden');
-        }
+        function sendDrawToPC(sessionId) { alert("Obrázek byl odeslán do PC!"); document.getElementById('fs-draw-modal').classList.add('hidden'); }
 
         function buildShareUrl() {
             let vybrane = zaznamy.filter(z => z.selected);
             let meta = {
-                type: currentExportType, jmeno: document.getElementById('cfg-jmeno').value,
-                firma: document.getElementById('cfg-firma').value, adresa: document.getElementById('cfg-adresa').value,
-                mesto: document.getElementById('cfg-mesto').value, podpisKundeText: document.getElementById('cfg-podpis').value,
-                bezZkousky: document.getElementById('ab-bezZkousky').checked, seZkouskou: document.getElementById('ab-seZkouskou').checked,
-                sVadami: document.getElementById('ab-sVadami').checked, vadyText: document.getElementById('ab-vadyText').value,
-                odstraneniDo: document.getElementById('ab-odstraneniDo').value, emailUctarna: document.getElementById('cfg-email-uctarna').value,
-                emailPracovnik: document.getElementById('cfg-email-pracovnik').value, waPracovnik: document.getElementById('cfg-wa-pracovnik').value,
+                type: currentExportType, jmeno: document.getElementById('cfg-jmeno').value, firma: document.getElementById('cfg-firma').value, adresa: document.getElementById('cfg-adresa').value, mesto: document.getElementById('cfg-mesto').value, podpisKundeText: document.getElementById('cfg-podpis').value,
+                bezZkousky: document.getElementById('ab-bezZkousky').checked, seZkouskou: document.getElementById('ab-seZkouskou').checked, sVadami: document.getElementById('ab-sVadami').checked, vadyText: document.getElementById('ab-vadyText').value,
+                odstraneniDo: document.getElementById('ab-odstraneniDo').value, emailUctarna: document.getElementById('cfg-email-uctarna').value, emailPracovnik: document.getElementById('cfg-email-pracovnik').value, waPracovnik: document.getElementById('cfg-wa-pracovnik').value,
                 dataPodpisuIch: dataPodpisuIchTiny || dataPodpisuIch, zaznamy: vybrane
             };
-            let jsonString = JSON.stringify(meta);
-            let encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
-            return window.location.href.split('?')[0] + '?sign=' + encodedData;
+            let jsonString = JSON.stringify(meta); let encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString)))); return window.location.href.split('?')[0] + '?sign=' + encodedData;
         }
 
         async function shareRemoteLink() {
             if (!dataPodpisuIch) { if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto odkaz sdílet?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem teilen?")) return; }
             let url = buildShareUrl();
-            if (navigator.share) {
-                try { await navigator.share({ title: currentLang === 'cs' ? 'Dokument k podpisu' : 'Dokument zur Unterschrift', url: url }); } catch (e) { }
-            } else {
-                navigator.clipboard.writeText(url).then(() => { alert(currentLang === 'cs' ? "Váš prohlížeč nativní sdílení nepodporuje. Odkaz byl zkopírován do schránky." : "Link wurde in die Zwischenablage kopiert."); });
-            }
+            if (navigator.share) { try { await navigator.share({ title: currentLang === 'cs' ? 'Dokument k podpisu' : 'Dokument zur Unterschrift', url: url }); } catch (e) {} } 
+            else { navigator.clipboard.writeText(url).then(() => { alert(currentLang === 'cs' ? "Odkaz zkopírován do schránky." : "Link kopiert."); }); }
         }
 
         function copyRemoteLink() {
-            if (!dataPodpisuIch) { if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto pokračovat?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem fortfahren?")) return; }
-            let url = buildShareUrl();
-            navigator.clipboard.writeText(url).then(() => { alert(currentLang === 'cs' ? "Odkaz byl zkopírován do schránky!" : "Link wurde in die Zwischenablage kopiert!"); });
+            if (!dataPodpisuIch) { if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto pokračovat?" : "Unterschrift fehlt. Trotzdem fortfahren?")) return; }
+            let url = buildShareUrl(); navigator.clipboard.writeText(url).then(() => { alert(currentLang === 'cs' ? "Odkaz byl zkopírován!" : "Link kopiert!"); });
         }
 
         function openRemoteLink() {
-            if (!dataPodpisuIch) { if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto pokračovat?" : "Sie haben Ihre Unterschrift nicht hinzugefügt. Trotzdem fortfahren?")) return; }
+            if (!dataPodpisuIch) { if(!confirm(currentLang === 'cs' ? "Nemáte vložený Váš podpis. Chcete přesto pokračovat?" : "Unterschrift fehlt. Trotzdem fortfahren?")) return; }
             let url = buildShareUrl(); window.open(url, '_blank');
         }
 
-        function copyToClipboard(text) {
-            if(!text || text === 'Není nastaveno' || text === '') return;
-            navigator.clipboard.writeText(text).then(() => { alert(currentLang === 'cs' ? "Zkopírováno: " + text : "Kopiert: " + text); });
-        }
+        function copyToClipboard(text) { if(!text || text === 'Není nastaveno' || text === '') return; navigator.clipboard.writeText(text).then(() => { alert(currentLang === 'cs' ? "Zkopírováno: " + text : "Kopiert: " + text); }); }
 
         async function sharePdfNative() {
-            let blob = executePDFExport(true);
-            let fname = currentExportType === 'faktura' ? "Faktura.pdf" : "Unterzeichnetes_Dokument.pdf";
-            let file = new File([blob], fname, { type: "application/pdf" });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try { await navigator.share({ files: [file], title: 'Dokument', text: currentLang === 'cs' ? 'Dobrý den, v příloze zasílám dokument.' : 'Guten Tag, anbei das Dokument.' }); } catch (e) { }
-            } else {
-                alert(currentLang === 'cs' ? "Váš prohlížeč nepodporuje přímé sdílení. Dokument se nyní stáhne." : "Ihr Browser unterstützt direktes Teilen nicht. Das Dokument wird nun heruntergeladen.");
-                executePDFExport();
-            }
+            let blob = executePDFExport(true); let fname = currentExportType === 'faktura' ? "Faktura.pdf" : "Unterzeichnetes_Dokument.pdf"; let file = new File([blob], fname, { type: "application/pdf" });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'Dokument', text: currentLang === 'cs' ? 'Dobrý den, v příloze zasílám dokument.' : 'Guten Tag, anbei das Dokument.' }); } catch (e) { } } 
+            else { alert(currentLang === 'cs' ? "Váš prohlížeč nepodporuje přímé sdílení. Dokument se stáhne." : "Teilen nicht unterstützt. Dokument wird heruntergeladen."); executePDFExport(); }
         }
 
-        function openPdfViewer() {
-            let blob = executePDFExport(true); let url = URL.createObjectURL(blob); window.open(url, '_blank');
-        }
+        function openPdfViewer() { let blob = executePDFExport(true); let url = URL.createObjectURL(blob); window.open(url, '_blank'); }
 
         function finishRemoteSign() {
-            if (!dataPodpisuKunde) { alert(currentLang === 'cs' ? "Prosím, podepište dokument kliknutím na vyhrazené místo." : "Bitte unterschreiben Sie das Dokument."); return; }
+            if (!dataPodpisuKunde) { alert(currentLang === 'cs' ? "Prosím, podepište dokument." : "Bitte unterschreiben."); return; }
             document.getElementById('document-live-preview').classList.add('hidden'); document.getElementById('wrapper-kunde').classList.add('hidden'); document.getElementById('export-card-actions').classList.add('hidden');
             let emailU = remoteDataPayload.emailUctarna || 'Není nastaveno'; let emailP = remoteDataPayload.emailPracovnik || 'Není nastaveno';
-            
             let successDiv = document.createElement('div'); successDiv.id = 'success-screen';
             successDiv.innerHTML = `
                 <div style="text-align:center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ccc; color: #000;">
                     <h2 style="color:#2ecc71; margin-bottom:5px;">${currentLang==='cs'?'Děkuji za váš podpis':'Danke für Ihre Unterschrift'}</h2>
-                    <p style="margin-bottom:15px; font-size:14px; text-align:left; color:#2c3e50;">
-                        ${currentLang==='cs'?'Dokument je připraven. Můžete si vybrat, jak jej chcete nasdílet nebo uložit.':'Das PDF wurde erstellt. Sie können es nun ansehen oder teilen.'}
-                    </p>
+                    <p style="margin-bottom:15px; font-size:14px; text-align:left; color:#2c3e50;">${currentLang==='cs'?'Dokument je připraven.':'Das PDF wurde erstellt.'}</p>
                     <div style="background:#f5f6fa; border:1px solid #dcdde1; border-radius:8px; padding:15px; margin-bottom:20px; text-align:left; font-size:13px;">
-                        <strong style="font-size:14px; color:#2c3e50;">${currentLang==='cs'?'Kontakty pro odeslání:':'Kontakte zum Senden:'}</strong><br>
-                        <small style="color:#7f8c8d;">${currentLang==='cs'?'(Kliknutím na e-mail si jej zkopírujete)':'(Klicken zum Kopieren)'}</small><br><br>
-                        ✉️ <strong>${currentLang==='cs'?'Účtárna':'Buchhaltung'}:</strong><br>
-                        <span onclick="copyToClipboard('${emailU}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailU}</span><br><br>
-                        ✉️ <strong>${currentLang==='cs'?'Kopie pracovník':'Mitarbeiter (Kopie)'}:</strong><br>
-                        <span onclick="copyToClipboard('${emailP}')" style="color:#3498db; cursor:pointer; font-weight:bold; font-size:15px; display:inline-block; margin-top:3px; padding:5px; background:#e8f4f8; border-radius:4px;">${emailP}</span>
+                        ✉️ <strong>Účtárna:</strong><br><span onclick="copyToClipboard('${emailU}')" style="color:#3498db; cursor:pointer; font-weight:bold;">${emailU}</span><br><br>
+                        ✉️ <strong>Kopie:</strong><br><span onclick="copyToClipboard('${emailP}')" style="color:#3498db; cursor:pointer; font-weight:bold;">${emailP}</span>
                     </div>
-                    <button class="action-button-large" style="background:#2ecc71; margin-bottom:15px;" onclick="sharePdfNative()">
-                        📲 ${currentLang==='cs'?'Sdílet PDF (Mail / WhatsApp)':'PDF teilen (E-Mail / WhatsApp)'}
-                    </button>
-                    <button class="action-button-large" style="background:#34495e; margin-bottom:15px;" onclick="openPdfViewer()">
-                        👀 ${currentLang==='cs'?'Zobrazit PDF na obrazovce':'PDF auf dem Bildschirm anzeigen'}
-                    </button>
+                    <button class="btn-main" style="background:#2ecc71; margin-bottom:15px;" onclick="sharePdfNative()">📲 Sdílet PDF</button>
+                    <button class="btn-main" style="background:#34495e;" onclick="openPdfViewer()">👀 Zobrazit PDF</button>
                 </div>
             `;
             document.getElementById('export-card').appendChild(successDiv);
         }
 
-        loadSettings(); 
-        loadTheme();
-        setLanguage(currentLang); 
-        checkRemoteSignMode();
+        loadSettings(); loadTheme(); setLanguage(currentLang); checkRemoteSignMode();
     </script>
 </body>
 </html>
