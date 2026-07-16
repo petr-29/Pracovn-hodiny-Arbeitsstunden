@@ -742,11 +742,11 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        // TADY JE KLÍČOVÁ OPRAVA: Odstranění "nezlomitelné mezery" (NBSP), 
-        // se kterou má jsPDF problémy a kvůli které dochází k překrývání textu!
+        // Naprosto blbuvzdorná funkce na měnu bez Intl.NumberFormat kvůli problémům jsPDF
         function formatMena(castka) {
-            let text = new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'EUR' }).format(castka);
-            return text.replace('€', 'EUR').replace(/\u00A0/g, ' ').replace(/\s/g, ' '); 
+            let parts = castka.toFixed(2).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            return parts.join(',') + ' EUR';
         }
 
         function updateLivePreview() {
@@ -783,6 +783,10 @@
                 
                 html += `  <div class="faktura-grid">`;
                 html += `    <div>`;
+                let lData = localStorage.getItem('cfg_logo');
+                if(lData) {
+                    html += `      <img src="${lData}" style="max-height:35px; margin-bottom: 8px; display:block;">`;
+                }
                 html += `      <div class="faktura-modry-text">Dodavatel</div>`;
                 html += `      <strong>${jmeno}</strong><br>${dodAdresa}<br>IČO: ${dodIco}<br><br>${dodBanka}<br>Vystavil: ${jmeno}<br>${dodKontakt}`;
                 html += `    </div>`;
@@ -823,8 +827,14 @@
                 html += `    <div style="font-size: 20px; font-weight: bold;">Celkem k úhradě: ${formatMena(sumEUR)}</div>`;
                 html += `    <div style="margin-top: 40px; display:flex; justify-content:flex-end;">`;
                 html += `      <div style="width: 250px; text-align:center; border-top: 1px solid #000; padding-top:5px; position:relative;">`;
+                
+                let rData = localStorage.getItem('cfg_razitko');
+                if(rData) {
+                    html += `        <img src="${rData}" style="max-height:50px; position:absolute; bottom: 5px; left: 50%; transform: translateX(-50%); opacity:0.8;">`;
+                }
+
                 if(dataPodpisuIch) {
-                    html += `        <img src="${dataPodpisuIch}" style="max-height:50px; position:absolute; bottom: 25px; left: 50%; transform: translateX(-50%);">`;
+                    html += `        <img src="${dataPodpisuIch}" style="max-height:50px; position:absolute; bottom: 25px; left: 50%; transform: translateX(-50%); z-index:2;">`;
                 }
                 html += `         Podpis`;
                 html += `      </div>`;
@@ -1002,15 +1012,19 @@
             let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
             let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
 
-            // Zkusíme vložit logo, pokud existuje
-          const logo = localStorage.getItem('cfg_logo');
-    if (logo) {
-        try {
-            doc.addImage(logo, 'PNG', 10, 10, 40, 40); 
-        } catch (e) {
-            console.error("Chyba při vkládání loga:", e);
-        }
-    }
+            // Zkusíme vložit logo a dynamicky mu zachovat poměr stran, ať není placaté
+            let logoData = localStorage.getItem('cfg_logo');
+            if (logoData) {
+                try {
+                    let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+                    let props = doc.getImageProperties(logoData);
+                    let ratio = props.width / props.height;
+                    let targetHeight = 15;
+                    let targetWidth = targetHeight * ratio;
+                    if(targetWidth > 50) { targetWidth = 50; targetHeight = targetWidth / ratio; }
+                    doc.addImage(logoData, imgType, 15, 10, targetWidth, targetHeight, '', 'FAST');
+                } catch(e) { console.error('Chyba při vkládání loga:', e); }
+            }
 
             // Červený blok nahoře vpravo
             doc.setFillColor(179, 57, 57); 
@@ -1116,30 +1130,38 @@
             let footerY = 220;
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(16);
-            doc.text("Celkem k uhrade:", 130, footerY);
-            doc.text(formatMena(sumEUR), 195, footerY, {align:'right'});
+            
+            // OPRAVA: Sloučení textu "Celkem k úhradě" a samotné částky do jednoho stringu.
+            // Zabraňuje jakémukoliv budoucímu překrývání!
+            doc.text(`Celkem k uhrade: ${formatMena(sumEUR)}`, 195, footerY, {align:'right'});
 
             doc.setDrawColor(0, 0, 0);
-            doc.line(130, footerY+5, 195, footerY+5);
+            doc.line(130, footerY+35, 195, footerY+35);
             doc.setFont("Helvetica", "normal");
             doc.setFontSize(9);
             
-            // Zkusíme vložit razítko (nejdřív razítko, ať je podpis "přes něj")
-          const razitko = localStorage.getItem('cfg_razitko');
-    if (razitko) {
-        try {
-            doc.addImage(razitko, 'PNG', 150, 250, 40, 40); 
-        } catch (e) {
-            console.error("Chyba při vkládání razítka:", e);
-        }
-    }
+            // Zkusíme vložit razítko (vypočítáme mu správný poměr stran a zarovnáme doprostřed podpisu)
+            let razitkoData = localStorage.getItem('cfg_razitko');
+            if (razitkoData) {
+                try {
+                    let imgType = razitkoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+                    let props = doc.getImageProperties(razitkoData);
+                    let ratio = props.width / props.height;
+                    let targetWidth = 35; 
+                    let targetHeight = targetWidth / ratio;
+                    if (targetHeight > 25) { targetHeight = 25; targetWidth = targetHeight * ratio; }
+                    
+                    let xPos = 162.5 - (targetWidth / 2);
+                    let yPos = footerY + 33 - targetHeight;
+                    doc.addImage(razitkoData, imgType, xPos, yPos, targetWidth, targetHeight, '', 'FAST');
+                } catch(e) { console.error('Chyba při vkládání razítka:', e); }
+            }
 
             // Pak samotný podpis
             if(dataPodpisuIch) {
                 doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY+15, 40, 15);
             }
 
-            doc.line(130, footerY+35, 195, footerY+35);
             doc.text("Podpis", 162.5, footerY+40, {align:'center'});
 
             doc.setFontSize(8);
@@ -1738,46 +1760,6 @@
         loadTheme();
         setLanguage(currentLang); 
         checkRemoteSignMode();
-  function nahratObrazek(input, storageKey, previewId) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        // uložíme obrázek do localStorage
-        localStorage.setItem(storageKey, e.target.result);
-
-        // zobrazíme náhled
-        const preview = document.getElementById(previewId);
-        preview.src = e.target.result;
-        preview.style.display = "block";
-    };
-    reader.readAsDataURL(file);
-}
-    // LOGO vlevo nahoře
-    const logo = localStorage.getItem('cfg_logo');
-    if (logo) {
-        try {
-            doc.addImage(logo, 'PNG', 10, 10, 40, 40);
-        } catch (e) {
-            console.error("Chyba při vkládání loga:", e);
-        }
-    }
-
-    // RAZÍTKO u podpisu
-    const razitko = localStorage.getItem('cfg_razitko');
-    if (razitko) {
-        try {
-            doc.addImage(razitko, 'PNG', 150, 250, 40, 40);
-        } catch (e) {
-            console.error("Chyba při vkládání razítka:", e);
-        }
-    }
-    
-    
     </script>
-
-   
-
 </body>
 </html>
