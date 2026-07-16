@@ -939,165 +939,217 @@
             else return exportStandardPDF(returnBlob);
         }
 
-        function exportFakturaPDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf; 
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            
-            let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); 
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            
-            // Použití filtru pro odstranění diakritiky
-            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
-            let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
-            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); 
-            let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
-            let icoOdberatel = bezDiakritiky(document.getElementById('cfg-ico-odberatel').value);
+     function exportFakturaPDF(returnBlob = false) {
+    const { jsPDF } = window.jspdf; 
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    
+    doc.setFont("courier", "normal");
+    let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); 
+    vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+    
+    let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
+    let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
+    let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); 
+    let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
+    let icoOdberatel = bezDiakritiky(document.getElementById('cfg-ico-odberatel').value);
 
-            let dodIco = bezDiakritiky(document.getElementById('cfg-dod-ico').value);
-            let dodAdresaObj = bezDiakritiky(document.getElementById('cfg-dod-adresa').value).split('\n');
-            let dodBanka = bezDiakritiky(document.getElementById('cfg-dod-banka').value);
-            let dodKontakt = bezDiakritiky(document.getElementById('cfg-dod-kontakt').value);
+    let dodIco = bezDiakritiky(document.getElementById('cfg-dod-ico').value); 
+    let dodAdresaObj = bezDiakritiky(document.getElementById('cfg-dod-adresa').value).split('\n');
+    let dodBanka = bezDiakritiky(document.getElementById('cfg-dod-banka').value); 
+    let dodKontakt = bezDiakritiky(document.getElementById('cfg-dod-kontakt').value);
 
-            let cisloFaktury = bezDiakritiky(document.getElementById('fak-cislo').value);
-            let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
-            let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
+    let cisloFaktury = bezDiakritiky(document.getElementById('fak-cislo').value);
+    let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate; 
+    let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
 
-            // Červený blok nahoře vpravo
-            doc.setFillColor(179, 57, 57); 
-            doc.rect(110, 10, 90, 25, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(20);
-            doc.text(`Faktura c. ${cisloFaktury}`, 195, 22, {align: 'right'});
-            doc.setFont("Helvetica", "italic");
-            doc.setFontSize(10);
-            doc.text("Neplatce DPH", 195, 29, {align: 'right'});
+    let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
 
-            // Modré nadpisy
-            doc.setTextColor(41, 128, 185); 
-            doc.setFont("Courier", "normal");
-            doc.setFontSize(18);
-            doc.text("Dodavatel", 15, 50);
-            doc.text("Odberatel", 110, 50);
+    // 1. ČERVENÝ PRUH PŘES CELOU ŠÍŘKU
+    doc.setFillColor(179, 57, 57); 
+    doc.rect(15, 10, 180, 25, 'F'); 
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("courier", "bold"); 
+    doc.setFontSize(20);
+    doc.text(`Faktura c. ${cisloFaktury}`, 190, 22, {align: 'right'});
+    doc.setFont("courier", "normal"); 
+    doc.setFontSize(10); 
+    doc.text("Neplatce DPH", 190, 29, {align: 'right'});
 
-            // Informace
-            doc.setTextColor(0, 0, 0);
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(9);
-            
-            // Dodavatel
-            let yL = 55;
-            doc.text(jmeno, 15, yL); yL+=6;
-            doc.setFont("Helvetica", "normal");
-            dodAdresaObj.forEach(line => { doc.text(line, 15, yL); yL+=6; });
-            doc.text(`ICO: ${dodIco}`, 15, yL); yL+=6;
-            let bankParts = dodBanka.split('|');
-            if(bankParts.length > 0) { doc.text(bankParts[0].trim(), 15, yL); yL+=6; }
-            if(bankParts.length > 1) { doc.text(bankParts[1].trim(), 15, yL); yL+=6; }
-            doc.text(`Vystavil: ${jmeno}`, 15, yL); yL+=6;
-            let kontParts = dodKontakt.split('|');
-            if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=6; }
-            if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=6; }
+    // 2. LOGO (Nezapomeň nahrát .PNG s průhledným pozadím!)
+    let logoData = localStorage.getItem('cfg_logo');
+    if (logoData) {
+        try {
+            let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+            let props = doc.getImageProperties(logoData); 
+            let ratio = props.width / props.height;
+            let targetHeight = 25; // Zvětšené logo pro lepší efekt přesahu
+            let targetWidth = targetHeight * ratio;
+            if(targetWidth > 60) { targetWidth = 60; targetHeight = targetWidth / ratio; }
+            doc.addImage(logoData, imgType, 18, 20, targetWidth, targetHeight, '', 'FAST');
+        } catch(e) {}
+    }
 
-            // Odberatel
-            let yR = 55;
-            doc.setFont("Helvetica", "bold");
-            let fSplit = firma.split(', ');
-            fSplit.forEach(line => { doc.text(line, 110, yR); yR+=6; });
-            doc.setFont("Helvetica", "normal");
-            doc.text(adresa, 110, yR); yR+=6;
-            doc.text(mesto, 110, yR); yR+=6;
-            let icoParts = icoOdberatel.split(',');
-            icoParts.forEach(line => { doc.text(line.trim(), 110, yR); yR+=6; });
+    // Dodavatel & Odberatel hlavičky
+    doc.setTextColor(41, 128, 185); 
+    doc.setFontSize(16); 
+    doc.text("Dodavatel", 15, 55); 
+    doc.text("Odberatel", 100, 55);
 
-            // Šedý pruh
-            let grayY = 105;
-            doc.setFillColor(242, 242, 242);
-            doc.rect(15, grayY, 180, 10, 'F');
-            doc.setFont("Helvetica", "normal");
-            doc.setTextColor(100, 100, 100);
-            doc.text("Zpusob platby: Bankovni prevod", 20, grayY+6);
+    doc.setTextColor(0, 0, 0); 
+    doc.setFont("courier", "bold"); 
+    doc.setFontSize(9);
+    
+    // DYNAMICKÉ POČÍTÁNÍ ŘÁDKŮ ADRESY (Zabrání překrývání!)
+    let yL = 61; 
+    doc.text(jmeno, 15, yL); yL+=5; 
+    doc.setFont("courier", "normal");
+    dodAdresaObj.forEach(line => { doc.text(line, 15, yL); yL+=5; });
+    doc.text(`ICO: ${dodIco}`, 15, yL); yL+=5;
+    let bankParts = dodBanka.split('|'); 
+    if(bankParts.length > 0) { doc.text(bankParts[0].trim(), 15, yL); yL+=5; }
+    if(bankParts.length > 1) { doc.text(bankParts[1].trim(), 15, yL); yL+=5; }
+    doc.text(`Vystavil: ${jmeno}`, 15, yL); yL+=5;
+    let kontParts = dodKontakt.split('|'); 
+    if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=5; }
+    if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=5; }
 
-            // Údaje k platbě
-            let dateY = 125;
-            doc.setTextColor(41, 128, 185);
-            doc.setFontSize(10);
-            doc.text("DATUM VYSTAVENI", 20, dateY);
-            doc.text("DATUM SPLATNOSTI", 70, dateY);
-            
-            doc.setTextColor(0, 0, 0);
-            doc.setFont("Helvetica", "bold");
-            if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
-            if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
+    let yR = 61; 
+    doc.setFont("courier", "bold");
+    let fSplit = firma.split(', '); 
+    fSplit.forEach(line => { doc.text(line, 100, yR); yR+=5; });
+    doc.setFont("courier", "normal"); 
+    doc.text(adresa, 100, yR); yR+=5; 
+    doc.text(mesto, 100, yR); yR+=5;
+    let icoParts = icoOdberatel.split(','); 
+    icoParts.forEach(line => { doc.text(line.trim(), 100, yR); yR+=5; });
 
-            // Součet
-            let sumEUR = 0;
-            vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
+    // VÝPOČET BEZPEČNÉ VZDÁLENOSTI PRO ZBYTEK DOKUMENTU
+    let currentY = Math.max(yL, yR) + 10;
 
-            doc.setTextColor(41, 128, 185);
-            doc.setFontSize(10);
-            doc.text("CELKEM K UHRADE", 130, dateY-10);
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(16);
-            doc.text(formatMena(sumEUR), 130, dateY-2);
+    // Způsob platby 
+    let grayY = currentY; 
+    doc.setFillColor(242, 242, 242); 
+    doc.rect(15, grayY, 120, 9, 'F');
+    doc.setTextColor(100, 100, 100); 
+    doc.text("Zpusob platby: Bankovni prevod", 20, grayY+6);
 
-            // Tabulka položek (červený pruh)
-            let tableY = 145;
-            doc.setFillColor(179, 57, 57);
-            doc.rect(15, tableY, 180, 8, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(9);
-            doc.text("Popis", 20, tableY+5.5);
-            doc.text("Mnozstvi", 120, tableY+5.5, {align:'center'});
-            doc.text("Cena za mj.", 150, tableY+5.5, {align:'center'});
-            doc.text("Celkem", 190, tableY+5.5, {align:'right'});
+    let dateY = grayY + 17; 
+    doc.setTextColor(41, 128, 185); 
+    doc.setFontSize(9);
+    doc.text("DATUM VYSTAVENI", 20, dateY); 
+    doc.text("DATUM SPLATNOSTI", 70, dateY);
+    doc.setTextColor(0, 0, 0); 
+    doc.setFont("courier", "bold");
+    if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
+    if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
 
-            doc.setTextColor(0, 0, 0);
-            doc.setFont("Helvetica", "normal");
-            let itemY = tableY + 10;
+    // 3. QR KÓD (Srovnaný vedle platby a zarovnaný)
+    let cleanIbanMatch = dodBanka.replace(/\s/g, '').match(/[A-Za-z]{2}[0-9A-Za-z]{13,32}/);
+    if (cleanIbanMatch) {
+        let iban = cleanIbanMatch[0].toUpperCase(); let vs = cisloFaktury.replace(/\D/g, ''); 
+        let qrData = getQrBase64(iban, sumEUR.toFixed(2), vs);
+        doc.addImage(qrData, 'PNG', 145, grayY, 40, 40);
+        doc.setFontSize(8); doc.setFont("courier", "normal"); doc.setTextColor(100, 100, 100); 
+        doc.text("QR Platba", 165, grayY + 44, {align: 'center'});
+    }
 
-            let totalH = 0;
-            vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
-            let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
+    // 4. TABULKA
+    let tableY = grayY + 50; 
+    doc.setFillColor(179, 57, 57); 
+    doc.rect(15, tableY, 180, 8, 'F');
+    doc.setTextColor(255, 255, 255); 
+    doc.setFont("courier", "bold"); 
+    doc.setFontSize(9);
+    doc.text("Popis", 20, tableY+5.5); 
+    doc.text("Mnozstvi", 125, tableY+5.5, {align:'center'}); // Sloupec posunut do bezpečí
+    doc.text("Cena/mj.", 155, tableY+5.5, {align:'center'}); 
+    doc.text("Celkem", 190, tableY+5.5, {align:'right'});
 
-            let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
-            doc.text(`Pracovni hodiny dle vykazu (${dateStr})`, 20, itemY);
-            doc.text(`${totalH.toFixed(2)} h`, 120, itemY, {align:'center'});
-            doc.text(`${typSazby} EUR`, 150, itemY, {align:'center'});
-            doc.text(formatMena(sumEUR), 190, itemY, {align:'right'});
-            
-            doc.setDrawColor(200, 200, 200);
-            doc.line(15, itemY+5, 195, itemY+5);
+    doc.setTextColor(0, 0, 0); 
+    doc.setFont("courier", "normal"); 
+    
+    let itemY = tableY + 8;
+    let totalH = 0; vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
+    let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
 
-            // Patička a Celkem k úhradě dole
-            let footerY = 220;
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text(`Celkem k uhrade:`, 130, footerY);
-            doc.text(formatMena(sumEUR), 190, footerY, {align:'right'});
+    let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
+    
+    // ROZDĚLENÍ POPISU NA DVA ŘÁDKY ABY NEZAVÁZEL
+    doc.text(`Pracovni hodiny dle vykazu`, 20, itemY+4);
+    doc.text(`(${dateStr})`, 20, itemY+9);
+    
+    doc.text(`${totalH.toFixed(2)} h`, 125, itemY+6.5, {align:'center'});
+    doc.text(`${typSazby} EUR`, 155, itemY+6.5, {align:'center'});
+    doc.text(formatMena(sumEUR), 190, itemY+6.5, {align:'right'});
+    
+    doc.setDrawColor(200, 200, 200); 
+    doc.line(15, itemY+14, 195, itemY+14);
 
-            doc.setDrawColor(0, 0, 0);
-            doc.line(125, footerY+5, 195, footerY+5);
-            doc.setFont("Helvetica", "normal");
-            doc.setFontSize(9);
-            
-            if(dataPodpisuIch) {
-                doc.addImage(dataPodpisuIch, 'JPEG', 135, footerY+15, 45, 15);
-            }
-            doc.line(125, footerY+35, 195, footerY+35);
-            doc.text("Podpis", 160, footerY+40, {align:'center'});
+    // 5. CELKEM K ÚHRADĚ
+    let totalY = itemY + 25; 
+    doc.setFillColor(245, 245, 245); 
+    doc.rect(15, totalY, 180, 12, 'F'); 
+    
+    doc.setFont("courier", "bold"); 
+    doc.setFontSize(14);
+    doc.text("Celkem k uhrade:", 135, totalY + 8, {align:'right'});
+    doc.setFontSize(15);
+    doc.text(formatMena(sumEUR), 190, totalY + 8, {align:'right'});
 
-            doc.setFontSize(8);
-            doc.text("Podnikatel je zapsan v zivnostenskem rejstriku.", 15, footerY+40);
-            doc.setTextColor(150, 150, 150);
-            doc.text("Vystaveno v systemu aplikace", 15, 285);
-            doc.text("Strana 1/1", 195, 285, {align: 'right'});
+    // PATIČKA S PODPISEM A RAZÍTKEM
+    let footerY = totalY + 40;
+    
+    let razitkoData = localStorage.getItem('cfg_razitko');
+    if (razitkoData) {
+        try {
+            let imgType = razitkoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+            let props = doc.getImageProperties(razitkoData); let ratio = props.width / props.height;
+            let targetWidth = 35; let targetHeight = targetWidth / ratio;
+            if (targetHeight > 25) { targetHeight = 25; targetWidth = targetHeight * ratio; }
+            let xPos = 162.5 - (targetWidth / 2); let yPos = footerY - targetHeight - 5;
+            doc.addImage(razitkoData, imgType, xPos, yPos, targetWidth, targetHeight, '', 'FAST');
+        } catch(e) {}
+    }
 
-            if(returnBlob) return doc.output('blob');
-            doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
-            if(!remoteMode) closeExportCard();
-        }
+    if(dataPodpisuIch) { doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY - 20, 40, 15); }
+    
+    doc.setDrawColor(0, 0, 0); 
+    doc.line(130, footerY, 195, footerY);
+    doc.setFontSize(9);
+    doc.text("Podpis", 162.5, footerY + 5, {align:'center'});
+    
+    doc.setFontSize(8); 
+    doc.setFont("courier", "normal");
+    doc.text("Podnikatel je zapsan v zivnostenskem rejstriku.", 15, footerY + 5);
+    
+    // PŘÍLOHY A STRÁNKOVÁNÍ
+    let prilohaTyp = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
+    doc.setTextColor(150, 150, 150);
+    
+    if (prilohaTyp !== 'none') {
+        doc.text("Vystaveno v systemu aplikace", 15, 285);
+        doc.text("Strana 1/2", 195, 285, {align: 'right'});
+        
+        doc.addPage();
+        doc.setTextColor(0, 0, 0); 
+        if (prilohaTyp === 'standard') { drawStandardReportToDoc(doc, vybrane); }
+        else if (prilohaTyp === 'abnahme') { drawAbnahmeReportToDoc(doc, vybrane); }
+        
+        doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+        doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 2/2", 195, 285, {align: 'right'});
+    } else {
+        doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 1/1", 195, 285, {align: 'right'});
+    }
+
+    if(!returnBlob) {
+        let base64Pdf = doc.output('datauristring');
+        ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, base64Pdf);
+    }
+
+    if(returnBlob) return doc.output('blob');
+    doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
+    if(!remoteMode) closeExportCard();
+}
 
         function buildShareUrl() {
             let vybrane = zaznamy.filter(z => z.selected);
