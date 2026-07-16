@@ -141,8 +141,8 @@
         .faktura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; font-size: 12px; }
         .faktura-gray-bar { background-color: #f2f2f2; padding: 10px 20px; font-size: 12px; border-bottom: 1px solid #e0e0e0; border-top: 1px solid #e0e0e0; display:flex; justify-content: space-between;}
         .faktura-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .faktura-table th { background-color: #b33939; color: white; padding: 8px; text-align: left; }
-        .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .faktura-table th { background-color: #b33939; color: white; padding: 12px; text-align: left; }
+        .faktura-table td { padding: 123px; border-bottom: 3px solid #eee; }
     </style>
 </head>
 <body>
@@ -416,19 +416,19 @@
                         <input type="text" id="cfg-dod-kontakt" value="Tel: +420 601 515 360 | Email: el.michalekpetr@gmail.com">
                     </div>
 
-                    <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
+                    <hr style="border:0; border-top:2px dashed #ccc; margin:20px 0;">
                     <div class="card-title" data-cs="Firemní identita" data-de="Firmenidentität">Firemní identita (Logo a Razítko)</div>
                     <div class="form-group">
                         <label>Logo (zobrazí se vlevo nahoře na faktuře)</label>
                         <input type="file" id="inp-logo" accept="image/png, image/jpeg" onchange="nahratObrazek(this, 'cfg_logo', 'preview-logo')">
-                        <img id="preview-logo" style="max-height: 50px; margin-top: 10px; display: none;">
-                        <button class="btn-sec" style="margin-top:5px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_logo', 'preview-logo', 'inp-logo')">Smazat logo</button>
+                        <img id="preview-logo" style="max-height: 50px; margin-top: 20px; display: none;">
+                        <button class="btn-sec" style="margin-top:10px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_logo', 'preview-logo', 'inp-logo')">Smazat logo</button>
                     </div>
                     <div class="form-group">
                         <label>Razítko (zobrazí se u podpisu)</label>
                         <input type="file" id="inp-razitko" accept="image/png, image/jpeg" onchange="nahratObrazek(this, 'cfg_razitko', 'preview-razitko')">
                         <img id="preview-razitko" style="max-height: 50px; margin-top: 10px; display: none;">
-                        <button class="btn-sec" style="margin-top:5px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_razitko', 'preview-razitko', 'inp-razitko')">Smazat razítko</button>
+                        <button class="btn-sec" style="margin-top:10px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_razitko', 'preview-razitko', 'inp-razitko')">Smazat razítko</button>
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
@@ -485,10 +485,6 @@
 
     <script>
         // Pomocná funkce pro odstranění háčků a čárek (pro bezproblémové PDF)
-        function bezDiakritiky(text) {
-            if (!text) return '';
-            return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
 
         function nahratObrazek(input, storageKey, previewId) {
             if (input.files && input.files[0]) {
@@ -930,22 +926,22 @@
             let vybrane = remoteMode ? remoteZaznamy : zaznamy.filter(z => z.selected); 
             vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             
-            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
-            let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
-            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); 
-            let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
-            let icoOdberatel = bezDiakritiky(document.getElementById('cfg-ico-odberatel').value);
+            let jmeno = sDiakritikou(document.getElementById('cfg-jmeno').value); 
+            let firma = sDiakritikou(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
+            let adresa = sDiakritikou(document.getElementById('cfg-adresa').value); 
+            let město = sDiakritikou(document.getElementById('cfg-město').value);
+            let IČOOdběratel = sDiakritikou(document.getElementById('cfg-ico-odběratel').value);
 
-            let dodIco = bezDiakritiky(document.getElementById('cfg-dod-ico').value);
-            let dodAdresaObj = bezDiakritiky(document.getElementById('cfg-dod-adresa').value).split('\n');
-            let dodBanka = bezDiakritiky(document.getElementById('cfg-dod-banka').value);
-            let dodKontakt = bezDiakritiky(document.getElementById('cfg-dod-kontakt').value);
+            let dodIIČO = sDiakritikou(document.getElementById('cfg-dod-ičo').value);
+            let dodAdresaObj = sDiakritikou(document.getElementById('cfg-dod-adresa').value).split('\n');
+            let dodBanka = sDiakritikou(document.getElementById('cfg-dod-banka').value);
+            let dodKontakt = sDiakritikou(document.getElementById('cfg-dod-kontakt').value);
 
-            let cisloFaktury = bezDiakritiky(document.getElementById('fak-cislo').value);
-            let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
+            let čisloFaktury = sDiakritikou(document.getElementById('fak-číslo').value);
+            let datumVystaveni = document.getElementById('fak-vystavení').valueAsDate;
             let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
 
-            let attachReport = document.getElementById('fak-priloha').checked;
+            let attachReport = document.getElementById('fak-příloha').checked;
 
             let logoData = localStorage.getItem('cfg_logo');
             if (logoData) {
@@ -997,7 +993,7 @@
             if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
             if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
 
-            let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
+            let sumEUR€ = 0; vybrane.forEach(z => { sumEUR€ += (kalkulujCisteHodiny(z) * z.sazba); });
 
             let tableY = 145; doc.setFillColor(179, 57, 57); doc.rect(15, tableY, 180, 8, 'F');
             doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(9);
@@ -1026,7 +1022,7 @@
             if (cleanIbanMatch) {
                 let iban = cleanIbanMatch[0].toUpperCase();
                 let vs = cisloFaktury.replace(/\D/g, ''); // Vyjme jen čísla z čísla faktury pro VS
-                let qrData = getQrBase64(iban, sumEUR.toFixed(2), vs);
+                let qrData = getQrBase64(iban, sumEUR€.toFixed(2), vs);
                 
                 doc.addImage(qrData, 'PNG', 15, footerY - 5, 30, 30);
                 doc.setFontSize(8); doc.setFont("courier", "bold");
