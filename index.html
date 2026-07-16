@@ -1032,7 +1032,7 @@ function executePDFExport(returnBlob = false) {
 }
 
 // 2. TVOJE KOMPLETNÍ A OPRAVENÁ FUNKCE PRO FAKTURU
-function exportFakturaPDF(returnBlob = false) {
+function exportFakturaPDF(returnBlob = false) {function exportFakturaPDF(returnBlob = false) {
     const { jsPDF } = window.jspdf; 
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     
@@ -1068,31 +1068,32 @@ function exportFakturaPDF(returnBlob = false) {
     doc.setFontSize(10); 
     doc.text("Neplatce DPH", 190, 29, {align: 'right'});
 
-    // 2. LOGO (Částečně v pruhu, částečně pod ním - nad dodavatelem)
+    // 2. LOGO (Nezapomeň nahrát .PNG s průhledným pozadím!)
     let logoData = localStorage.getItem('cfg_logo');
     if (logoData) {
         try {
             let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
             let props = doc.getImageProperties(logoData); 
             let ratio = props.width / props.height;
-            let targetHeight = 22; // Zvětšená výška pro překryv
+            let targetHeight = 25; // Zvětšené logo pro lepší efekt přesahu
             let targetWidth = targetHeight * ratio;
-            if(targetWidth > 55) { targetWidth = 55; targetHeight = targetWidth / ratio; }
-            doc.addImage(logoData, imgType, 20, 15, targetWidth, targetHeight, '', 'FAST');
+            if(targetWidth > 60) { targetWidth = 60; targetHeight = targetWidth / ratio; }
+            doc.addImage(logoData, imgType, 18, 20, targetWidth, targetHeight, '', 'FAST');
         } catch(e) {}
     }
 
-    // Dodavatel & Odberatel
+    // Dodavatel & Odberatel hlavičky
     doc.setTextColor(41, 128, 185); 
     doc.setFontSize(16); 
-    doc.text("Dodavatel", 15, 50); 
-    doc.text("Odberatel", 100, 50);
+    doc.text("Dodavatel", 15, 55); 
+    doc.text("Odberatel", 100, 55);
 
     doc.setTextColor(0, 0, 0); 
     doc.setFont("courier", "bold"); 
     doc.setFontSize(9);
     
-    let yL = 56; 
+    // DYNAMICKÉ POČÍTÁNÍ ŘÁDKŮ ADRESY (Zabrání překrývání!)
+    let yL = 61; 
     doc.text(jmeno, 15, yL); yL+=5; 
     doc.setFont("courier", "normal");
     dodAdresaObj.forEach(line => { doc.text(line, 15, yL); yL+=5; });
@@ -1105,7 +1106,7 @@ function exportFakturaPDF(returnBlob = false) {
     if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=5; }
     if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=5; }
 
-    let yR = 56; 
+    let yR = 61; 
     doc.setFont("courier", "bold");
     let fSplit = firma.split(', '); 
     fSplit.forEach(line => { doc.text(line, 100, yR); yR+=5; });
@@ -1115,14 +1116,17 @@ function exportFakturaPDF(returnBlob = false) {
     let icoParts = icoOdberatel.split(','); 
     icoParts.forEach(line => { doc.text(line.trim(), 100, yR); yR+=5; });
 
-    // Způsob platby (Jen levá část, ať je místo pro QR doprava)
-    let grayY = 95; 
+    // VÝPOČET BEZPEČNÉ VZDÁLENOSTI PRO ZBYTEK DOKUMENTU
+    let currentY = Math.max(yL, yR) + 10;
+
+    // Způsob platby 
+    let grayY = currentY; 
     doc.setFillColor(242, 242, 242); 
     doc.rect(15, grayY, 120, 9, 'F');
     doc.setTextColor(100, 100, 100); 
     doc.text("Zpusob platby: Bankovni prevod", 20, grayY+6);
 
-    let dateY = 112; 
+    let dateY = grayY + 17; 
     doc.setTextColor(41, 128, 185); 
     doc.setFontSize(9);
     doc.text("DATUM VYSTAVENI", 20, dateY); 
@@ -1132,49 +1136,52 @@ function exportFakturaPDF(returnBlob = false) {
     if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
     if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
 
-    // 3. QR KÓD (Přesunutý doprava vedle data a platební metody)
+    // 3. QR KÓD (Srovnaný vedle platby a zarovnaný)
     let cleanIbanMatch = dodBanka.replace(/\s/g, '').match(/[A-Za-z]{2}[0-9A-Za-z]{13,32}/);
     if (cleanIbanMatch) {
         let iban = cleanIbanMatch[0].toUpperCase(); let vs = cisloFaktury.replace(/\D/g, ''); 
         let qrData = getQrBase64(iban, sumEUR.toFixed(2), vs);
-        doc.addImage(qrData, 'PNG', 150, grayY, 40, 40);
+        doc.addImage(qrData, 'PNG', 145, grayY, 40, 40);
         doc.setFontSize(8); doc.setFont("courier", "normal"); doc.setTextColor(100, 100, 100); 
-        doc.text("QR Platba", 170, grayY + 44, {align: 'center'});
+        doc.text("QR Platba", 165, grayY + 44, {align: 'center'});
     }
 
-    // 4. TABULKA (S oddělovacími čarami pro hezký vzhled)
-    let tableY = 145; 
+    // 4. TABULKA
+    let tableY = grayY + 50; 
     doc.setFillColor(179, 57, 57); 
     doc.rect(15, tableY, 180, 8, 'F');
     doc.setTextColor(255, 255, 255); 
     doc.setFont("courier", "bold"); 
     doc.setFontSize(9);
     doc.text("Popis", 20, tableY+5.5); 
-    doc.text("Mnozstvi", 110, tableY+5.5, {align:'center'});
-    doc.text("Cena za mj.", 145, tableY+5.5, {align:'center'}); 
+    doc.text("Mnozstvi", 125, tableY+5.5, {align:'center'}); // Sloupec posunut do bezpečí
+    doc.text("Cena/mj.", 155, tableY+5.5, {align:'center'}); 
     doc.text("Celkem", 190, tableY+5.5, {align:'right'});
 
     doc.setTextColor(0, 0, 0); 
     doc.setFont("courier", "normal"); 
     
-    let itemY = tableY + 10;
+    let itemY = tableY + 8;
     let totalH = 0; vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
     let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
 
     let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
-    doc.text(`Pracovni hodiny dle vykazu (${dateStr})`, 20, itemY);
-    doc.text(`${totalH.toFixed(2)} h`, 110, itemY, {align:'center'});
-    doc.text(`${typSazby} EUR`, 145, itemY, {align:'center'});
-    doc.text(formatMena(sumEUR), 190, itemY, {align:'right'});
     
-    // Oddělovací čára řádku
+    // ROZDĚLENÍ POPISU NA DVA ŘÁDKY ABY NEZAVÁZEL
+    doc.text(`Pracovni hodiny dle vykazu`, 20, itemY+4);
+    doc.text(`(${dateStr})`, 20, itemY+9);
+    
+    doc.text(`${totalH.toFixed(2)} h`, 125, itemY+6.5, {align:'center'});
+    doc.text(`${typSazby} EUR`, 155, itemY+6.5, {align:'center'});
+    doc.text(formatMena(sumEUR), 190, itemY+6.5, {align:'right'});
+    
     doc.setDrawColor(200, 200, 200); 
-    doc.line(15, itemY+4, 195, itemY+4);
+    doc.line(15, itemY+14, 195, itemY+14);
 
-    // 5. CELKEM K ÚHRADĚ (Větší mezera a uděláno jako krásný box)
-    let totalY = itemY + 20; 
+    // 5. CELKEM K ÚHRADĚ
+    let totalY = itemY + 25; 
     doc.setFillColor(245, 245, 245); 
-    doc.rect(15, totalY, 180, 12, 'F'); // Rámeček pro celkovou sumu
+    doc.rect(15, totalY, 180, 12, 'F'); 
     
     doc.setFont("courier", "bold"); 
     doc.setFontSize(14);
@@ -1182,7 +1189,7 @@ function exportFakturaPDF(returnBlob = false) {
     doc.setFontSize(15);
     doc.text(formatMena(sumEUR), 190, totalY + 8, {align:'right'});
 
-    // PATIČKA S PODPISEM (Posunuto níže podle nového uspořádání)
+    // PATIČKA S PODPISEM A RAZÍTKEM
     let footerY = totalY + 40;
     
     let razitkoData = localStorage.getItem('cfg_razitko');
@@ -1200,7 +1207,7 @@ function exportFakturaPDF(returnBlob = false) {
     if(dataPodpisuIch) { doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY - 20, 40, 15); }
     
     doc.setDrawColor(0, 0, 0); 
-    doc.line(130, footerY, 195, footerY); // Čára pro podpis
+    doc.line(130, footerY, 195, footerY);
     doc.setFontSize(9);
     doc.text("Podpis", 162.5, footerY + 5, {align:'center'});
     
@@ -1208,7 +1215,7 @@ function exportFakturaPDF(returnBlob = false) {
     doc.setFont("courier", "normal");
     doc.text("Podnikatel je zapsan v zivnostenskem rejstriku.", 15, footerY + 5);
     
-    // PŘÍLOHY (Stránkování a přidání výkazů)
+    // PŘÍLOHY A STRÁNKOVÁNÍ
     let prilohaTyp = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
     doc.setTextColor(150, 150, 150);
     
@@ -1227,7 +1234,6 @@ function exportFakturaPDF(returnBlob = false) {
         doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 1/1", 195, 285, {align: 'right'});
     }
 
-    // ULOŽENÍ DO ARCHIVU (Base64)
     if(!returnBlob) {
         let base64Pdf = doc.output('datauristring');
         ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, base64Pdf);
@@ -1436,49 +1442,199 @@ function exportFakturaPDF(returnBlob = false) {
             }
         }
 
-        function generatePhoneLink() {
-            currentDrawSessionId = Math.random().toString(36).substring(2, 10);
-            const baseUrl = window.location.href.split('?')[0]; const phoneUrl = `${baseUrl}?remoteDraw=${currentDrawSessionId}`;
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-            document.getElementById('qr-code-img').src = qrUrl; document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId}`; document.getElementById('qr-modal').classList.remove('hidden');
+let pollingInterval = null;
+
+        // VYLEPŠENÝ QR KÓD PRO NÁKRES Z TELEFONU
+        async function generatePhoneLink() {
+            document.getElementById('qr-code-img').style.display = 'none';
+            document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečné spojení s telefonem...';
+            document.getElementById('qr-modal').classList.remove('hidden');
+            
+            try {
+                let res = await fetch('https://jsonblob.com/api/jsonBlob', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ status: 'waiting', image: null })
+                });
+                let blobId = res.headers.get('Location').split('/').pop();
+                
+                const baseUrl = window.location.href.split('?')[0]; 
+                const phoneUrl = `${baseUrl}?remoteDraw=${blobId}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
+                
+                document.getElementById('qr-code-img').src = qrUrl; 
+                document.getElementById('qr-code-img').style.display = 'block';
+                document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód.`; 
+                
+                startPollingDraw(blobId);
+            } catch(e) {
+                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+            }
         }
 
-        function generateSignaturePhoneLink(target) {
-            currentDrawSessionId = Math.random().toString(36).substring(2, 10);
-            const baseUrl = window.location.href.split('?')[0]; const phoneUrl = `${baseUrl}?remoteSig=${target}&session=${currentDrawSessionId}`;
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-            document.getElementById('qr-code-img').src = qrUrl; document.getElementById('qr-session-id-display').innerText = `Session ID: ${currentDrawSessionId} (${target === 'kunde' ? 'Klient' : 'Dodavatel'})`; document.getElementById('qr-modal').classList.remove('hidden');
+        function startPollingDraw(blobId) {
+            if(pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                try {
+                    let res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`);
+                    let data = await res.json();
+                    if (data && data.status === 'done' && data.image) {
+                        clearInterval(pollingInterval);
+                        closeQrModal();
+                        actPopisImgData = data.image; 
+                        document.getElementById('drawn-preview-img').src = actPopisImgData; 
+                        document.getElementById('preview-drawn-image').style.display = 'block';
+                        alert("Nákres úspěšně přenesen do PC!");
+                    }
+                } catch(e) {}
+            }, 2000);
         }
 
-        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); currentDrawSessionId = null; }
+        // VYLEPŠENÝ QR KÓD PRO PODPIS Z TELEFONU
+        async function generateSignaturePhoneLink(target) {
+            document.getElementById('qr-code-img').style.display = 'none';
+            document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečné spojení s telefonem...';
+            document.getElementById('qr-modal').classList.remove('hidden');
+            
+            try {
+                let res = await fetch('https://jsonblob.com/api/jsonBlob', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ status: 'waiting', signature: null })
+                });
+                let blobId = res.headers.get('Location').split('/').pop();
+                
+                const baseUrl = window.location.href.split('?')[0]; 
+                const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
+                
+                document.getElementById('qr-code-img').src = qrUrl; 
+                document.getElementById('qr-code-img').style.display = 'block';
+                document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
+                
+                startPollingSignature(blobId, target);
+            } catch(e) {
+                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+            }
+        }
 
+        function startPollingSignature(blobId, target) {
+            if(pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                try {
+                    let res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`);
+                    let data = await res.json();
+                    if (data && data.status === 'done' && data.signature) {
+                        clearInterval(pollingInterval);
+                        closeQrModal();
+                        
+                        const tinyCanvas = document.createElement('canvas'); tinyCanvas.width = 200; tinyCanvas.height = 70;
+                        const tCtx = tinyCanvas.getContext('2d'); tCtx.fillStyle = '#ffffff'; tCtx.fillRect(0, 0, tinyCanvas.width, tinyCanvas.height);
+                        
+                        let img = new Image();
+                        img.onload = () => {
+                            tCtx.drawImage(img, 0, 0, tinyCanvas.width, tinyCanvas.height);
+                            const tinyDataUrl = tinyCanvas.toDataURL('image/jpeg', 0.3);
+                            
+                            if (target === 'kunde') { 
+                                dataPodpisuKunde = data.signature; 
+                                document.getElementById('box-kunde').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; 
+                            } else { 
+                                dataPodpisuIch = data.signature; 
+                                dataPodpisuIchTiny = tinyDataUrl; 
+                                document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; 
+                            }
+                            updateLivePreview();
+                            alert("Podpis úspěšně přenesen do PC!");
+                        };
+                        img.src = data.signature;
+                    }
+                } catch(e) {}
+            }, 2000); // Ptá se cloudu každé 2 vteřiny
+        }
+
+        function closeQrModal() { 
+            document.getElementById('qr-modal').classList.add('hidden'); 
+            if(pollingInterval) clearInterval(pollingInterval);
+        }
+
+        // NAČTENÍ APLIKACE V TELEFONU
         window.addEventListener('DOMContentLoaded', (event) => {
             const urlParams = new URLSearchParams(window.location.search);
+            
+            // Režim nákresu v telefonu
             if (urlParams.has('remoteDraw')) {
-                const sessionId = urlParams.get('remoteDraw'); document.getElementById('main-app').classList.add('hidden'); document.getElementById('welcome-screen').style.display = 'none';
+                const blobId = urlParams.get('remoteDraw'); 
+                document.getElementById('main-app').classList.add('hidden'); document.getElementById('welcome-screen').style.display = 'none';
                 const footer = document.querySelector('.fs-draw-footer');
-                footer.innerHTML = `<button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button><button class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${sessionId}')">Odeslat do PC</button>`;
+                footer.innerHTML = `<button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button><button id="btn-send-draw" class="btn-main" style="background:#8e44ad; color:white; flex:2;" onclick="sendDrawToPC('${blobId}')">Odeslat do PC</button>`;
                 document.getElementById('fs-draw-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; 
             }
+            
+            // Režim podpisu v telefonu
             if (urlParams.has('remoteSig')) {
-                const target = urlParams.get('remoteSig'); const sessionId = urlParams.get('session');
+                const target = urlParams.get('remoteSig'); 
+                const blobId = urlParams.get('blobId'); 
                 document.getElementById('main-app').classList.add('hidden'); document.getElementById('welcome-screen').style.display = 'none';
-                targetSignature = target; let textTitle = target === 'kunde' ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (currentLang === 'cs' ? 'Podpis: Váš' : 'Unterschrift: Ihre');
+                targetSignature = target; 
+                let textTitle = target === 'kunde' ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (currentLang === 'cs' ? 'Podpis: Váš' : 'Unterschrift: Ihre');
                 document.getElementById('modal-sig-title').innerText = textTitle;
                 const modalBtns = document.querySelector('.modal-content .row');
-                modalBtns.innerHTML = `<button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button><button class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${sessionId}', '${target}')">Odeslat do PC</button>`;
+                modalBtns.innerHTML = `<button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button><button id="btn-send-sig" class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${blobId}', '${target}')">Odeslat do PC</button>`;
                 document.getElementById('signature-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; 
                 setTimeout(() => { canvas.width = canvas.offsetWidth; canvas.height = 200; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6'; }, 100);
             }
         });
 
-        function sendSignatureToPC(sessionId, target) {
+        // ODESLÁNÍ PODPISU Z TELEFONU DO CLOUDU
+        async function sendSignatureToPC(blobId, target) {
             const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
-            if (canvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve se podepište!'); return; }
-            alert("Podpis byl odeslán do PC!"); document.getElementById('signature-modal').classList.add('hidden');
+            if (canvas.toDataURL() === blank.toDataURL()) { alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); return; }
+            
+            const dataUrl = canvas.toDataURL('image/png');
+            const btn = document.getElementById('btn-send-sig');
+            if(btn) { btn.innerText = "Odesílám..."; btn.disabled = true; }
+            
+            try {
+                await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ status: 'done', signature: dataUrl })
+                });
+                
+                document.getElementById('signature-modal').classList.add('hidden');
+                document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; font-family:sans-serif;'>Podpis úspěšně odeslán do PC! ✔️<br><br><span style='font-size:14px;color:#777;'>Tuto záložku můžete zavřít.</span></h2>";
+            } catch(e) {
+                alert("Chyba při odesílání do PC.");
+                if(btn) { btn.innerText = "Odeslat do PC"; btn.disabled = false; }
+            }
         }
 
-        function sendDrawToPC(sessionId) { alert("Obrázek byl odeslán do PC!"); document.getElementById('fs-draw-modal').classList.add('hidden'); }
+        // ODESLÁNÍ NÁKRESU Z TELEFONU DO CLOUDU
+        async function sendDrawToPC(blobId) {
+            const blank = document.createElement('canvas'); blank.width = fsCanvas.width; blank.height = fsCanvas.height;
+            const blankCtx = blank.getContext('2d'); blankCtx.fillStyle = '#ffffff'; blankCtx.fillRect(0, 0, blank.width, blank.height);
+            
+            if (fsCanvas.toDataURL() === blank.toDataURL()) { alert('Nejdříve něco nakreslete!'); return; }
+            
+            const dataUrl = fsCanvas.toDataURL('image/png');
+            const btn = document.getElementById('btn-send-draw');
+            if(btn) { btn.innerText = "Odesílám..."; btn.disabled = true; }
+            
+            try {
+                await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ status: 'done', image: dataUrl })
+                });
+                
+                document.getElementById('fs-draw-modal').classList.add('hidden');
+                document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; font-family:sans-serif;'>Nákres úspěšně odeslán do PC! ✔️<br><br><span style='font-size:14px;color:#777;'>Tuto záložku můžete zavřít.</span></h2>";
+            } catch(e) {
+                alert("Chyba při odesílání do PC.");
+                if(btn) { btn.innerText = "Odeslat do PC"; btn.disabled = false; }
+            }
+        }
 
         function buildShareUrl() {
             let vybrane = zaznamy.filter(z => z.selected);
