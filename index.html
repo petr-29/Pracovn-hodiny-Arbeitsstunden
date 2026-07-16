@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pracovní Hodiny / Arbeitsstunden</title>
-    <!-- Knihovna pro tvorbu PDF -->
+    <title>Marker Feit - Správa hodin</title>
+    <!-- Knihovny -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Knihovna pro tvorbu QR kódů -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
-        /* PÍSMO COURIER NEW PRO CELOU APLIKACI */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
-
+        /* MODERNÍ VÝCHOZÍ PÍSMO PRO UI */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    
         /* STYLY PRO MODERNÍ ÚVODNÍ OBRAZOVKU */
         #welcome-screen {
             position: fixed; top: 0; left: 0; height: 100vh; width: 100%;
@@ -34,9 +33,17 @@
         .enter-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(230, 126, 34, 0.6); background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; }
 
         /* GLOBÁLNÍ PROMĚNNÉ */
-        :root { --primary: #f39c12; --primary-hover: #d35400; --bg: #f5f6fa; --card-bg: #ffffff; --text: #2c3e50; --border: #dcdde1; }
-        body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; transition: background-color 0.3s, color 0.3s; }
+:root { --primary: #f39c12; --primary-hover: #d35400; --bg: #f5f6fa; --card-bg: #ffffff; --text: #2c3e50; --border: #dcdde1; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; }
         .hidden { display: none !important; }
+        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .tab-item { background: none; border: none; color: #7f8c8d; display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; font-weight: bold;}
+        .tab-item.active { color: var(--primary); }
+        button.btn-main { background: var(--primary); color: #000; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .faktura-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f2f6; }
+    
         
         /* STYLY PRO TMAVÝ REŽIM (DARK MODE) */
         body.dark-theme { --bg: #121214; --card-bg: #1e1e24; --text: #f5f6fa; --border: #2f3640; }
