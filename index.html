@@ -1032,11 +1032,17 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             const pageWidth = doc.internal.pageSize.getWidth();
+            const PAGE_TABLE_BREAK_Y = 255;
+            const PAGE_SUMMARY_BREAK_Y = 250;
+            const PAGE_SIGNATURE_BREAK_Y = 210;
+            const PAGE_QR_BREAK_Y = 230;
+            const NEW_PAGE_START_Y = 20;
+            const TABLE_DESC_MAX_LENGTH = 28;
             let y = 14;
             let hodinyCelkem = 0;
             let cenaCelkem = 0;
 
-            const title = currentExportType === 'faktura' ? 'Faktura' : (currentExportType === 'abnahme' ? 'Abnahme Protokoll' : 'Standardni vykaz prace');
+            const title = currentExportType === 'faktura' ? 'Faktura' : (currentExportType === 'abnahme' ? 'Abnahme Protokoll' : 'Standardní výkaz práce');
             doc.setFontSize(16);
             doc.text(title, 14, y);
             y += 8;
@@ -1051,13 +1057,13 @@
             doc.text(`Dodavatel: ${jmeno}`, 14, y); y += 7;
 
             if (currentExportType === 'faktura') {
-                doc.text(`Cislo faktury: ${document.getElementById('fak-cislo').value || '-'}`, 14, y); y += 5;
-                doc.text(`Datum vystaveni: ${document.getElementById('fak-vystaveni').value || '-'}`, 14, y); y += 5;
+                doc.text(`Číslo faktury: ${document.getElementById('fak-cislo').value || '-'}`, 14, y); y += 5;
+                doc.text(`Datum vystavení: ${document.getElementById('fak-vystaveni').value || '-'}`, 14, y); y += 5;
                 doc.text(`Datum splatnosti: ${document.getElementById('fak-splatnost').value || '-'}`, 14, y); y += 7;
             }
             if (currentExportType === 'abnahme') {
-                doc.text(`Bez funkcni zkousky: ${document.getElementById('ab-bezZkousky').checked ? 'Ano' : 'Ne'}`, 14, y); y += 5;
-                doc.text(`S funkcni zkouskou: ${document.getElementById('ab-seZkouskou').checked ? 'Ano' : 'Ne'}`, 14, y); y += 5;
+                doc.text(`Bez funkční zkoušky: ${document.getElementById('ab-bezZkousky').checked ? 'Ano' : 'Ne'}`, 14, y); y += 5;
+                doc.text(`S funkční zkouškou: ${document.getElementById('ab-seZkouskou').checked ? 'Ano' : 'Ne'}`, 14, y); y += 5;
                 if (document.getElementById('ab-sVadami').checked) {
                     doc.text(`Vady: ${document.getElementById('ab-vadyText').value || '-'}`, 14, y); y += 5;
                     doc.text(`Odstranit do: ${document.getElementById('ab-odstraneniDo').value || '-'}`, 14, y); y += 5;
@@ -1070,7 +1076,7 @@
                 doc.rect(14, y, 182, 8, 'F');
                 doc.setFontSize(9);
                 doc.text('Datum', 16, y + 5);
-                doc.text('Cas', 42, y + 5);
+                doc.text('Čas', 42, y + 5);
                 doc.text('Hod.', 78, y + 5);
                 doc.text('Sazba', 102, y + 5);
                 doc.text('Cena', 132, y + 5);
@@ -1081,7 +1087,7 @@
             drawHeader();
             doc.setFontSize(8.5);
             vybrane.forEach(z => {
-                if (y > 255) {
+                if (y > PAGE_TABLE_BREAK_Y) {
                     doc.addPage();
                     y = 14;
                     drawHeader();
@@ -1096,19 +1102,19 @@
                 doc.text(hodiny.toFixed(2), 78, y + 5, { align: 'right' });
                 doc.text(`${sazba.toFixed(2)} EUR`, 102, y + 5);
                 doc.text(`${radekCena.toFixed(2)} EUR`, 132, y + 5);
-                doc.text((z.popisPrace || '-').toString().slice(0, 28), 158, y + 5);
+                doc.text((z.popisPrace || '-').toString().slice(0, TABLE_DESC_MAX_LENGTH), 158, y + 5);
                 doc.line(14, y + 7, 196, y + 7);
                 y += 7;
             });
 
             y += 4;
-            if (y > 250) { doc.addPage(); y = 20; }
+            if (y > PAGE_SUMMARY_BREAK_Y) { doc.addPage(); y = NEW_PAGE_START_Y; }
             doc.setFontSize(11);
-            doc.text(`Soucet hodin: ${hodinyCelkem.toFixed(2)} h`, 14, y);
+            doc.text(`Součet hodin: ${hodinyCelkem.toFixed(2)} h`, 14, y);
             doc.text(`Celkem: ${cenaCelkem.toFixed(2)} EUR`, pageWidth - 14, y, { align: 'right' });
             y += 8;
 
-            if (y > 210) { doc.addPage(); y = 20; }
+            if (y > PAGE_SIGNATURE_BREAK_Y) { doc.addPage(); y = NEW_PAGE_START_Y; }
             doc.setFontSize(10);
             doc.text('Podpis klienta', 14, y);
             doc.text('Podpis dodavatele', 110, y);
@@ -1126,7 +1132,7 @@
                 timestamp: new Date().toISOString()
             });
             let qr = new QRious({ value: qrValue, size: 180 });
-            if (y > 230) { doc.addPage(); y = 20; }
+            if (y > PAGE_QR_BREAK_Y) { doc.addPage(); y = NEW_PAGE_START_Y; }
             doc.text('QR', 14, y);
             doc.addImage(qr.toDataURL('image/png'), 'PNG', 14, y + 2, 32, 32);
 
