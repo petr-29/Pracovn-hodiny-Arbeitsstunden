@@ -212,7 +212,10 @@
     to { transform: scale(1); opacity: 1; }
 }
 
-@keyframes glowText {
+Fix missing glowText keyframes for animate-glow-text utility
+
+Add missing @keyframes glowText so .animate-glow-text works as intended.
+No changes to PDF files or content.@keyframes glowText {
     from { text-shadow: 0 0 5px rgba(255,255,255,0.2); }
     to   { text-shadow: 0 0 12px rgba(255,255,255,0.8); }
 }
