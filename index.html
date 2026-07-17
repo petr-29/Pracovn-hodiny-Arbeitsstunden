@@ -1032,13 +1032,15 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             const pageWidth = doc.internal.pageSize.getWidth();
+            const PAGE_MARGIN_TOP = 14;
             const PAGE_TABLE_BREAK_Y = 255;
             const PAGE_SUMMARY_BREAK_Y = 250;
             const PAGE_SIGNATURE_BREAK_Y = 210;
             const PAGE_QR_BREAK_Y = 230;
             const NEW_PAGE_START_Y = 20;
+            // Max délka popisu v tabulce kvůli šířce sloupce v A4
             const TABLE_DESC_MAX_LENGTH = 28;
-            let y = 14;
+            let y = PAGE_MARGIN_TOP;
             let hodinyCelkem = 0;
             let cenaCelkem = 0;
 
@@ -1089,12 +1091,14 @@
             vybrane.forEach(z => {
                 if (y > PAGE_TABLE_BREAK_Y) {
                     doc.addPage();
-                    y = 14;
+                    y = PAGE_MARGIN_TOP;
                     drawHeader();
                 }
                 let hodiny = kalkulujCisteHodiny(z);
                 let sazba = parseFloat(z.sazba) || 0;
                 let radekCena = hodiny * sazba;
+                let popisText = (z.popisPrace || '-').toString();
+                let popisDisplay = popisText.length > TABLE_DESC_MAX_LENGTH ? `${popisText.slice(0, TABLE_DESC_MAX_LENGTH - 3)}...` : popisText;
                 hodinyCelkem += hodiny;
                 cenaCelkem += radekCena;
                 doc.text((z.datum || '').toString(), 16, y + 5);
@@ -1102,7 +1106,7 @@
                 doc.text(hodiny.toFixed(2), 78, y + 5, { align: 'right' });
                 doc.text(`${sazba.toFixed(2)} EUR`, 102, y + 5);
                 doc.text(`${radekCena.toFixed(2)} EUR`, 132, y + 5);
-                doc.text((z.popisPrace || '-').toString().slice(0, TABLE_DESC_MAX_LENGTH), 158, y + 5);
+                doc.text(popisDisplay, 158, y + 5);
                 doc.line(14, y + 7, 196, y + 7);
                 y += 7;
             });
@@ -1139,7 +1143,7 @@
             if (currentExportType === 'faktura') {
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 archiv.unshift({
-                    id: Date.now(),
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                     cislo: document.getElementById('fak-cislo').value || 'bez-cisla',
                     vystaveni: document.getElementById('fak-vystaveni').value || '',
                     splatnost: document.getElementById('fak-splatnost').value || '',
