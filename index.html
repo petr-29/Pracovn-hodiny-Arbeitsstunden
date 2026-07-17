@@ -1349,7 +1349,22 @@
             if(localStorage.getItem('cfg_logo')) { document.getElementById('preview-logo').src = localStorage.getItem('cfg_logo'); document.getElementById('preview-logo').style.display = 'block'; }
             if(localStorage.getItem('cfg_razitko')) { document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko'); document.getElementById('preview-razitko').style.display = 'block'; }
             const cfgServerAddr = localStorage.getItem('cfg_server_addr'); if(cfgServerAddr) document.getElementById('cfg-server-addr').value = cfgServerAddr;
-            const hintEl = document.getElementById('server-addr-hint'); if(hintEl) { if(window.location.protocol === 'file:') { hintEl.style.color='#e74c3c'; hintEl.innerText='⚠️ Aplikace je otevřena ze souboru – pro vzdálený podpis spusťte server a otevřete přes HTTP (http://VAŠE_IP:3000).'; } else if(window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') { hintEl.innerText='✓ Detekováno: '+window.location.hostname+':'+(window.location.port||'3000')+' (použito pokud necháte pole prázdné)'; } else { hintEl.style.color='#e67e22'; hintEl.innerText='⚠️ Server běží na localhost – telefon se nepřipojí přes QR! Zadejte LAN IP adresu výše (např. 192.168.1.100:3000).'; } }
+            _updateServerAddrHint();
+        }
+
+        function _updateServerAddrHint() {
+            const hintEl = document.getElementById('server-addr-hint');
+            if (!hintEl) return;
+            if (window.location.protocol === 'file:') {
+                hintEl.style.color = '#e74c3c';
+                hintEl.innerText = '⚠️ Aplikace je otevřena ze souboru – pro vzdálený podpis spusťte server a otevřete přes HTTP (http://VAŠE_IP:3000).';
+            } else if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                hintEl.style.color = '#7f8c8d';
+                hintEl.innerText = '✓ Detekováno: ' + window.location.hostname + ':' + (window.location.port || '3000') + ' (použito pokud necháte pole prázdné)';
+            } else {
+                hintEl.style.color = '#e67e22';
+                hintEl.innerText = '⚠️ Server běží na localhost – telefon se nepřipojí přes QR! Zadejte LAN IP adresu výše (např. 192.168.1.100:3000).';
+            }
         }
 
         function exportCSV() {
@@ -1394,8 +1409,12 @@
         // VZDÁLENÝ PODPIS PŘES TELEFON (LAN server)
         function _getSignatureServerBaseUrl() {
             // Prefer explicitly configured address
-            const saved = (localStorage.getItem('cfg_server_addr') || '').trim();
-            if (saved) return 'http://' + saved;
+            let saved = (localStorage.getItem('cfg_server_addr') || '').trim();
+            if (saved) {
+                // Strip any protocol prefix the user may have entered (e.g. http://)
+                saved = saved.replace(/^https?:\/\//i, '');
+                return 'http://' + saved;
+            }
             // If served from HTTP, use current origin (works for API calls)
             if (window.location.protocol === 'http:') return window.location.origin;
             // file:// or https:// without config - cannot determine server
@@ -1416,12 +1435,19 @@
             }
 
             // Determine host/port for QR URL (must be reachable by phone on LAN)
-            const savedAddr = (localStorage.getItem('cfg_server_addr') || '').trim();
+            // Strip protocol prefix in case user included it, then split host:port
+            const savedAddr = (localStorage.getItem('cfg_server_addr') || '').trim().replace(/^https?:\/\//i, '');
             let qrHost, qrPort;
             if (savedAddr) {
-                const parts = savedAddr.split(':');
-                qrHost = parts[0];
-                qrPort = parts[1] || '3000';
+                // Handle format host:port (IPv6 not supported – use LAN IPv4)
+                const colonIdx = savedAddr.lastIndexOf(':');
+                if (colonIdx > 0 && /^\d+$/.test(savedAddr.slice(colonIdx + 1))) {
+                    qrHost = savedAddr.slice(0, colonIdx);
+                    qrPort = savedAddr.slice(colonIdx + 1);
+                } else {
+                    qrHost = savedAddr;
+                    qrPort = '3000';
+                }
             } else {
                 qrHost = window.location.hostname;
                 qrPort = window.location.port || '3000';
@@ -1451,6 +1477,7 @@
                 const sessionId = data.sessionId;
 
                 // Build URL phone will open — must use LAN IP (localhost on phone = phone itself)
+                // host + port params are passed so sign.html can POST the signature back to the server
                 const phoneUrl = 'http://' + qrHost + ':' + qrPort
                     + '/sign?sessionId=' + encodeURIComponent(sessionId)
                     + '&target=' + encodeURIComponent(target)
@@ -1458,7 +1485,7 @@
                     + '&host=' + encodeURIComponent(qrHost)
                     + '&port=' + encodeURIComponent(qrPort);
 
-                // Generate QR locally with QRious (no external request)
+                // QRious is loaded via CDN script tag in <head> — generates QR locally, no external request
                 const qr = new QRious({ value: phoneUrl, size: 250 });
                 document.getElementById('qr-code-img').src = qr.toDataURL();
                 document.getElementById('qr-code-img').style.display = 'block';
@@ -1474,7 +1501,7 @@
                     sessionIdEl.style.color = '#7f8c8d';
                     sessionIdEl.innerText = 'ID: ' + sessionId;
                 }
-                if (urlDisplay) { urlDisplay.style.color = '#2980b9'; urlDisplay.innerText = phoneUrl; }
+                if (urlDisplay) { urlDisplay.style.color = '#2980b9'; urlDisplay.style.fontWeight = 'bold'; urlDisplay.innerText = phoneUrl; }
 
                 startPollingSignature(sessionId, target, serverBaseUrl);
             } catch (e) {
@@ -1503,12 +1530,18 @@
                     if (data && data.signature) {
                         clearInterval(pollingInterval); pollingInterval = null;
                         if (pollingTimeout) { clearTimeout(pollingTimeout); pollingTimeout = null; }
+                        // Use DOM creation to avoid innerHTML with untrusted content
+                        const sigImg = document.createElement('img');
+                        sigImg.className = 'signature-display-img';
+                        sigImg.src = data.signature;
                         if (target === 'kunde') {
                             dataPodpisuKunde = data.signature;
-                            document.getElementById('box-kunde').innerHTML = '<img src="' + data.signature + '" class="signature-display-img">';
+                            const box = document.getElementById('box-kunde');
+                            box.innerHTML = ''; box.appendChild(sigImg);
                         } else {
                             dataPodpisuIch = data.signature;
-                            document.getElementById('box-ich').innerHTML = '<img src="' + data.signature + '" class="signature-display-img">';
+                            const box = document.getElementById('box-ich');
+                            box.innerHTML = ''; box.appendChild(sigImg);
                         }
                         updateLivePreview();
                         closeQrModal();
