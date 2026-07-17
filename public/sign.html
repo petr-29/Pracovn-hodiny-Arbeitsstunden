@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Podpis - Pracovní hodiny</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f6fa;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: #ecf0f1;
+            padding: 8px 15px;
+            font-size: 12px;
+            color: #2c3e50;
+            border-bottom: 1px solid #bdc3c7;
+        }
+
+        .status-bar.waiting {
+            background: #fff3e0;
+            color: #f39c12;
+        }
+
+        .status-bar.ready {
+            background: #e8f5e9;
+            color: #27ae60;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            background: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            border: 2px solid #bdc3c7;
+            background: #fafafa;
+            border-radius: 8px;
+            max-width: 100%;
+            max-height: 100%;
+            touch-action: none;
+            cursor: crosshair;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer {
+            background: var(--card-bg, white);
+            border-top: 1px solid #dcdde1;
+            padding: 12px 10px;
+            display: flex;
+            gap: 8px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-clear:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-cancel:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 6px rgba(149, 165, 166, 0.3);
+        }
+
+        .btn-send {
+            background: #27ae60;
+            color: white;
+            flex: 1.5;
+        }
+
+        .btn-send:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 6px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-send:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .loading-indicator {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            text-align: center;
+            z-index: 1000;
+            font-size: 16px;
+        }
+
+        .loading-indicator.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-text {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 13px;
+            margin-bottom: 10px;
+            padding: 0 10px;
+        }
+
+        .session-id {
+            background: #ecf0f1;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #34495e;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 id="title">📝 Podpis</h1>
+        <p id="subtitle">Podepiš se na plátně</p>
+    </div>
+
+    <div class="status-bar waiting" id="statusBar">
+        <span id="statusText">⏳ Čekání na inicializaci...</span>
+    </div>
+
+    <div class="info-text">
+        <div class="session-id" id="sessionDisplay"></div>
+        <span id="infoText">Kreslím prstem nebo perem na displeji</span>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="signatureCanvas"></canvas>
+    </div>
+
+    <div class="footer">
+        <button class="btn-clear" onclick="clearCanvas()" id="btnClear">🗑️ Smazat</button>
+        <button class="btn-cancel" onclick="cancelSign()" id="btnCancel">✕ Zrušit</button>
+        <button class="btn-send" onclick="sendSignature()" id="btnSend">✓ Odeslat</button>
+    </div>
+
+    <div class="loading-indicator" id="loadingIndicator">
+        <div class="spinner"></div>
+        <div id="loadingText">Odesílání podpisu...</div>
+    </div>
+
+    <script>
+        // === GLOBÁLNÍ PROMĚNNÉ ===
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        const params = new URLSearchParams(window.location.search);
+        
+        const sessionId = params.get('sessionId');
+        const target = params.get('target') || 'kunde';
+        const lang = params.get('lang') || 'cs';
+        const pcHostname = params.get('host') || window.location.hostname;
+        const pcPort = params.get('port') || '3000';
+        
+        let isDrawing = false;
+        let hasDrawn = false;
+        
+        // === JAZYKY ===
+        const translations = {
+            cs: {
+                titleKunde: '📝 Podpis klienta',
+                titleIch: '📝 Váš podpis',
+                subtitle: 'Podepiš se na plátně',
+                info: 'Kreslím prstem nebo perem na displeji',
+                statusWaiting: '⏳ Připraven na podpis',
+                statusDrawing: '✏️ Kreslení...',
+                statusReady: '✓ Podpis připraven',
+                btnClear: '🗑️ Smazat',
+                btnCancel: '✕ Zrušit',
+                btnSend: '✓ Odeslat',
+                loading: 'Odesílání podpisu...',
+                error: 'Chyba připojení',
+                success: 'Podpis odeslán!'
+            },
+            de: {
+                titleKunde: '📝 Unterschrift Kunde',
+                titleIch: '📝 Ihre Unterschrift',
+                subtitle: 'Unterschreiben Sie auf dem Display',
+                info: 'Mit Finger oder Stift auf dem Display zeichnen',
+                statusWaiting: '⏳ Bereit zum Unterschreiben',
+                statusDrawing: '✏️ Zeichnung...',
+                statusReady: '✓ Unterschrift bereit',
+                btnClear: '🗑️ Löschen',
+                btnCancel: '✕ Abbrechen',
+                btnSend: '✓ Senden',
+                loading: 'Unterschrift wird gesendet...',
+                error: 'Verbindungsfehler',
+                success: 'Unterschrift gesendet!'
+            }
+        };
+        
+        const t = translations[lang] || translations.cs;
+        
+        // === INICIALIZACE ===
+        function init() {
+            // Nastavit canvas velikost
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Nastavit kreslicí vlastnosti
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#0a3ca6';
+            
+            // Inicializovat UI
+            const titleEl = document.getElementById('title');
+            const subtitleEl = document.getElementById('subtitle');
+            const infoEl = document.getElementById('infoText');
+            const statusEl = document.getElementById('statusText');
+            const sessionDisplayEl = document.getElementById('sessionDisplay');
+            
+            titleEl.textContent = target === 'kunde' ? t.titleKunde : t.titleIch;
+            subtitleEl.textContent = t.subtitle;
+            infoEl.textContent = t.info;
+            statusEl.textContent = t.statusWaiting;
+            sessionDisplayEl.textContent = `ID: ${sessionId}`;
+            
+            document.getElementById('btnClear').textContent = t.btnClear;
+            document.getElementById('btnCancel').textContent = t.btnCancel;
+            document.getElementById('btnSend').textContent = t.btnSend;
+            
+            // Event listenery na kreslení
+            setupDrawingListeners();
+            
+            console.log(`✓ Inicializace: sessionId=${sessionId}, target=${target}, lang=${lang}`);
+        }
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            
+            canvas.width = Math.max(rect.width - 20, 200);
+            canvas.height = Math.max(rect.height - 20, 200);
+            
+            // Obnovit vlastnosti po změně velikosti
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#0a3ca6';
+        }
+        
+        function setupDrawingListeners() {
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            canvas.addEventListener('touchstart', startDrawing, false);
+            canvas.addEventListener('touchmove', draw, false);
+            canvas.addEventListener('touchend', stopDrawing, false);
+        }
+        
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+        
+        function startDrawing(e) {
+            e.preventDefault();
+            isDrawing = true;
+            hasDrawn = true;
+            
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            
+            updateStatus(t.statusDrawing);
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+        
+        function stopDrawing(e) {
+            e.preventDefault();
+            isDrawing = false;
+            
+            if (hasDrawn) {
+                updateStatus(t.statusReady);
+                document.getElementById('btnSend').disabled = false;
+            }
+        }
+        
+        function updateStatus(text) {
+            const statusBar = document.getElementById('statusBar');
+            const statusText = document.getElementById('statusText');
+            
+            statusText.textContent = text;
+            
+            if (text.includes('✓')) {
+                statusBar.className = 'status-bar ready';
+            } else if (text.includes('✏️')) {
+                statusBar.className = 'status-bar';
+            } else {
+                statusBar.className = 'status-bar waiting';
+            }
+        }
+        
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasDrawn = false;
+            isDrawing = false;
+            document.getElementById('btnSend').disabled = true;
+            updateStatus(t.statusWaiting);
+        }
+        
+        function cancelSign() {
+            if (confirm(lang === 'cs' ? 'Zrušit podpis?' : 'Unterschrift abbrechen?')) {
+                window.history.back();
+            }
+        }
+        
+        async function sendSignature() {
+            if (!hasDrawn) {
+                alert(lang === 'cs' ? 'Nejdříve se podepiš!' : 'Bitte unterschreiben Sie zuerst!');
+                return;
+            }
+            
+            const signatureData = canvas.toDataURL('image/png');
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`http://${pcHostname}:${pcPort}/api/signature/${sessionId}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ signature: signatureData })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                console.log('✓ Podpis úspěšně odeslán:', data);
+                
+                showLoading(false);
+                updateStatus(t.success);
+                
+                setTimeout(() => {
+                    window.history.back();
+                }, 1500);
+            } catch (error) {
+                console.error('✗ Chyba při odesílání:', error);
+                showLoading(false);
+                updateStatus(t.error);
+                alert(`${t.error}: ${error.message}`);
+            }
+        }
+        
+        function showLoading(show) {
+            const indicator = document.getElementById('loadingIndicator');
+            if (show) {
+                indicator.classList.add('show');
+                document.getElementById('loadingText').textContent = t.loading;
+            } else {
+                indicator.classList.remove('show');
+            }
+        }
+        
+        // === START ===
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
