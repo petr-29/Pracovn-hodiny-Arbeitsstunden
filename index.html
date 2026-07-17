@@ -706,6 +706,8 @@
             document.querySelectorAll('[data-cs][data-de]').forEach(el => {
                 el.innerText = el.getAttribute(`data-${lang}`);
             });
+            renderAdresarKlientu();
+            renderArchivFaktur();
         }
 
         function loadLanguage() {
@@ -1148,7 +1150,7 @@
             if (currentExportType === 'faktura') {
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 archiv.unshift({
-                    id: (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${archiv.length + 1}`,
+                    id: (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     cislo: document.getElementById('fak-cislo').value || 'bez-cisla',
                     vystaveni: document.getElementById('fak-vystaveni').value || '',
                     splatnost: document.getElementById('fak-splatnost').value || '',
@@ -1244,7 +1246,7 @@
             if (!container) return;
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             if (archiv.length === 0) {
-                container.innerHTML = '<p style="color:#7f8c8d;">Archiv je zatím prázdný.</p>';
+                container.innerHTML = `<p style="color:#7f8c8d;">${currentLang === 'cs' ? 'Archiv je zatím prázdný.' : 'Archiv ist noch leer.'}</p>`;
                 return;
             }
             let html = '';
@@ -1264,9 +1266,9 @@
             let select = document.getElementById('adresar-select');
             if (!select) return;
             let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
-            let options = '<option value="-1">-- Vyber uloženou firmu --</option>';
+            let options = `<option value="-1">${currentLang === 'cs' ? '-- Vyber uloženou firmu --' : '-- Gespeicherte Firma auswählen --'}</option>`;
             adresar.forEach((k, i) => {
-                options += `<option value="${i}">${k.firma || ('Klient ' + (i + 1))}</option>`;
+                options += `<option value="${i}">${k.firma || ((currentLang === 'cs' ? 'Klient ' : 'Kunde ') + (i + 1))}</option>`;
             });
             select.innerHTML = options;
         }
