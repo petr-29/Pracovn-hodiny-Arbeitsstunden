@@ -1337,22 +1337,34 @@
             let blob = new Blob([csv], { type: 'text/csv;' }); let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
         }
 
-        // --- CLOUD SYNCHRONIZACE: KOMPLETNÍ PROPOJENÍ TELEFONU A POČÍTAČE ---
+// --- CLOUD SYNCHRONIZACE: KOMPLETNÍ PROPOJENÍ TELEFONU A POČÍTAČE ---
         async function generateCloudSync() {
             document.getElementById('qr-modal-hlavicka').innerText = 'Naskenuj telefonem pro STAŽENÍ DAT';
             document.getElementById('qr-code-img').style.display = 'none';
+            document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
             document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečnou cloudovou zálohu...';
             document.getElementById('qr-modal').classList.remove('hidden');
             
             try {
-                // Připravíme všechna data z LocalStorage do jednoho balíku
-                let syncData = JSON.stringify(localStorage);
+                // VYTVOŘENÍ ODLEHČENÉHO BALÍČKU (odfiltrujeme archiv faktur, který obsahuje těžká PDF)
+                let lightStorage = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    // Přeneseme vše KROMĚ archivu faktur
+                    if (key !== 'archiv_faktur') { 
+                        lightStorage[key] = localStorage.getItem(key);
+                    }
+                }
+                let syncData = JSON.stringify(lightStorage);
                 
                 let res = await fetch('https://jsonblob.com/api/jsonBlob', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({ type: 'fullsync', payload: syncData })
                 });
+
+                // Pokud server odmítne balík (např. chyba 413 Payload Too Large)
+                if(!res.ok) throw new Error('Server zamítl data (pravděpodobně jsou moc velká).');
                 
                 let blobId = res.headers.get('Location').split('/').pop();
                 const baseUrl = window.location.href.split('?')[0]; 
@@ -1364,7 +1376,13 @@
                 document.getElementById('qr-session-id-display').style.color = '#27ae60';
                 document.getElementById('qr-session-id-display').innerText = `Data nahrána. Otevři foťák v telefonu.`; 
             } catch(e) {
-                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru! Otevíráš soubor napřímo z disku (file://). Pro sdílení přes QR nahraj aplikaci na internet.';
+                document.getElementById('qr-session-id-display').style.color = '#e74c3c';
+                document.getElementById('qr-session-id-display').innerHTML = `
+                    <strong>Chyba odeslání dat!</strong><br><br>
+                    1. Vaše nahrané logo nebo razítko je v nastavení příliš velké (limit je 1MB). Zkuste tam nahrát menší obrázek.<br>
+                    2. Váš prohlížeč (nebo AdBlock) blokuje odesílání dat.
+                `;
+                console.error("Detail chyby:", e);
             }
         }
 
