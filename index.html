@@ -568,6 +568,9 @@
             loadTheme();
             loadSettings();
             renderZaznamy();
+            renderArchivFaktur();
+            renderAdresarKlientu();
+            initLivePreviewBindings();
             loadLanguage();
             if(window.location.search.includes('fullsync=')) return; 
             
@@ -719,6 +722,7 @@
             document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
             document.getElementById(`view-${tabName}`).classList.remove('hidden');
             element.classList.add('active');
+            if (tabName === 'faktury') renderArchivFaktur();
         }
 
         function toggleEarningsMask() {
@@ -930,14 +934,237 @@
             
             let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value;
             let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
+            let hodinyCelkem = 0;
+            let cenaCelkem = 0;
+            let rows = '';
+            vybrane.forEach(z => {
+                let hodiny = kalkulujCisteHodiny(z);
+                let sazba = parseFloat(z.sazba) || 0;
+                let radekCena = hodiny * sazba;
+                hodinyCelkem += hodiny;
+                cenaCelkem += radekCena;
+                rows += `<tr>
+                    <td style="padding:6px;border:1px solid #ddd;">${z.datum}</td>
+                    <td style="padding:6px;border:1px solid #ddd;">${z.zacatek}–${z.konec}</td>
+                    <td style="padding:6px;border:1px solid #ddd;text-align:right;">${hodiny.toFixed(2)}</td>
+                    <td style="padding:6px;border:1px solid #ddd;text-align:right;">${sazba.toFixed(2)} €</td>
+                    <td style="padding:6px;border:1px solid #ddd;text-align:right;">${radekCena.toFixed(2)} €</td>
+                </tr>`;
+            });
 
-            let html = `<p style="text-align:center; color:#7f8c8d;">Náhled dokumentu</p>`;
+            let podpisKunde = dataPodpisuKunde ? `<img src="${dataPodpisuKunde}" style="max-height:50px;max-width:100%;">` : '<span style="color:#999;">(bez podpisu)</span>';
+            let podpisIch = dataPodpisuIch ? `<img src="${dataPodpisuIch}" style="max-height:50px;max-width:100%;">` : '<span style="color:#999;">(bez podpisu)</span>';
+            let title = currentExportType === 'faktura' ? 'Faktura' : (currentExportType === 'abnahme' ? 'Abnahme Protokoll' : 'Výkaz práce');
+
+            let fakturaMeta = '';
+            if (currentExportType === 'faktura') {
+                let cislo = document.getElementById('fak-cislo').value || '---';
+                let vystaveni = document.getElementById('fak-vystaveni').value || '---';
+                let splatnost = document.getElementById('fak-splatnost').value || '---';
+                let priloha = document.querySelector('input[name="fak-priloha-typ"]:checked');
+                fakturaMeta = `
+                    <div style="background:#f9f9f9;padding:8px;border:1px solid #ddd;margin-bottom:8px;">
+                        <strong>Číslo faktury:</strong> ${cislo}<br>
+                        <strong>Datum vystavení:</strong> ${vystaveni}<br>
+                        <strong>Datum splatnosti:</strong> ${splatnost}<br>
+                        <strong>Příloha:</strong> ${priloha ? priloha.value : 'none'}
+                    </div>`;
+            }
+
+            let abnahmeMeta = '';
+            if (currentExportType === 'abnahme') {
+                let bez = document.getElementById('ab-bezZkousky').checked ? 'Ano' : 'Ne';
+                let se = document.getElementById('ab-seZkouskou').checked ? 'Ano' : 'Ne';
+                let vady = document.getElementById('ab-sVadami').checked ? 'Ano' : 'Ne';
+                let vadyText = document.getElementById('ab-vadyText').value || '-';
+                let odstraneni = document.getElementById('ab-odstraneniDo').value || '-';
+                abnahmeMeta = `
+                    <div style="background:#f9f9f9;padding:8px;border:1px solid #ddd;margin-bottom:8px;">
+                        <strong>Bez funkční zkoušky:</strong> ${bez} | <strong>S funkční zkouškou:</strong> ${se}<br>
+                        <strong>Závady:</strong> ${vady}<br>
+                        <strong>Popis závad:</strong> ${vadyText}<br>
+                        <strong>Odstranit do:</strong> ${odstraneni}
+                    </div>`;
+            }
+
+            let html = `
+                <div style="font-size:13px;line-height:1.45;">
+                    <h3 style="text-align:center;margin-bottom:8px;">${title}</h3>
+                    ${fakturaMeta}
+                    ${abnahmeMeta}
+                    <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;">
+                        <div><strong>Klient:</strong><br>${firma}<br>${adresa}<br>${mesto}</div>
+                        <div><strong>Dodavatel:</strong><br>${jmeno}</div>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px;">
+                        <thead>
+                            <tr style="background:#f1f1f1;">
+                                <th style="padding:6px;border:1px solid #ddd;text-align:left;">Datum</th>
+                                <th style="padding:6px;border:1px solid #ddd;text-align:left;">Čas</th>
+                                <th style="padding:6px;border:1px solid #ddd;text-align:right;">Hodiny</th>
+                                <th style="padding:6px;border:1px solid #ddd;text-align:right;">Sazba</th>
+                                <th style="padding:6px;border:1px solid #ddd;text-align:right;">Cena</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows || '<tr><td colspan="5" style="padding:8px;text-align:center;border:1px solid #ddd;">Žádné vybrané záznamy</td></tr>'}</tbody>
+                    </table>
+                    <div style="text-align:right;font-weight:bold;">Součet hodin: ${hodinyCelkem.toFixed(2)} h | Celkem: ${cenaCelkem.toFixed(2)} €</div>
+                    <div style="display:flex;gap:10px;margin-top:10px;">
+                        <div style="flex:1;border:1px solid #ddd;padding:8px;"><strong>Podpis klienta:</strong><br>${podpisKunde}</div>
+                        <div style="flex:1;border:1px solid #ddd;padding:8px;"><strong>Podpis dodavatele:</strong><br>${podpisIch}</div>
+                    </div>
+                </div>`;
             document.getElementById('document-live-preview').innerHTML = html;
         }
 
         function executePDFExport() {
-            alert('Exportování PDF...');
-            // Zde by byla implementace PDF exportu
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert('Knihovna jsPDF není dostupná.');
+                return;
+            }
+            let vybrane = zaznamy.filter(z => z.selected);
+            if (vybrane.length === 0) {
+                alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro export!' : 'Bitte wählen Sie zuerst Zeilen aus!');
+                return;
+            }
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const PAGE_MARGIN_TOP = 14;
+            const PAGE_TABLE_BREAK_Y = 255;
+            const PAGE_SUMMARY_BREAK_Y = 250;
+            const PAGE_SIGNATURE_BREAK_Y = 210;
+            const PAGE_QR_BREAK_Y = 230;
+            const NEW_PAGE_START_Y = 20;
+            const ELLIPSIS = '...';
+            // Max délka popisu v tabulce (počet znaků) kvůli šířce sloupce v A4
+            const TABLE_DESC_MAX_LENGTH_CHARS = 28;
+            let y = PAGE_MARGIN_TOP;
+            let hodinyCelkem = 0;
+            let cenaCelkem = 0;
+
+            const title = currentExportType === 'faktura' ? 'Faktura' : (currentExportType === 'abnahme' ? 'Abnahme Protokoll' : 'Standardní výkaz práce');
+            doc.setFontSize(16);
+            doc.text(title, 14, y);
+            y += 8;
+
+            let firma = document.getElementById('cfg-firma').value;
+            let adresa = document.getElementById('cfg-adresa').value;
+            let mesto = document.getElementById('cfg-mesto').value;
+            let jmeno = document.getElementById('cfg-jmeno').value;
+            doc.setFontSize(10);
+            doc.text(`Klient: ${firma}`, 14, y); y += 5;
+            doc.text(`Adresa: ${adresa}, ${mesto}`, 14, y); y += 5;
+            doc.text(`Dodavatel: ${jmeno}`, 14, y); y += 7;
+
+            if (currentExportType === 'faktura') {
+                doc.text(`Číslo faktury: ${document.getElementById('fak-cislo').value || '-'}`, 14, y); y += 5;
+                doc.text(`Datum vystavení: ${document.getElementById('fak-vystaveni').value || '-'}`, 14, y); y += 5;
+                doc.text(`Datum splatnosti: ${document.getElementById('fak-splatnost').value || '-'}`, 14, y); y += 7;
+            }
+            if (currentExportType === 'abnahme') {
+                doc.text(`Bez funkční zkoušky: ${document.getElementById('ab-bezZkousky').checked ? 'Ano' : 'Ne'}`, 14, y); y += 5;
+                doc.text(`S funkční zkouškou: ${document.getElementById('ab-seZkouskou').checked ? 'Ano' : 'Ne'}`, 14, y); y += 5;
+                if (document.getElementById('ab-sVadami').checked) {
+                    doc.text(`Vady: ${document.getElementById('ab-vadyText').value || '-'}`, 14, y); y += 5;
+                    doc.text(`Odstranit do: ${document.getElementById('ab-odstraneniDo').value || '-'}`, 14, y); y += 5;
+                }
+                y += 2;
+            }
+
+            const drawHeader = () => {
+                doc.setFillColor(240, 240, 240);
+                doc.rect(14, y, 182, 8, 'F');
+                doc.setFontSize(9);
+                doc.text('Datum', 16, y + 5);
+                doc.text('Čas', 42, y + 5);
+                doc.text('Hod.', 78, y + 5);
+                doc.text('Sazba', 102, y + 5);
+                doc.text('Cena', 132, y + 5);
+                doc.text('Popis', 158, y + 5);
+                y += 8;
+            };
+
+            drawHeader();
+            doc.setFontSize(8.5);
+            vybrane.forEach(z => {
+                if (y > PAGE_TABLE_BREAK_Y) {
+                    doc.addPage();
+                    y = PAGE_MARGIN_TOP;
+                    drawHeader();
+                }
+                let hodiny = kalkulujCisteHodiny(z);
+                let sazba = parseFloat(z.sazba) || 0;
+                let radekCena = hodiny * sazba;
+                let popisText = (z.popisPrace || '-').toString();
+                let popisDisplay = popisText.length > TABLE_DESC_MAX_LENGTH_CHARS ? `${popisText.slice(0, TABLE_DESC_MAX_LENGTH_CHARS - ELLIPSIS.length)}${ELLIPSIS}` : popisText;
+                hodinyCelkem += hodiny;
+                cenaCelkem += radekCena;
+                doc.text((z.datum || '').toString(), 16, y + 5);
+                doc.text(`${z.zacatek || '-'}-${z.konec || '-'}`, 42, y + 5);
+                doc.text(hodiny.toFixed(2), 78, y + 5, { align: 'right' });
+                doc.text(`${sazba.toFixed(2)} EUR`, 102, y + 5);
+                doc.text(`${radekCena.toFixed(2)} EUR`, 132, y + 5);
+                doc.text(popisDisplay, 158, y + 5);
+                doc.line(14, y + 7, 196, y + 7);
+                y += 7;
+            });
+
+            y += 4;
+            if (y > PAGE_SUMMARY_BREAK_Y) { doc.addPage(); y = NEW_PAGE_START_Y; }
+            doc.setFontSize(11);
+            doc.text(`Součet hodin: ${hodinyCelkem.toFixed(2)} h`, 14, y);
+            doc.text(`Celkem: ${cenaCelkem.toFixed(2)} EUR`, pageWidth - 14, y, { align: 'right' });
+            y += 8;
+
+            if (y > PAGE_SIGNATURE_BREAK_Y) { doc.addPage(); y = NEW_PAGE_START_Y; }
+            doc.setFontSize(10);
+            doc.text('Podpis klienta', 14, y);
+            doc.text('Podpis dodavatele', 110, y);
+            doc.rect(14, y + 2, 78, 26);
+            doc.rect(110, y + 2, 78, 26);
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 16, y + 4, 74, 22);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 112, y + 4, 74, 22);
+            y += 32;
+
+            let qrValue = JSON.stringify({
+                type: currentExportType || 'standard',
+                firma: firma,
+                cisloFaktury: document.getElementById('fak-cislo').value || '',
+                total: cenaCelkem.toFixed(2),
+                timestamp: new Date().toISOString()
+            });
+            if (typeof QRious !== 'function') {
+                alert(currentLang === 'cs' ? 'Knihovna QRious není dostupná.' : 'QRious-Bibliothek ist nicht verfügbar.');
+                return;
+            }
+            let qr = new QRious({ value: qrValue, size: 180 });
+            if (y > PAGE_QR_BREAK_Y) { doc.addPage(); y = NEW_PAGE_START_Y; }
+            doc.text('QR', 14, y);
+            doc.addImage(qr.toDataURL('image/png'), 'PNG', 14, y + 2, 32, 32);
+
+            if (currentExportType === 'faktura') {
+                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+                archiv.unshift({
+                    id: (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${archiv.length + 1}`,
+                    cislo: document.getElementById('fak-cislo').value || 'bez-cisla',
+                    vystaveni: document.getElementById('fak-vystaveni').value || '',
+                    splatnost: document.getElementById('fak-splatnost').value || '',
+                    firma: firma,
+                    hodin: hodinyCelkem.toFixed(2),
+                    total: cenaCelkem.toFixed(2),
+                    createdAt: new Date().toISOString()
+                });
+                localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
+                renderArchivFaktur();
+            }
+
+            let datum = new Date().toISOString().slice(0, 10);
+            let filePrefix = currentExportType === 'faktura' ? 'faktura' : (currentExportType === 'abnahme' ? 'abnahme' : 'standard');
+            doc.save(`${filePrefix}_${datum}.pdf`);
+            closeExportCard();
         }
 
         function saveSettings() {
@@ -968,19 +1195,97 @@
         }
 
         function ulozDoAdresare() {
-            alert('Funkce bude implementována');
+            let firma = document.getElementById('cfg-firma').value.trim();
+            if (!firma) { alert(currentLang === 'cs' ? 'Zadejte název firmy.' : 'Bitte Firmennamen eingeben.'); return; }
+            let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+            let klient = {
+                firma: firma,
+                adresa: document.getElementById('cfg-adresa').value,
+                mesto: document.getElementById('cfg-mesto').value,
+                ico: document.getElementById('cfg-ico-odberatel').value,
+                podpis: document.getElementById('cfg-podpis').value
+            };
+            let normalize = (text) => (text || '').toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            let idx = adresar.findIndex(k => normalize(k.firma) === normalize(firma));
+            if (idx >= 0) adresar[idx] = klient; else adresar.push(klient);
+            localStorage.setItem('adresar_klientu', JSON.stringify(adresar));
+            renderAdresarKlientu();
+            alert(currentLang === 'cs' ? 'Klient uložen.' : 'Kunde gespeichert.');
         }
 
         function nactiZAdresare() {
-            alert('Funkce bude implementována');
+            let select = document.getElementById('adresar-select');
+            let idx = parseInt(select.value, 10);
+            if (isNaN(idx) || idx < 0) return;
+            let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+            let klient = adresar[idx];
+            if (!klient) return;
+            document.getElementById('cfg-firma').value = klient.firma || '';
+            document.getElementById('cfg-adresa').value = klient.adresa || '';
+            document.getElementById('cfg-mesto').value = klient.mesto || '';
+            document.getElementById('cfg-ico-odberatel').value = klient.ico || '';
+            document.getElementById('cfg-podpis').value = klient.podpis || '';
+            updateLivePreview();
         }
 
         function smazZAdresare() {
-            alert('Funkce bude implementována');
+            let select = document.getElementById('adresar-select');
+            let idx = parseInt(select.value, 10);
+            if (isNaN(idx) || idx < 0) { alert(currentLang === 'cs' ? 'Vyberte klienta k odstranění.' : 'Wählen Sie einen Kunden zum Löschen aus.'); return; }
+            let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+            adresar.splice(idx, 1);
+            localStorage.setItem('adresar_klientu', JSON.stringify(adresar));
+            renderAdresarKlientu();
+            alert(currentLang === 'cs' ? 'Klient odstraněn.' : 'Kunde wurde gelöscht.');
         }
 
         function renderArchivFaktur() {
-            alert('Funkce bude implementována');
+            let container = document.getElementById('archiv-faktur-container');
+            if (!container) return;
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            if (archiv.length === 0) {
+                container.innerHTML = '<p style="color:#7f8c8d;">Archiv je zatím prázdný.</p>';
+                return;
+            }
+            let html = '';
+            archiv.forEach(f => {
+                html += `<div class="faktura-item">
+                    <div>
+                        <strong>${f.cislo || 'bez-cisla'}</strong><br>
+                        <small>${f.firma || '-'} | ${f.vystaveni || '-'} | ${f.total || '0.00'} EUR</small>
+                    </div>
+                    <div style="text-align:right;"><small>${new Date(f.createdAt).toLocaleString('cs-CZ')}</small></div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderAdresarKlientu() {
+            let select = document.getElementById('adresar-select');
+            if (!select) return;
+            let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+            let options = '<option value="-1">-- Vyber uloženou firmu --</option>';
+            adresar.forEach((k, i) => {
+                options += `<option value="${i}">${k.firma || ('Klient ' + (i + 1))}</option>`;
+            });
+            select.innerHTML = options;
+        }
+
+        function initLivePreviewBindings() {
+            [
+                'cfg-firma', 'cfg-adresa', 'cfg-mesto', 'cfg-ico-odberatel', 'cfg-podpis', 'cfg-jmeno',
+                'cfg-dod-adresa', 'cfg-dod-ico', 'cfg-dod-banka', 'cfg-dod-kontakt',
+                'fak-cislo', 'fak-vystaveni', 'fak-splatnost',
+                'ab-vadyText', 'ab-odstraneniDo', 'ab-bezZkousky', 'ab-seZkouskou', 'ab-sVadami'
+            ].forEach(id => {
+                let el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', updateLivePreview);
+                el.addEventListener('change', updateLivePreview);
+            });
+            document.querySelectorAll('input[name="fak-priloha-typ"]').forEach(r => {
+                r.addEventListener('change', updateLivePreview);
+            });
         }
     </script>
 </body>
