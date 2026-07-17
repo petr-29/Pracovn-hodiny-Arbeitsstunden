@@ -155,7 +155,7 @@
         .faktura-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .faktura-table th { background-color: #b33939; color: white; padding: 8px; text-align: left; }
         .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
- /* ===== UTILITY ANIMATION CLASSES ===== */
+/* ===== UTILITY ANIMATION CLASSES ===== */
 .animate-fade-in {
     animation: fadeIn var(--transition-slow) ease-out forwards;
 }
@@ -184,13 +184,43 @@
 }
 
 .animate-glow-text {
-    animation: glowText 2s infinite alternate ease-in-out;
+    animation: glowTextSoft 2s infinite alternate ease-in-out;
 }
 
 .animate-rotate-spin {
     animation: rotateSpin 1s linear infinite;
 }
 
+/* KEYFRAMES */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes scalePop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes glowTextSoft {
+    from { text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+    to   { text-shadow: 0 0 12px rgba(255,255,255,0.8); }
+}
+
+@keyframes rotateSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 /* KEYFRAMES */
 @keyframes fadeIn {
     from { opacity: 0; }
