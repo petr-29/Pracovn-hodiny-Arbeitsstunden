@@ -1365,14 +1365,13 @@
         }
 
         // --- CLOUD SYNCHRONIZACE: KOMPLETNÍ PROPOJENÍ TELEFONU A POČÍTAČE ---
-   // --- OFFLINE SYNC: DATA JSOU PŘÍMO V QR KÓDU ---
         async function generateCloudSync() {
             document.getElementById('qr-modal-hlavicka').innerText = 'Naskenuj QR v telefonu';
             document.getElementById('qr-code-img').style.display = 'none';
-            document.getElementById('qr-session-id-display').innerText = 'Komprimuji data pro přenos...';
+            document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
+            document.getElementById('qr-session-id-display').innerText = 'Připravuji datový balík...';
             document.getElementById('qr-modal').classList.remove('hidden');
             
-            // 1. Zmenšíme data (vynecháme faktury a obrázky)
             let lightStorage = {};
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
@@ -1380,21 +1379,39 @@
                     lightStorage[key] = localStorage.getItem(key);
                 }
             }
-            
-            // 2. Data zabalíme do textu
-            let jsonData = JSON.stringify(lightStorage);
-            
-            // 3. QR kód se standardem pro velká data (pokud to bude moc velké, QR bude složitější)
-            // Upozornění: Pokud máš záznamů hodně, QR může být hustý, ale načte se.
-            let qr = new QRious({
-                value: jsonData,
-                size: 400,
-                level: 'L' // Low correction level pro maximální kapacitu dat
-            });
-            
-            document.getElementById('qr-code-img').src = qr.toDataURL();
-            document.getElementById('qr-code-img').style.display = 'block';
-            document.getElementById('qr-session-id-display').innerText = 'Naskenuj tento kód čtečkou v aplikaci (v mobilu).';
+
+            try {
+                let res = await fetch('https://jsonblob.com/api/jsonBlob', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ payload: JSON.stringify(lightStorage) })
+                });
+
+                if(!res.ok) throw new Error('Upload sync dat selhal.');
+                const location = res.headers.get('Location');
+                if(!location) throw new Error('Chybí Location header.');
+                let blobId = location.split('/').pop();
+
+                const baseUrl = window.location.href.split('?')[0];
+                const phoneUrl = `${baseUrl}?fullsync=${blobId}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
+
+                document.getElementById('qr-code-img').src = qrUrl;
+                document.getElementById('qr-code-img').style.display = 'block';
+                document.getElementById('qr-session-id-display').style.color = '#27ae60';
+                document.getElementById('qr-session-id-display').innerText = 'Data nahrána. Otevři foťák v telefonu.';
+
+                setTimeout(() => {
+                    const display = document.getElementById('qr-session-id-display');
+                    if (display) {
+                        display.style.color = '#e67e22';
+                        display.innerText = 'Relace vypršela. Zkuste znovu.';
+                    }
+                }, 5 * 60 * 1000);
+            } catch(e) {
+                document.getElementById('qr-session-id-display').style.color = '#e74c3c';
+                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení nebo je datový balík pořád moc velký!';
+            }
         }
 
         // VYLEPŠENÝ QR KÓD PRO PODPIS Z TELEFONU
@@ -1420,6 +1437,16 @@
                 document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
                 
                 startPollingSignature(blobId, target);
+
+                // Po 5 minutách zastav polling a informuj uživatele
+                setTimeout(() => {
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        const display = document.getElementById('qr-session-id-display');
+                        if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                    }
+                }, 5 * 60 * 1000);
             } catch(e) {
                 document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
             }
@@ -1516,9 +1543,39 @@
             }
         }
 
-        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); if(pollingInterval) clearInterval(pollingInterval); }
+        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; } }
 
         // Inicializace
+        // === MIGRACE DAT (jednorázová) ===
+        (function migrateLocalStorage() {
+            // 1. Stará záznamy: 'zaznamy' -> 'pracovni_zaznamy'
+            const stareZaznamy = localStorage.getItem('zaznamy');
+            if (stareZaznamy && !localStorage.getItem('pracovni_zaznamy')) {
+                localStorage.setItem('pracovni_zaznamy', stareZaznamy);
+                localStorage.removeItem('zaznamy');
+                console.log('Migrace: zaznamy -> pracovni_zaznamy OK');
+            }
+
+            // 2. Stará nastavení: 'app_settings' objekt -> individuální cfg_* klíče
+            const stareNastaveni = localStorage.getItem('app_settings');
+            if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
+                try {
+                    const s = JSON.parse(stareNastaveni);
+                    if (s.jmeno)      localStorage.setItem('cfg_jmeno', s.jmeno);
+                    if (s.firma)      localStorage.setItem('cfg_firma', s.firma);
+                    if (s.adresa)     localStorage.setItem('cfg_adresa', s.adresa);
+                    if (s.mesto)      localStorage.setItem('cfg_mesto', s.mesto);
+                    if (s.ico)        localStorage.setItem('cfg_ico_odberatel', s.ico);
+                    if (s.dod_adresa) localStorage.setItem('cfg_dod_adresa', s.dod_adresa);
+                    if (s.dod_ico)    localStorage.setItem('cfg_dod_ico', s.dod_ico);
+                    if (s.dod_banka)  localStorage.setItem('cfg_dod_banka', s.dod_banka);
+                    if (s.dod_kontakt)localStorage.setItem('cfg_dod_kontakt', s.dod_kontakt);
+                    localStorage.removeItem('app_settings');
+                    console.log('Migrace: app_settings -> cfg_* OK');
+                } catch(e) { console.warn('Migrace nastavení selhala:', e); }
+            }
+        })();
+
         processFullSyncMode();
         loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
     </script>
