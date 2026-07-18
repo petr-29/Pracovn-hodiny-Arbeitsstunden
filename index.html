@@ -1177,24 +1177,49 @@
                 item.innerHTML = `<div style="flex-grow: 1;"><div style="font-weight:bold; color:#2980b9;">Faktura ${f.cislo}</div>
                     <div style="font-size:12px;">${f.odberatel} | ${new Date(f.datum).toLocaleDateString()}</div>
                     <div style="font-weight:bold; color:#2ecc71;">${f.suma.toFixed(2)} EUR</div></div>
-                    <div style="display:flex; gap: 5px;"><button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">⬇️ PDF</button>
-                    <button class="btn-sec" style="background:#e74c3c; color:white; padding: 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button></div>`;
+                    <div style="display:flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
+                        <button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">👁️ Otevřít</button>
+                        <button class="btn-sec" style="background:#f39c12; color:white; padding: 10px;" onclick="opravitFakturu(${f.id})">✏️ Přepsat</button>
+                        <button class="btn-sec" style="background:#e74c3c; color:white; padding: 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button>
+                    </div>`;
                 container.appendChild(item);
             });
         }
         
         function stahnoutFakturuZArchivu(id) {
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; let f = archiv.find(x => x.id === id);
-            if(f && f.pdfData) { let link = document.createElement('a'); link.href = f.pdfData; link.download = `Faktura_${f.cislo.replace('/','-')}_Archiv.pdf`; link.click(); } 
+            if(f && f.pdfData) { 
+                // Bezpečné otevírání PDF i pro mobily přes převod na Blob
+                fetch(f.pdfData).then(res => res.blob()).then(blob => {
+                    let url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                }).catch(() => alert("Nepodařilo se otevřít PDF."));
+            } 
             else { alert("Data PDF pro tuto fakturu chybí."); }
         }
 
-        function smazatFakturuZArchivu(id) {
-            if(confirm("Opravdu smazat z archivu? Tvé záznamy práce ti zůstanou, ale toto PDF bude ztraceno.")) {
+        function smazatFakturuZArchivu(id, force = false) {
+            if(force || confirm("Opravdu smazat z archivu? Tvé záznamy práce ti zůstanou, ale toto PDF bude ztraceno.")) {
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 archiv = archiv.filter(f => f.id !== id); localStorage.setItem('archiv_faktur', JSON.stringify(archiv)); renderArchivFaktur();
             }
         }
+
+        function opravitFakturu(id) {
+            if(confirm("Pro opravu se tato faktura z archivu smaže. Následně vás přesměruji do Záznamů, kde můžete opravit data a vygenerovat fakturu znovu. Chcete pokračovat?")) {
+                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+                let f = archiv.find(x => x.id === id);
+                if(f) {
+                    // Předvyplníme číslo faktury pro nové generování
+                    document.getElementById('fak-cislo').value = f.cislo;
+                    // Smažeme fakturu rovnou bez dalšího ptaní
+                    smazatFakturuZArchivu(id, true);
+                    // Přesuneme uživatele na záložku Záznamy
+                    switchTab('zaznamy', document.querySelectorAll('.tab-item')[1]);
+                }
+            }
+        }
+
 
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let adresarKlientu = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
@@ -1460,8 +1485,8 @@
             }
         }
 
-               async function sendSignatureToPC(blobId, target) {
-            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+                async function sendSignatureToPC(blobId, target) {
+                const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); return; }
             
             const dataUrl = canvas.toDataURL('image/png');
