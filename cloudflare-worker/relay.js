@@ -20,6 +20,7 @@ export default {
     async fetch(request, env) {
         const url = new URL(request.url);
         const id = url.pathname.slice(1); // odstraní úvodní '/'
+        const SESSION_TTL_SECONDS = 300;
 
         // CORS hlavičky — potřebné pro volání z prohlížeče
         const corsHeaders = {
@@ -39,7 +40,7 @@ export default {
             const newId = crypto.randomUUID();
             
             // TTL 300 sekund = 5 minut
-            await env.RELAY_KV.put(newId, body, { expirationTtl: 300 });
+            await env.RELAY_KV.put(newId, body, { expirationTtl: SESSION_TTL_SECONDS });
             
             return new Response(JSON.stringify({ id: newId }), {
                 status: 201,
@@ -77,7 +78,7 @@ export default {
             }
             const body = await request.text();
             // Zachováme TTL — aktualizujeme s 5 minutovým TTL od teď
-            await env.RELAY_KV.put(id, body, { expirationTtl: 300 });
+            await env.RELAY_KV.put(id, body, { expirationTtl: SESSION_TTL_SECONDS });
             return new Response(JSON.stringify({ success: true }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
