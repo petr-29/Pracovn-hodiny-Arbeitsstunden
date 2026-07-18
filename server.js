@@ -61,13 +61,14 @@ function isAllowedOrigin(origin) {
 
 function isLocalHostname(hostname) {
   const normalized = hostname.toLowerCase();
+  const ipVersion = net.isIP(normalized);
 
   if (normalized === 'localhost' || normalized.endsWith('.local')) {
     return true;
   }
 
-  if (net.isIP(normalized) === 6) {
-    return normalized === '::1' || normalized === '::0:1' || normalized === '0:0:0:0:0:0:0:1';
+  if (ipVersion && ipVersion !== 4) {
+    return false;
   }
 
   const octets = normalized.split('.').map(Number);
