@@ -232,6 +232,8 @@
         const target = params.get('target') || 'kunde';
         const lang = params.get('lang') || 'cs';
         const token = params.get('token');
+        const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const tokenPattern = /^[0-9a-f]{64}$/i;
         
         let isDrawing = false;
         let hasDrawn = false;
@@ -274,7 +276,7 @@
         
         // === INICIALIZACE ===
         function init() {
-            if (!sessionId || !token) {
+            if (!sessionId || !token || !sessionIdPattern.test(sessionId) || !tokenPattern.test(token)) {
                 updateStatus(t.error);
                 document.getElementById('btnSend').disabled = true;
                 alert(lang === 'cs' ? 'Chybí bezpečnostní token nebo ID relace.' : 'Sicherheits-Token oder Sitzungs-ID fehlt.');

@@ -4,6 +4,7 @@ const http = require('http').createServer(app);
 const cors = require('cors');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const net = require('net');
 const path = require('path');
 
 const MAX_REQUEST_SIZE = '2mb';
@@ -61,8 +62,12 @@ function isAllowedOrigin(origin) {
 function isLocalHostname(hostname) {
   const normalized = hostname.toLowerCase();
 
-  if (normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1' || normalized.endsWith('.local')) {
+  if (normalized === 'localhost' || normalized.endsWith('.local')) {
     return true;
+  }
+
+  if (net.isIP(normalized) === 6) {
+    return normalized === '::1' || normalized === '::0:1' || normalized === '0:0:0:0:0:0:0:1';
   }
 
   const octets = normalized.split('.').map(Number);
@@ -88,7 +93,7 @@ function isValidTarget(target) {
 }
 
 function isValidLang(lang) {
-  return typeof lang === 'undefined' || ALLOWED_LANGS.has(lang);
+  return typeof lang === 'undefined' || (typeof lang === 'string' && ALLOWED_LANGS.has(lang));
 }
 
 function isValidPcId(pcId) {
@@ -144,15 +149,14 @@ function matchesToken(expectedToken, providedToken) {
   );
 }
 
-function getSessionSignUrl(req, session) {
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+function getSessionSignUrl(session) {
   const params = new URLSearchParams({
     sessionId: session.id,
     target: session.target,
     token: session.uploadToken
   });
 
-  return `${baseUrl}/sign?${params.toString()}`;
+  return `/sign?${params.toString()}`;
 }
 
 // === API ENDPOINTY ===
@@ -194,7 +198,7 @@ app.post('/api/signature-session', signatureRateLimit, (req, res) => {
     uploadToken,
     target,
     created: signatureSessions[sessionId].created,
-    signUrl: getSessionSignUrl(req, signatureSessions[sessionId])
+    signUrl: getSessionSignUrl(signatureSessions[sessionId])
   });
 });
 
