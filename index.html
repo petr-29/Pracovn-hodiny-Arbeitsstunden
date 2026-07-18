@@ -1352,13 +1352,23 @@
             return window.location.href.split('?')[0];
         }
 
+        function getLangText(csText, deText) {
+            return currentLang === 'cs' ? csText : deText;
+        }
+
         // --- CLOUD SYNCHRONIZACE: KOMPLETNÍ PROPOJENÍ TELEFONU A POČÍTAČE ---
         async function generateCloudSync() {
             const qrModal = getQrModalElements();
-            qrModal.header.innerText = 'Naskenujte QR kód pro stažení dat do telefonu';
+            qrModal.header.innerText = getLangText(
+                'Naskenujte QR kód pro stažení dat do telefonu',
+                'QR-Code scannen, um Daten auf das Telefon zu laden'
+            );
             qrModal.image.style.display = 'none';
             qrModal.status.style.color = '#7f8c8d';
-            qrModal.status.innerText = 'Připravuji datový balíček do cloudu...';
+            qrModal.status.innerText = getLangText(
+                'Připravuji datový balíček do cloudu...',
+                'Datenpaket für die Cloud wird vorbereitet...'
+            );
             qrModal.modal.classList.remove('hidden');
             
             try {
@@ -1398,10 +1408,16 @@
                 qrModal.image.src = qrUrl; 
                 qrModal.image.style.display = 'block';
                 qrModal.status.style.color = '#27ae60';
-                qrModal.status.innerText = 'Hotovo. Otevřete fotoaparát v telefonu a naskenujte QR kód.'; 
+                qrModal.status.innerText = getLangText(
+                    'Hotovo. Otevřete fotoaparát v telefonu a naskenujte QR kód.',
+                    'Fertig. Öffnen Sie die Kamera am Telefon und scannen Sie den QR-Code.'
+                );
             } catch(e) {
                 qrModal.status.style.color = '#e74c3c';
-                qrModal.status.innerText = 'Nepodařilo se připravit QR kód. Zkontrolujte připojení nebo zmenšete objem dat.';
+                qrModal.status.innerText = getLangText(
+                    'Nepodařilo se připravit QR kód. Zkontrolujte připojení nebo zmenšete objem dat.',
+                    'QR-Code konnte nicht vorbereitet werden. Prüfen Sie die Verbindung oder reduzieren Sie die Datenmenge.'
+                );
             }
         }
 
@@ -1409,7 +1425,10 @@
         async function generateSignaturePhoneLink(target) {
             const qrModal = getQrModalElements();
             qrModal.image.style.display = 'none';
-            qrModal.status.innerText = 'Připravuji bezpečný QR odkaz pro podpis...';
+            qrModal.status.innerText = getLangText(
+                'Připravuji bezpečný QR odkaz pro podpis...',
+                'Sicherer QR-Link für die Unterschrift wird vorbereitet...'
+            );
             qrModal.modal.classList.remove('hidden');
             
             try {
@@ -1426,11 +1445,17 @@
                 qrModal.image.src = qrUrl; 
                 qrModal.image.style.display = 'block';
                 qrModal.status.style.color = '#7f8c8d';
-                qrModal.status.innerText = 'QR kód je připraven. Naskenujte jej v telefonu pro podpis.'; 
+                qrModal.status.innerText = getLangText(
+                    'QR kód je připraven. Naskenujte jej v telefonu pro podpis.',
+                    'QR-Code ist bereit. Scannen Sie ihn am Telefon für die Unterschrift.'
+                );
                 
                 startPollingSignature(blobId, target);
             } catch(e) {
-                qrModal.status.innerText = 'Nepodařilo se spojit se serverem.';
+                qrModal.status.innerText = getLangText(
+                    'Nepodařilo se spojit se serverem.',
+                    'Verbindung zum Server konnte nicht hergestellt werden.'
+                );
             }
         }
 
