@@ -3,6 +3,7 @@ const app = express();
 const http = require('http').createServer(app);
 const cors = require('cors');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const MAX_REQUEST_SIZE = '2mb';
@@ -19,8 +20,8 @@ const SIGNATURE_PATTERN = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
 // Úložiště pro relace podpisu
 let signatureSessions = {};
-let requestCounts = new Map();
 
+app.set('trust proxy', false);
 app.disable('x-powered-by');
 app.use(express.json({ limit: MAX_REQUEST_SIZE }));
 app.use('/api', cors({
@@ -36,6 +37,17 @@ app.use('/api', cors({
   maxAge: 300
 }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+const signatureRateLimit = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  limit: RATE_LIMIT_MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: {
+    xForwardedForHeader: false,
+    trustProxy: false
+  }
+});
 
 function isAllowedOrigin(origin) {
   try {
@@ -53,12 +65,14 @@ function isLocalHostname(hostname) {
     return true;
   }
 
-  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized) || /^192\.168\.\d{1,3}\.\d{1,3}$/.test(normalized)) {
-    return true;
+  const octets = normalized.split('.').map(Number);
+  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return false;
   }
 
-  const private172 = normalized.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
-  return Boolean(private172 && Number(private172[1]) >= 16 && Number(private172[1]) <= 31);
+  return octets[0] === 10 ||
+    (octets[0] === 192 && octets[1] === 168) ||
+    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31);
 }
 
 function isValidSessionId(sessionId) {
@@ -96,6 +110,11 @@ function createUploadToken() {
 }
 
 function removeSession(sessionId) {
+  const session = signatureSessions[sessionId];
+  if (session && session.cleanupTimeout) {
+    clearTimeout(session.cleanupTimeout);
+  }
+
   delete signatureSessions[sessionId];
 }
 
@@ -136,28 +155,6 @@ function getSessionSignUrl(req, session) {
   return `${baseUrl}/sign?${params.toString()}`;
 }
 
-function rateLimitSignatureRequests(req, res, next) {
-  const now = Date.now();
-  const key = `${req.ip}:${req.path}`;
-  const entry = requestCounts.get(key);
-
-  if (!entry || now >= entry.resetAt) {
-    requestCounts.set(key, {
-      count: 1,
-      resetAt: now + RATE_LIMIT_WINDOW_MS
-    });
-    return next();
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
-    res.set('Retry-After', String(Math.ceil((entry.resetAt - now) / 1000)));
-    return res.status(429).json({ error: 'Too many requests' });
-  }
-
-  entry.count += 1;
-  return next();
-}
-
 // === API ENDPOINTY ===
 
 /**
@@ -165,7 +162,7 @@ function rateLimitSignatureRequests(req, res, next) {
  * Vytvoří novou relaci pro podpis
  * Body: { target: 'kunde' | 'ich', pcId: string }
  */
-app.post('/api/signature-session', rateLimitSignatureRequests, (req, res) => {
+app.post('/api/signature-session', signatureRateLimit, (req, res) => {
   const { target = 'kunde', pcId } = req.body || {};
 
   if (!isValidTarget(target)) {
@@ -205,7 +202,7 @@ app.post('/api/signature-session', rateLimitSignatureRequests, (req, res) => {
  * GET /api/signature/:sessionId
  * Zjistí stav podpisu - vrací podpis pokud je připraven
  */
-app.get('/api/signature/:sessionId', rateLimitSignatureRequests, (req, res) => {
+app.get('/api/signature/:sessionId', signatureRateLimit, (req, res) => {
   const { sessionId } = req.params;
   if (!isValidSessionId(sessionId)) {
     return res.status(400).json({ error: 'Invalid sessionId' });
@@ -226,9 +223,11 @@ app.get('/api/signature/:sessionId', rateLimitSignatureRequests, (req, res) => {
     });
 
     // Smazat relaci po 5 minutách od vyzvednutí podpisu
-    setTimeout(() => {
-      removeSession(sessionId);
-    }, COMPLETED_SESSION_CLEANUP_DELAY_MS);
+    if (!session.cleanupTimeout) {
+      session.cleanupTimeout = setTimeout(() => {
+        removeSession(sessionId);
+      }, COMPLETED_SESSION_CLEANUP_DELAY_MS);
+    }
   } else {
     res.json({
       signature: null,
@@ -242,7 +241,7 @@ app.get('/api/signature/:sessionId', rateLimitSignatureRequests, (req, res) => {
  * POST /api/signature/:sessionId/upload
  * Telefon odešle podpis
  */
-app.post('/api/signature/:sessionId/upload', rateLimitSignatureRequests, (req, res) => {
+app.post('/api/signature/:sessionId/upload', signatureRateLimit, (req, res) => {
   const { sessionId } = req.params;
   const { signature } = req.body || {};
   const token = (req.body && req.body.token) || req.get('x-signature-token');
@@ -285,7 +284,7 @@ app.post('/api/signature/:sessionId/upload', rateLimitSignatureRequests, (req, r
  * GET /sign
  * Zobrazit podpisové plátno na základě parametrů
  */
-app.get('/sign', rateLimitSignatureRequests, (req, res) => {
+app.get('/sign', signatureRateLimit, (req, res) => {
   const { sessionId, target, lang, token } = req.query;
 
   if (!isValidSessionId(sessionId)) {
