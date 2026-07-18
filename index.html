@@ -556,6 +556,9 @@
         let remoteMode = false; let currentExportType = ''; let currentDrawSessionId = null;
         let dataPodpisuKunde = null; let dataPodpisuIch = null; let targetSignature = ''; 
         let pollingInterval = null;
+        let cloudSyncTimeout = null;
+        let signatureTimeout = null;
+        const SESSION_EXPIRY_MS = 5 * 60 * 1000;
         
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         
@@ -1401,13 +1404,14 @@
                 document.getElementById('qr-session-id-display').style.color = '#27ae60';
                 document.getElementById('qr-session-id-display').innerText = 'Data nahrána. Otevři foťák v telefonu.';
 
-                setTimeout(() => {
+                if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
+                cloudSyncTimeout = setTimeout(() => {
                     const display = document.getElementById('qr-session-id-display');
                     if (display) {
                         display.style.color = '#e67e22';
                         display.innerText = 'Relace vypršela. Zkuste znovu.';
                     }
-                }, 5 * 60 * 1000);
+                }, SESSION_EXPIRY_MS);
             } catch(e) {
                 document.getElementById('qr-session-id-display').style.color = '#e74c3c';
                 document.getElementById('qr-session-id-display').innerText = 'Chyba připojení nebo je datový balík pořád moc velký!';
@@ -1439,14 +1443,15 @@
                 startPollingSignature(blobId, target);
 
                 // Po 5 minutách zastav polling a informuj uživatele
-                setTimeout(() => {
+                if (signatureTimeout) clearTimeout(signatureTimeout);
+                signatureTimeout = setTimeout(() => {
                     if (pollingInterval) {
                         clearInterval(pollingInterval);
                         pollingInterval = null;
                         const display = document.getElementById('qr-session-id-display');
                         if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
                     }
-                }, 5 * 60 * 1000);
+                }, SESSION_EXPIRY_MS);
             } catch(e) {
                 document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
             }
@@ -1543,7 +1548,12 @@
             }
         }
 
-        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; } }
+        function closeQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+            if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+            if(cloudSyncTimeout) { clearTimeout(cloudSyncTimeout); cloudSyncTimeout = null; }
+            if(signatureTimeout) { clearTimeout(signatureTimeout); signatureTimeout = null; }
+        }
 
         // Inicializace
         // === MIGRACE DAT (jednorázová) ===
