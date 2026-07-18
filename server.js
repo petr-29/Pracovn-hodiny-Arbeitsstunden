@@ -63,7 +63,7 @@ function isLocalHostname(hostname) {
   const normalized = hostname.toLowerCase();
   const ipVersion = net.isIP(normalized);
 
-  if (normalized === 'localhost' || normalized.endsWith('.local')) {
+  if (normalized === 'localhost' || normalized === '::1' || normalized.endsWith('.local')) {
     return true;
   }
 
@@ -113,6 +113,12 @@ function createSessionId() {
 
 function createUploadToken() {
   return crypto.randomBytes(32).toString('hex');
+}
+
+function getSessionLogLabel(sessionId) {
+  return typeof sessionId === 'string' && sessionId.length > 8
+    ? `…${sessionId.slice(-8)}`
+    : 'unknown';
 }
 
 function removeSession(sessionId) {
@@ -192,7 +198,7 @@ app.post('/api/signature-session', signatureRateLimit, (req, res) => {
     status: 'waiting'
   };
 
-  console.log(`✓ Nová relace podpisu: ${sessionId} (${target})`);
+  console.log(`✓ Nová relace podpisu: ${getSessionLogLabel(sessionId)} (${target})`);
 
   res.json({
     sessionId,
@@ -220,7 +226,7 @@ app.get('/api/signature/:sessionId', signatureRateLimit, (req, res) => {
   }
 
   if (session.signature) {
-    console.log(`✓ Podpis přijat pro relaci: ${sessionId}`);
+    console.log(`✓ Podpis přijat pro relaci: ${getSessionLogLabel(sessionId)}`);
     res.json({
       signature: session.signature,
       target: session.target,
@@ -276,7 +282,7 @@ app.post('/api/signature/:sessionId/upload', signatureRateLimit, (req, res) => {
   session.status = 'completed';
   session.uploadedAt = new Date();
 
-  console.log(`✓ Podpis uložen: ${sessionId}`);
+  console.log(`✓ Podpis uložen: ${getSessionLogLabel(sessionId)}`);
 
   res.json({
     success: true,
