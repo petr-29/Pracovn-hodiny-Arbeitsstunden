@@ -556,6 +556,9 @@
         let remoteMode = false; let currentExportType = ''; let currentDrawSessionId = null;
         let dataPodpisuKunde = null; let dataPodpisuIch = null; let targetSignature = ''; 
         let pollingInterval = null;
+        let cloudSyncTimeout = null;
+        let signatureTimeout = null;
+        const SESSION_EXPIRY_MS = 5 * 60 * 1000;
         
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         
@@ -1177,24 +1180,49 @@
                 item.innerHTML = `<div style="flex-grow: 1;"><div style="font-weight:bold; color:#2980b9;">Faktura ${f.cislo}</div>
                     <div style="font-size:12px;">${f.odberatel} | ${new Date(f.datum).toLocaleDateString()}</div>
                     <div style="font-weight:bold; color:#2ecc71;">${f.suma.toFixed(2)} EUR</div></div>
-                    <div style="display:flex; gap: 5px;"><button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">⬇️ PDF</button>
-                    <button class="btn-sec" style="background:#e74c3c; color:white; padding: 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button></div>`;
+                    <div style="display:flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
+                        <button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">👁️ Otevřít</button>
+                        <button class="btn-sec" style="background:#f39c12; color:white; padding: 10px;" onclick="opravitFakturu(${f.id})">✏️ Přepsat</button>
+                        <button class="btn-sec" style="background:#e74c3c; color:white; padding: 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button>
+                    </div>`;
                 container.appendChild(item);
             });
         }
         
         function stahnoutFakturuZArchivu(id) {
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; let f = archiv.find(x => x.id === id);
-            if(f && f.pdfData) { let link = document.createElement('a'); link.href = f.pdfData; link.download = `Faktura_${f.cislo.replace('/','-')}_Archiv.pdf`; link.click(); } 
+            if(f && f.pdfData) { 
+                // Bezpečné otevírání PDF i pro mobily přes převod na Blob
+                fetch(f.pdfData).then(res => res.blob()).then(blob => {
+                    let url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                }).catch(() => alert("Nepodařilo se otevřít PDF."));
+            } 
             else { alert("Data PDF pro tuto fakturu chybí."); }
         }
 
-        function smazatFakturuZArchivu(id) {
-            if(confirm("Opravdu smazat z archivu? Tvé záznamy práce ti zůstanou, ale toto PDF bude ztraceno.")) {
+        function smazatFakturuZArchivu(id, force = false) {
+            if(force || confirm("Opravdu smazat z archivu? Tvé záznamy práce ti zůstanou, ale toto PDF bude ztraceno.")) {
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 archiv = archiv.filter(f => f.id !== id); localStorage.setItem('archiv_faktur', JSON.stringify(archiv)); renderArchivFaktur();
             }
         }
+
+        function opravitFakturu(id) {
+            if(confirm("Pro opravu se tato faktura z archivu smaže. Následně vás přesměruji do Záznamů, kde můžete opravit data a vygenerovat fakturu znovu. Chcete pokračovat?")) {
+                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+                let f = archiv.find(x => x.id === id);
+                if(f) {
+                    // Předvyplníme číslo faktury pro nové generování
+                    document.getElementById('fak-cislo').value = f.cislo;
+                    // Smažeme fakturu rovnou bez dalšího ptaní
+                    smazatFakturuZArchivu(id, true);
+                    // Přesuneme uživatele na záložku Záznamy
+                    switchTab('zaznamy', document.querySelectorAll('.tab-item')[1]);
+                }
+            }
+        }
+
 
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let adresarKlientu = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
@@ -1341,53 +1369,52 @@
 
         // --- CLOUD SYNCHRONIZACE: KOMPLETNÍ PROPOJENÍ TELEFONU A POČÍTAČE ---
         async function generateCloudSync() {
-            document.getElementById('qr-modal-hlavicka').innerText = 'Naskenuj telefonem pro STAŽENÍ DAT';
+            document.getElementById('qr-modal-hlavicka').innerText = 'Naskenuj QR v telefonu';
             document.getElementById('qr-code-img').style.display = 'none';
             document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
-            document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečnou cloudovou zálohu...';
+            document.getElementById('qr-session-id-display').innerText = 'Připravuji datový balík...';
             document.getElementById('qr-modal').classList.remove('hidden');
             
-            try {
-                // VYTVOŘENÍ ODLEHČENÉHO BALÍČKU
-                let lightStorage = {};
-                for (let i = 0; i < localStorage.length; i++) {
-                    let key = localStorage.key(i);
-                    // Odstraníme archiv faktur a obrázky loga/razítka
-                    if (key === 'archiv_faktur' || key === 'cfg_logo' || key === 'cfg_razitko') continue;
-                    
-                    if (key === 'pracovni_zaznamy') {
-                        let records = JSON.parse(localStorage.getItem(key)) || [];
-                        let strippedRecords = records.map(r => {
-                            let newR = {...r}; delete newR.popisPraceImg; // Smaže obří nákresy tužkou
-                            return newR;
-                        });
-                        lightStorage[key] = JSON.stringify(strippedRecords);
-                    } else {
-                        lightStorage[key] = localStorage.getItem(key);
-                    }
+            let lightStorage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key !== 'archiv_faktur' && key !== 'cfg_logo' && key !== 'cfg_razitko') {
+                    lightStorage[key] = localStorage.getItem(key);
                 }
-                let syncData = JSON.stringify(lightStorage);
-                
+            }
+
+            try {
                 let res = await fetch('https://jsonblob.com/api/jsonBlob', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ type: 'fullsync', payload: syncData })
+                    body: JSON.stringify({ payload: JSON.stringify(lightStorage) })
                 });
 
-                if(!res.ok) throw new Error('Server zamítl data (příliš velká).');
-                
-                let blobId = res.headers.get('Location').split('/').pop();
-                const baseUrl = window.location.href.split('?')[0]; 
+                if(!res.ok) throw new Error('Upload sync dat selhal.');
+                const location = res.headers.get('Location');
+                if(!location) throw new Error('Chybí Location header.');
+                let blobId = location.split('/').pop();
+
+                const baseUrl = window.location.href.split('?')[0];
                 const phoneUrl = `${baseUrl}?fullsync=${blobId}`;
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-                
-                document.getElementById('qr-code-img').src = qrUrl; 
+
+                document.getElementById('qr-code-img').src = qrUrl;
                 document.getElementById('qr-code-img').style.display = 'block';
                 document.getElementById('qr-session-id-display').style.color = '#27ae60';
-                document.getElementById('qr-session-id-display').innerText = `Data nahrána. Otevři foťák v telefonu.`; 
+                document.getElementById('qr-session-id-display').innerText = 'Data nahrána. Otevři foťák v telefonu.';
+
+                if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
+                cloudSyncTimeout = setTimeout(() => {
+                    const display = document.getElementById('qr-session-id-display');
+                    if (display) {
+                        display.style.color = '#e67e22';
+                        display.innerText = 'Relace vypršela. Zkuste znovu.';
+                    }
+                }, SESSION_EXPIRY_MS);
             } catch(e) {
                 document.getElementById('qr-session-id-display').style.color = '#e74c3c';
-                document.getElementById('qr-session-id-display').innerHTML = `Chyba připojení nebo je datový balík pořád moc velký!`;
+                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení nebo je datový balík pořád moc velký!';
             }
         }
 
@@ -1414,6 +1441,17 @@
                 document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
                 
                 startPollingSignature(blobId, target);
+
+                // Po 5 minutách zastav polling a informuj uživatele
+                if (signatureTimeout) clearTimeout(signatureTimeout);
+                signatureTimeout = setTimeout(() => {
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        const display = document.getElementById('qr-session-id-display');
+                        if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                    }
+                }, SESSION_EXPIRY_MS);
             } catch(e) {
                 document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
             }
@@ -1479,8 +1517,8 @@
             }
         }
 
-        async function sendSignatureToPC(blobId, target) {
-            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+                async function sendSignatureToPC(blobId, target) {
+                const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); return; }
             
             const dataUrl = canvas.toDataURL('image/png');
@@ -1495,16 +1533,59 @@
                 });
                 
                 document.getElementById('signature-modal').classList.add('hidden');
-                document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; font-family:sans-serif;'>Podpis úspěšně odeslán do PC! ✔️<br><br><span style='font-size:14px;color:#777;'>Tuto záložku můžete zavřít.</span></h2>";
+                
+                // Přidáno tlačítko pro návrat do standardního režimu aplikace
+                document.body.innerHTML = `
+                    <div style="text-align:center; margin-top:50px; font-family:sans-serif; padding:20px;">
+                        <h1 style="color:#2ecc71;">Podpis úspěšně odeslán do PC! ✔️</h1>
+                        <p style="color:#2c3e50;">Aplikace v počítači váš podpis právě přijala.</p>
+                        <button onclick="window.location.href=window.location.href.split('?')[0]" style="padding:15px; font-size:18px; font-weight:bold; background:#3498db; color:white; border:none; border-radius:8px; width:100%; margin-top:20px;">Zpět do aplikace</button>
+                    </div>
+                `;
             } catch(e) {
                 alert("Chyba při odesílání do PC.");
                 if(btn) { btn.innerText = "Odeslat do PC"; btn.disabled = false; }
             }
         }
 
-        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); if(pollingInterval) clearInterval(pollingInterval); }
+        function closeQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+            if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+            if(cloudSyncTimeout) { clearTimeout(cloudSyncTimeout); cloudSyncTimeout = null; }
+            if(signatureTimeout) { clearTimeout(signatureTimeout); signatureTimeout = null; }
+        }
 
         // Inicializace
+        // === MIGRACE DAT (jednorázová) ===
+        (function migrateLocalStorage() {
+            // 1. Stará záznamy: 'zaznamy' -> 'pracovni_zaznamy'
+            const stareZaznamy = localStorage.getItem('zaznamy');
+            if (stareZaznamy && !localStorage.getItem('pracovni_zaznamy')) {
+                localStorage.setItem('pracovni_zaznamy', stareZaznamy);
+                localStorage.removeItem('zaznamy');
+                console.log('Migrace: zaznamy -> pracovni_zaznamy OK');
+            }
+
+            // 2. Stará nastavení: 'app_settings' objekt -> individuální cfg_* klíče
+            const stareNastaveni = localStorage.getItem('app_settings');
+            if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
+                try {
+                    const s = JSON.parse(stareNastaveni);
+                    if (s.jmeno)      localStorage.setItem('cfg_jmeno', s.jmeno);
+                    if (s.firma)      localStorage.setItem('cfg_firma', s.firma);
+                    if (s.adresa)     localStorage.setItem('cfg_adresa', s.adresa);
+                    if (s.mesto)      localStorage.setItem('cfg_mesto', s.mesto);
+                    if (s.ico)        localStorage.setItem('cfg_ico_odberatel', s.ico);
+                    if (s.dod_adresa) localStorage.setItem('cfg_dod_adresa', s.dod_adresa);
+                    if (s.dod_ico)    localStorage.setItem('cfg_dod_ico', s.dod_ico);
+                    if (s.dod_banka)  localStorage.setItem('cfg_dod_banka', s.dod_banka);
+                    if (s.dod_kontakt)localStorage.setItem('cfg_dod_kontakt', s.dod_kontakt);
+                    localStorage.removeItem('app_settings');
+                    console.log('Migrace: app_settings -> cfg_* OK');
+                } catch(e) { console.warn('Migrace nastavení selhala:', e); }
+            }
+        })();
+
         processFullSyncMode();
         loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
     </script>
