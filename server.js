@@ -37,9 +37,8 @@ app.use('/api', cors({
   allowedHeaders: ['Content-Type', 'X-Signature-Token'],
   maxAge: 300
 }));
-app.use(express.static(path.join(__dirname, 'public')));
 
-const signatureRateLimit = rateLimit({
+const appRateLimit = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   limit: RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
@@ -49,6 +48,11 @@ const signatureRateLimit = rateLimit({
     trustProxy: false
   }
 });
+
+app.get('/', appRateLimit, (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.use(express.static(path.join(__dirname, 'public')));
 
 function isAllowedOrigin(origin) {
   try {
@@ -173,7 +177,7 @@ function getSessionSignUrl(session) {
  * Vytvoří novou relaci pro podpis
  * Body: { target: 'kunde' | 'ich', pcId: string }
  */
-app.post('/api/signature-session', signatureRateLimit, (req, res) => {
+app.post('/api/signature-session', appRateLimit, (req, res) => {
   const { target = 'kunde', pcId } = req.body || {};
 
   if (!isValidTarget(target)) {
@@ -213,7 +217,7 @@ app.post('/api/signature-session', signatureRateLimit, (req, res) => {
  * GET /api/signature/:sessionId
  * Zjistí stav podpisu - vrací podpis pokud je připraven
  */
-app.get('/api/signature/:sessionId', signatureRateLimit, (req, res) => {
+app.get('/api/signature/:sessionId', appRateLimit, (req, res) => {
   const { sessionId } = req.params;
   if (!isValidSessionId(sessionId)) {
     return res.status(400).json({ error: 'Invalid sessionId' });
@@ -252,7 +256,7 @@ app.get('/api/signature/:sessionId', signatureRateLimit, (req, res) => {
  * POST /api/signature/:sessionId/upload
  * Telefon odešle podpis
  */
-app.post('/api/signature/:sessionId/upload', signatureRateLimit, (req, res) => {
+app.post('/api/signature/:sessionId/upload', appRateLimit, (req, res) => {
   const { sessionId } = req.params;
   const { signature } = req.body || {};
   const token = (req.body && req.body.token) || req.get('x-signature-token');
@@ -295,7 +299,7 @@ app.post('/api/signature/:sessionId/upload', signatureRateLimit, (req, res) => {
  * GET /sign
  * Zobrazit podpisové plátno na základě parametrů
  */
-app.get('/sign', signatureRateLimit, (req, res) => {
+app.get('/sign', appRateLimit, (req, res) => {
   const { sessionId, target, lang, token } = req.query;
 
   if (!isValidSessionId(sessionId)) {
