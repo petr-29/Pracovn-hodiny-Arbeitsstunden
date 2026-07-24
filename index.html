@@ -1626,7 +1626,7 @@
             if(signatureTimeout) { clearTimeout(signatureTimeout); signatureTimeout = null; }
         }
 
-        // Inicializace
+              // Inicializace
         // === MIGRACE DAT (jednorázová) ===
         (function migrateLocalStorage() {
             // 1. Stará záznamy: 'zaznamy' -> 'pracovni_zaznamy'
@@ -1636,9 +1636,8 @@
                 localStorage.removeItem('zaznamy');
                 console.log('Migrace: zaznamy -> pracovni_zaznamy OK');
             }
-    <script>
-      // ... c
- // 2. Stará nastavení: 'app_settings' objekt -> individuální cfg_* klíče
+
+            // 2. Stará nastavení: 'app_settings' objekt -> individuální cfg_* klíče
             const stareNastaveni = localStorage.getItem('app_settings');
             if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
                 try {
@@ -1658,8 +1657,7 @@
             }
         })();
 
-         processFullSyncMode();
-      loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
-    </script>
+        processFullSyncMode();
+        loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
 </body>
 </html>
