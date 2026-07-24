@@ -1522,7 +1522,7 @@
                         updateLivePreview();
                         alert("Podpis úspěšně přenesen do PC!");
                     }
-                } catch(e) {}
+                } catch(e) { console.error('Chyba při získávání podpisu:', e); }
             }, 2000);
         }
 

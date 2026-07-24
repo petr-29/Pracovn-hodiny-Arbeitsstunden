@@ -38,7 +38,7 @@ The only requirement is that `node server.js` runs and the `PORT` environment va
 | Variable | Required | Example | Description |
 |----------|----------|---------|-------------|
 | `PORT` | no | `3000` | Port the server listens on (default: 3000) |
-| `PUBLIC_URL` | **yes** | `https://arbeitsstunden-api.onrender.com` | Absolute public URL of the backend. Used to build the absolute `/sign?…` URL returned to the frontend and embedded in the QR code. Must not end with `/`. |
+| `PUBLIC_URL` | **yes (cross-origin)** | `https://arbeitsstunden-api.onrender.com` | Absolute public URL of the backend. Used to build the absolute `/sign?…` URL returned to the frontend and embedded in the QR code. Must not end with `/`. Required when the frontend is on a different origin (GitHub Pages). Not needed for single-host local development. |
 | `ALLOWED_ORIGIN` | no | `https://example.github.io` | Additional exact frontend origin to allow in CORS. `https://petr-29.github.io` is always allowed. |
 
 ### 3. Set the frontend API base URL
@@ -102,7 +102,7 @@ The backend allows the following request origins:
 
 - `https://petr-29.github.io` (always allowed)
 - Any value set in the `ALLOWED_ORIGIN` environment variable (exact match only)
-- `localhost`, `127.0.0.1`, `::1`, `*.local`
+- `localhost`, `127.0.0.1`, `::1`, hostnames ending in `.local`
 - Private LAN ranges: `10.x.x.x`, `192.168.x.x`, `172.16-31.x.x`
 
 Wildcard origins (`*`) are **not** used.

@@ -21,8 +21,8 @@ const SIGNATURE_PATTERN = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
 // GitHub Pages origin for this repository – always allowed
 const GITHUB_PAGES_ORIGIN = 'https://petr-29.github.io';
-// Optional extra origin for custom frontends (set via env var, exact match only)
-const EXTRA_ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.trim().replace(/\/$/, '') : null;
+// Optional user-configurable origin for custom frontends (set via env var, exact match only)
+const CUSTOM_ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.trim().replace(/\/$/, '') : null;
 // Public URL of this backend (used to build absolute sign URLs in production)
 const PUBLIC_URL = process.env.PUBLIC_URL ? process.env.PUBLIC_URL.trim().replace(/\/$/, '') : null;
 
@@ -65,8 +65,8 @@ function isAllowedOrigin(origin) {
   // Allow GitHub Pages origin for this repository
   if (origin === GITHUB_PAGES_ORIGIN) return true;
 
-  // Allow optional env-configured extra origin (exact match, no wildcards)
-  if (EXTRA_ALLOWED_ORIGIN && origin === EXTRA_ALLOWED_ORIGIN) return true;
+  // Allow optional user-configurable extra origin (exact match, no wildcards)
+  if (CUSTOM_ALLOWED_ORIGIN && origin === CUSTOM_ALLOWED_ORIGIN) return true;
 
   // Allow localhost and private LAN addresses for local development
   try {
