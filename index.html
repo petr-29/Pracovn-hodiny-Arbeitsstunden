@@ -559,6 +559,10 @@
         let cloudSyncTimeout = null;
         let signatureTimeout = null;
         const SESSION_EXPIRY_MS = 5 * 60 * 1000;
+        // API base URL for the external Node backend.
+        // Set window.__API_BASE_URL__ (e.g. in a <script> tag before this file) to point to
+        // a separately hosted backend.  Leave unset to keep the built-in jsonblob.com relay.
+        const API_BASE_URL = ((window.__API_BASE_URL__ || '').trim()).replace(/\/$/, '');
         
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         
@@ -1423,38 +1427,103 @@
             document.getElementById('qr-code-img').style.display = 'none';
             document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečné spojení s telefonem...';
             document.getElementById('qr-modal').classList.remove('hidden');
-            
-            try {
-                let res = await fetch('https://jsonblob.com/api/jsonBlob', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ status: 'waiting', signature: null })
-                });
-                let blobId = res.headers.get('Location').split('/').pop();
-                const baseUrl = window.location.href.split('?')[0]; 
-                const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-                
-                document.getElementById('qr-code-img').src = qrUrl; 
-                document.getElementById('qr-code-img').style.display = 'block';
-                document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
-                document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
-                
-                startPollingSignature(blobId, target);
 
-                // Po 5 minutách zastav polling a informuj uživatele
-                if (signatureTimeout) clearTimeout(signatureTimeout);
-                signatureTimeout = setTimeout(() => {
-                    if (pollingInterval) {
+            if (API_BASE_URL) {
+                // === Node backend flow ===
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/signature-session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ target, pcId: navigator.userAgent.slice(0, 80) })
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    const { sessionId, signUrl } = data;
+
+                    // signUrl from local dev is relative; production returns absolute via PUBLIC_URL env var
+                    const absoluteSignUrl = (signUrl && signUrl.startsWith('http'))
+                        ? signUrl
+                        : `${API_BASE_URL}${signUrl}`;
+
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(absoluteSignUrl)}`;
+                    document.getElementById('qr-code-img').src = qrUrl;
+                    document.getElementById('qr-code-img').style.display = 'block';
+                    document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
+                    document.getElementById('qr-session-id-display').innerText = 'Spojeno! Naskenujte kód pro podpis.';
+
+                    startPollingSignatureApi(sessionId, target);
+
+                    if (signatureTimeout) clearTimeout(signatureTimeout);
+                    signatureTimeout = setTimeout(() => {
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                            const display = document.getElementById('qr-session-id-display');
+                            if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                        }
+                    }, SESSION_EXPIRY_MS);
+                } catch(e) {
+                    document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+                }
+            } else {
+                // === Fallback: jsonblob.com relay (works without a Node backend) ===
+                try {
+                    let res = await fetch('https://jsonblob.com/api/jsonBlob', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ status: 'waiting', signature: null })
+                    });
+                    let blobId = res.headers.get('Location').split('/').pop();
+                    const baseUrl = window.location.href.split('?')[0]; 
+                    const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
+                    
+                    document.getElementById('qr-code-img').src = qrUrl; 
+                    document.getElementById('qr-code-img').style.display = 'block';
+                    document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
+                    document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
+                    
+                    startPollingSignature(blobId, target);
+
+                    if (signatureTimeout) clearTimeout(signatureTimeout);
+                    signatureTimeout = setTimeout(() => {
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                            const display = document.getElementById('qr-session-id-display');
+                            if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                        }
+                    }, SESSION_EXPIRY_MS);
+                } catch(e) {
+                    document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+                }
+            }
+        }
+
+        // Polls the Node backend for a completed signature (used when API_BASE_URL is set)
+        function startPollingSignatureApi(sessionId, target) {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/signature/${encodeURIComponent(sessionId)}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data && data.status === 'completed' && data.signature) {
                         clearInterval(pollingInterval);
                         pollingInterval = null;
-                        const display = document.getElementById('qr-session-id-display');
-                        if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                        closeQrModal();
+                        if (target === 'kunde') {
+                            dataPodpisuKunde = data.signature;
+                            document.getElementById('box-kunde').innerHTML = `<img src="${data.signature}" class="signature-display-img">`;
+                        } else {
+                            dataPodpisuIch = data.signature;
+                            document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`;
+                        }
+                        updateLivePreview();
+                        alert("Podpis úspěšně přenesen do PC!");
                     }
-                }, SESSION_EXPIRY_MS);
-            } catch(e) {
-                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
-            }
+                } catch(e) {}
+            }, 2000);
         }
 
         function startPollingSignature(blobId, target) {
