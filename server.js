@@ -19,6 +19,13 @@ const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
 const TOKEN_PATTERN = /^[0-9a-f]{64}$/i;
 const SIGNATURE_PATTERN = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
+// GitHub Pages origin for this repository – always allowed
+const GITHUB_PAGES_ORIGIN = 'https://petr-29.github.io';
+// Optional user-configurable origin for custom frontends (set via env var, exact match only)
+const CUSTOM_ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.trim().replace(/\/$/, '') : null;
+// Public URL of this backend (used to build absolute sign URLs in production)
+const PUBLIC_URL = process.env.PUBLIC_URL ? process.env.PUBLIC_URL.trim().replace(/\/$/, '') : null;
+
 // Úložiště pro relace podpisu
 let signatureSessions = {};
 
@@ -55,6 +62,13 @@ app.get('/', appRateLimit, (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 function isAllowedOrigin(origin) {
+  // Allow GitHub Pages origin for this repository
+  if (origin === GITHUB_PAGES_ORIGIN) return true;
+
+  // Allow optional user-configurable extra origin (exact match, no wildcards)
+  if (CUSTOM_ALLOWED_ORIGIN && origin === CUSTOM_ALLOWED_ORIGIN) return true;
+
+  // Allow localhost and private LAN addresses for local development
   try {
     const { hostname } = new URL(origin);
     return isLocalHostname(hostname);
@@ -67,7 +81,7 @@ function isLocalHostname(hostname) {
   const normalized = hostname.toLowerCase();
   const ipVersion = net.isIP(normalized);
 
-  if (normalized === 'localhost' || normalized === '::1' || normalized.endsWith('.local')) {
+  if (normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1' || normalized.endsWith('.local')) {
     return true;
   }
 
@@ -160,14 +174,27 @@ function matchesToken(expectedToken, providedToken) {
   );
 }
 
-function getSessionSignUrl(session) {
+function getSessionSignUrl(req, session) {
   const params = new URLSearchParams({
     sessionId: session.id,
     target: session.target,
     token: session.uploadToken
   });
 
-  return `/sign?${params.toString()}`;
+  const relPath = `/sign?${params.toString()}`;
+
+  // Use PUBLIC_URL env var when set – required for cross-origin (Pages + external backend) deployments.
+  if (PUBLIC_URL) {
+    return `${PUBLIC_URL}${relPath}`;
+  }
+
+  // Only build an absolute URL when the requesting hostname is a verified local address,
+  // to prevent Host-header injection on public/untrusted deployments.
+  if (req && isLocalHostname(req.hostname)) {
+    return `${req.protocol}://${req.get('host')}${relPath}`;
+  }
+
+  return relPath;
 }
 
 // === API ENDPOINTY ===
@@ -209,7 +236,7 @@ app.post('/api/signature-session', appRateLimit, (req, res) => {
     uploadToken,
     target,
     created: signatureSessions[sessionId].created,
-    signUrl: getSessionSignUrl(signatureSessions[sessionId])
+    signUrl: getSessionSignUrl(req, signatureSessions[sessionId])
   });
 });
 
