@@ -67,7 +67,7 @@ function isLocalHostname(hostname) {
   const normalized = hostname.toLowerCase();
   const ipVersion = net.isIP(normalized);
 
-  if (normalized === 'localhost' || normalized === '::1' || normalized.endsWith('.local')) {
+  if (normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1' || normalized.endsWith('.local')) {
     return true;
   }
 
@@ -160,14 +160,22 @@ function matchesToken(expectedToken, providedToken) {
   );
 }
 
-function getSessionSignUrl(session) {
+function getSessionSignUrl(req, session) {
   const params = new URLSearchParams({
     sessionId: session.id,
     target: session.target,
     token: session.uploadToken
   });
 
-  return `/sign?${params.toString()}`;
+  const relPath = `/sign?${params.toString()}`;
+
+  // Only build an absolute URL when the requesting hostname is a verified local address,
+  // to prevent Host-header injection on public/untrusted deployments.
+  if (req && isLocalHostname(req.hostname)) {
+    return `${req.protocol}://${req.get('host')}${relPath}`;
+  }
+
+  return relPath;
 }
 
 // === API ENDPOINTY ===
@@ -209,7 +217,7 @@ app.post('/api/signature-session', appRateLimit, (req, res) => {
     uploadToken,
     target,
     created: signatureSessions[sessionId].created,
-    signUrl: getSessionSignUrl(signatureSessions[sessionId])
+    signUrl: getSessionSignUrl(req, signatureSessions[sessionId])
   });
 });
 
