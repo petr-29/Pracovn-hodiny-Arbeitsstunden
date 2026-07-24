@@ -1392,7 +1392,6 @@
 
         // --- CLOUD SYNCHRONIZACE: KOMPLETNÍ PROPOJENÍ TELEFONU A POČÍTAČE ---
         async function generateCloudSync() {
-<<<<<<< HEAD
             const qrModal = getQrModalElements();
             qrModal.header.innerText = getLangText(
                 'Naskenujte QR kód pro stažení dat do telefonu',
@@ -1405,13 +1404,6 @@
                 'Datenpaket für die Cloud wird vorbereitet...'
             );
             qrModal.modal.classList.remove('hidden');
-=======
-            document.getElementById('qr-modal-hlavicka').innerText = 'Naskenuj QR v telefonu';
-            document.getElementById('qr-code-img').style.display = 'none';
-            document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
-            document.getElementById('qr-session-id-display').innerText = 'Připravuji datový balík...';
-            document.getElementById('qr-modal').classList.remove('hidden');
->>>>>>> origin/main
             
             let lightStorage = {};
             for (let i = 0; i < localStorage.length; i++) {
@@ -1428,10 +1420,10 @@
                     body: JSON.stringify({ payload: JSON.stringify(lightStorage) })
                 });
 
-<<<<<<< HEAD
                 if(!res.ok) throw new Error('Server zamítl data (příliš velká).');
-                
-                let blobId = res.headers.get('Location').split('/').pop();
+                const location = res.headers.get('Location');
+                if(!location) throw new Error('Chybí Location header.');
+                let blobId = location.split('/').pop();
                 const baseUrl = getBaseAppUrl(); 
                 const phoneUrl = `${baseUrl}?fullsync=${blobId}`;
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
@@ -1443,82 +1435,34 @@
                     'Hotovo. Otevřete fotoaparát v telefonu a naskenujte QR kód.',
                     'Fertig. Öffnen Sie die Kamera am Telefon und scannen Sie den QR-Code.'
                 );
+
+                if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
+                cloudSyncTimeout = setTimeout(() => {
+                    qrModal.status.style.color = '#e67e22';
+                    qrModal.status.innerText = getLangText(
+                        'Relace vypršela. Zkuste znovu.',
+                        'Sitzung abgelaufen. Bitte erneut versuchen.'
+                    );
+                }, SESSION_EXPIRY_MS);
             } catch(e) {
                 qrModal.status.style.color = '#e74c3c';
                 qrModal.status.innerText = getLangText(
                     'Nepodařilo se připravit QR kód. Zkontrolujte připojení nebo zmenšete objem dat.',
                     'QR-Code konnte nicht vorbereitet werden. Prüfen Sie die Verbindung oder reduzieren Sie die Datenmenge.'
                 );
-=======
-                if(!res.ok) throw new Error('Upload sync dat selhal.');
-                const location = res.headers.get('Location');
-                if(!location) throw new Error('Chybí Location header.');
-                let blobId = location.split('/').pop();
-
-                const baseUrl = window.location.href.split('?')[0];
-                const phoneUrl = `${baseUrl}?fullsync=${blobId}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-
-                document.getElementById('qr-code-img').src = qrUrl;
-                document.getElementById('qr-code-img').style.display = 'block';
-                document.getElementById('qr-session-id-display').style.color = '#27ae60';
-                document.getElementById('qr-session-id-display').innerText = 'Data nahrána. Otevři foťák v telefonu.';
-
-                if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
-                cloudSyncTimeout = setTimeout(() => {
-                    const display = document.getElementById('qr-session-id-display');
-                    if (display) {
-                        display.style.color = '#e67e22';
-                        display.innerText = 'Relace vypršela. Zkuste znovu.';
-                    }
-                }, SESSION_EXPIRY_MS);
-            } catch(e) {
-                document.getElementById('qr-session-id-display').style.color = '#e74c3c';
-                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení nebo je datový balík pořád moc velký!';
->>>>>>> origin/main
             }
         }
 
         // VYLEPŠENÝ QR KÓD PRO PODPIS Z TELEFONU
         async function generateSignaturePhoneLink(target) {
-<<<<<<< HEAD
             const qrModal = getQrModalElements();
             qrModal.image.style.display = 'none';
+            qrModal.status.style.color = '#7f8c8d';
             qrModal.status.innerText = getLangText(
-                'Připravuji bezpečný QR odkaz pro podpis...',
-                'Sicherer QR-Link für die Unterschrift wird vorbereitet...'
+                'Vytvářím bezpečné spojení s telefonem...',
+                'Sichere Verbindung mit dem Telefon wird hergestellt...'
             );
             qrModal.modal.classList.remove('hidden');
-            
-            try {
-                let res = await fetch('https://jsonblob.com/api/jsonBlob', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ status: 'waiting', signature: null })
-                });
-                let blobId = res.headers.get('Location').split('/').pop();
-                const baseUrl = getBaseAppUrl(); 
-                const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-                
-                qrModal.image.src = qrUrl; 
-                qrModal.image.style.display = 'block';
-                qrModal.status.style.color = '#7f8c8d';
-                qrModal.status.innerText = getLangText(
-                    'QR kód je připraven. Naskenujte jej v telefonu pro podpis.',
-                    'QR-Code ist bereit. Scannen Sie ihn am Telefon für die Unterschrift.'
-                );
-                
-                startPollingSignature(blobId, target);
-            } catch(e) {
-                qrModal.status.innerText = getLangText(
-                    'Nepodařilo se spojit se serverem.',
-                    'Verbindung zum Server konnte nicht hergestellt werden.'
-                );
-=======
-            document.getElementById('qr-code-img').style.display = 'none';
-            document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečné spojení s telefonem...';
-            document.getElementById('qr-modal').classList.remove('hidden');
 
             if (API_BASE_URL) {
                 // === Node backend flow ===
@@ -1538,10 +1482,13 @@
                         : `${API_BASE_URL}${signUrl}`;
 
                     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(absoluteSignUrl)}`;
-                    document.getElementById('qr-code-img').src = qrUrl;
-                    document.getElementById('qr-code-img').style.display = 'block';
-                    document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
-                    document.getElementById('qr-session-id-display').innerText = 'Spojeno! Naskenujte kód pro podpis.';
+                    qrModal.image.src = qrUrl;
+                    qrModal.image.style.display = 'block';
+                    qrModal.status.style.color = '#7f8c8d';
+                    qrModal.status.innerText = getLangText(
+                        'QR kód je připraven. Naskenujte jej v telefonu pro podpis.',
+                        'QR-Code ist bereit. Scannen Sie ihn am Telefon für die Unterschrift.'
+                    );
 
                     startPollingSignatureApi(sessionId, target);
 
@@ -1550,12 +1497,19 @@
                         if (pollingInterval) {
                             clearInterval(pollingInterval);
                             pollingInterval = null;
-                            const display = document.getElementById('qr-session-id-display');
-                            if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                            qrModal.status.style.color = '#e67e22';
+                            qrModal.status.innerText = getLangText(
+                                '⏱️ Relace vypršela. Zavřete a zkuste znovu.',
+                                '⏱️ Sitzung abgelaufen. Schließen Sie und versuchen Sie es erneut.'
+                            );
                         }
                     }, SESSION_EXPIRY_MS);
                 } catch(e) {
-                    document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+                    qrModal.status.style.color = '#e74c3c';
+                    qrModal.status.innerText = getLangText(
+                        'Chyba připojení k serveru.',
+                        'Verbindungsfehler zum Server.'
+                    );
                 }
             } else {
                 // === Fallback: jsonblob.com relay (works without a Node backend) ===
@@ -1566,14 +1520,17 @@
                         body: JSON.stringify({ status: 'waiting', signature: null })
                     });
                     let blobId = res.headers.get('Location').split('/').pop();
-                    const baseUrl = window.location.href.split('?')[0]; 
+                    const baseUrl = getBaseAppUrl(); 
                     const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
                     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
                     
-                    document.getElementById('qr-code-img').src = qrUrl; 
-                    document.getElementById('qr-code-img').style.display = 'block';
-                    document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
-                    document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
+                    qrModal.image.src = qrUrl; 
+                    qrModal.image.style.display = 'block';
+                    qrModal.status.style.color = '#7f8c8d';
+                    qrModal.status.innerText = getLangText(
+                        'QR kód je připraven. Naskenujte jej v telefonu pro podpis.',
+                        'QR-Code ist bereit. Scannen Sie ihn am Telefon für die Unterschrift.'
+                    );
                     
                     startPollingSignature(blobId, target);
 
@@ -1582,14 +1539,20 @@
                         if (pollingInterval) {
                             clearInterval(pollingInterval);
                             pollingInterval = null;
-                            const display = document.getElementById('qr-session-id-display');
-                            if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                            qrModal.status.style.color = '#e67e22';
+                            qrModal.status.innerText = getLangText(
+                                '⏱️ Relace vypršela. Zavřete a zkuste znovu.',
+                                '⏱️ Sitzung abgelaufen. Schließen Sie und versuchen Sie es erneut.'
+                            );
                         }
                     }, SESSION_EXPIRY_MS);
                 } catch(e) {
-                    document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+                    qrModal.status.style.color = '#e74c3c';
+                    qrModal.status.innerText = getLangText(
+                        'Nepodařilo se spojit se serverem.',
+                        'Verbindung zum Server konnte nicht hergestellt werden.'
+                    );
                 }
->>>>>>> origin/main
             }
         }
 
