@@ -1635,7 +1635,13 @@
                 console.log('Migrace: zaznamy -> pracovni_zaznamy OK');
             }
 
-            // 2. Stará nastavení: 'app_settings' objekt -> individuální cfg_* klíče
+           <script>
+      window.__API_BASE_URL__ = 'https://arbeitsstunden-api.onrender.com';
+    </script>
+
+    <script>
+      // ... c
+ // 2. Stará nastavení: 'app_settings' objekt -> individuální cfg_* klíče
             const stareNastaveni = localStorage.getItem('app_settings');
             if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
                 try {
@@ -1655,8 +1661,8 @@
             }
         })();
 
-        processFullSyncMode();
-        loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
+         processFullSyncMode();
+      loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
     </script>
 </body>
 </html>
