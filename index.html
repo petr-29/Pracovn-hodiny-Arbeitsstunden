@@ -267,7 +267,7 @@
                     <div id="faktura-fields" class="hidden">
                         <div class="row">
                             <div class="form-group">
-                                <label>Číslo faktury (např. 2026/07-001)</label>
+                                <label id="fak-cislo-label">Číslo faktury (např. 2026/07-001)</label>
                                 <input type="text" id="fak-cislo" value="2026/07-001" oninput="updateLivePreview()">
                             </div>
                         </div>
@@ -559,22 +559,21 @@
             let dnes = new Date();
             let rok = dnes.getFullYear();
             let mesic = String(dnes.getMonth() + 1).padStart(2, '0');
-            let aktualniPrefix = `${rok}/${mesic}-`; 
+            let aktualniPrefix = `${rok}/${mesic}-`;
 
-            if (archiv.length > 0) {
-                archiv.sort((a,b) => new Date(b.datum) - new Date(a.datum));
-                let posledniFaktura = archiv[0].cislo;
+            let labelEl = document.getElementById('fak-cislo-label');
+            if (labelEl) { labelEl.textContent = `Číslo faktury (např. ${aktualniPrefix}001)`; }
 
-                if (posledniFaktura.startsWith(aktualniPrefix)) {
-                    let parts = posledniFaktura.split('-');
-                    if (parts.length === 2 && !isNaN(parts[1])) {
-                        let nextNum = parseInt(parts[1]) + 1;
-                        cisloInput.value = aktualniPrefix + String(nextNum).padStart(3, '0');
-                        return;
-                    }
+            let mesicniFaktury = archiv.filter(f => f.cislo && f.cislo.startsWith(aktualniPrefix));
+            let maxCislo = 0;
+            mesicniFaktury.forEach(f => {
+                let parts = f.cislo.split('-');
+                if (parts.length === 2 && parts[1] !== '' && !isNaN(parts[1])) {
+                    let num = parseInt(parts[1]);
+                    if (num > maxCislo) maxCislo = num;
                 }
-            }
-            cisloInput.value = aktualniPrefix + "001";
+            });
+            cisloInput.value = aktualniPrefix + String(maxCislo + 1).padStart(3, '0');
         }
 
         let remoteMode = false; let currentExportType = ''; let currentDrawSessionId = null;
@@ -910,25 +909,7 @@
                 archiv.push({ id: Date.now(), cislo: cislo, odberatel: odberatel, suma: suma, datum: new Date().toISOString(), pdfData: base64Pdf });
                 localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
                 renderArchivFaktur();
-                
-                let cisloInput = document.getElementById('fak-cislo');
-                let dnes = new Date();
-                let rok = dnes.getFullYear();
-                let mesic = String(dnes.getMonth() + 1).padStart(2, '0');
-                let aktualniPrefix = `${rok}/${mesic}-`; 
-
-                if (cislo.startsWith(aktualniPrefix)) {
-                    let parts = cislo.split('-'); 
-                    if (parts.length === 2 && !isNaN(parts[1])) {
-                        let nextNum = parseInt(parts[1]) + 1;
-                        cisloInput.value = aktualniPrefix + String(nextNum).padStart(3, '0');
-                    } else {
-                        cisloInput.value = aktualniPrefix + "001";
-                    }
-                } else {
-                    cisloInput.value = aktualniPrefix + "001";
-                }
-                
+                nastavCisloNoveFaktury();
             } catch(e) { 
                 alert(currentLang === 'cs' ? 
                     'Paměť pro ukládání faktur je plná (PDF dokumenty jsou moc velké). Jděte do sekce Faktury a promažte staré záznamy.' : 
