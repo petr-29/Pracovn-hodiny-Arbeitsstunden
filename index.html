@@ -267,8 +267,8 @@
                     <div id="faktura-fields" class="hidden">
                         <div class="row">
                             <div class="form-group">
-                                <label>Číslo faktury (např. 2026/0001)</label>
-                                <input type="text" id="fak-cislo" value="2026/0001" oninput="updateLivePreview()">
+                                <label>Číslo faktury (např. 2026/07-001)</label>
+                                <input type="text" id="fak-cislo" value="2026/07-001" oninput="updateLivePreview()">
                             </div>
                         </div>
                         <div class="row">
@@ -548,6 +548,33 @@
             document.getElementById('fak-vystaveni').valueAsDate = new Date();
             let tydenDate = new Date(); tydenDate.setDate(tydenDate.getDate() + 14);
             document.getElementById('fak-splatnost').valueAsDate = tydenDate;
+            
+            // Nastavení aktuálního čísla faktury podle měsíce
+            nastavCisloNoveFaktury();
+        }
+
+        function nastavCisloNoveFaktury() {
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            let cisloInput = document.getElementById('fak-cislo');
+            let dnes = new Date();
+            let rok = dnes.getFullYear();
+            let mesic = String(dnes.getMonth() + 1).padStart(2, '0');
+            let aktualniPrefix = `${rok}/${mesic}-`; 
+
+            if (archiv.length > 0) {
+                archiv.sort((a,b) => new Date(b.datum) - new Date(a.datum));
+                let posledniFaktura = archiv[0].cislo;
+
+                if (posledniFaktura.startsWith(aktualniPrefix)) {
+                    let parts = posledniFaktura.split('-');
+                    if (parts.length === 2 && !isNaN(parts[1])) {
+                        let nextNum = parseInt(parts[1]) + 1;
+                        cisloInput.value = aktualniPrefix + String(nextNum).padStart(3, '0');
+                        return;
+                    }
+                }
+            }
+            cisloInput.value = aktualniPrefix + "001";
         }
 
         let remoteMode = false; let currentExportType = ''; let currentDrawSessionId = null;
@@ -556,9 +583,6 @@
         let cloudSyncTimeout = null;
         let signatureTimeout = null;
         const SESSION_EXPIRY_MS = 5 * 60 * 1000;
-        // API base URL for the external Node backend.
-        // Set window.__API_BASE_URL__ (e.g. in a <script> tag before this file) to point to
-        // a separately hosted backend.  Leave unset to keep the built-in jsonblob.com relay.
         const API_BASE_URL = ((window.__API_BASE_URL__ || '').trim()).replace(/\/$/, '');
         
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
@@ -871,13 +895,44 @@
 
         function ulozitFakturuDoArchivu(cislo, odberatel, suma, base64Pdf) {
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            if(archiv.length >= 30) { archiv.shift(); }
-            if(!archiv.find(f => f.cislo === cislo)) {
-                try {
-                    archiv.push({ id: Date.now(), cislo: cislo, odberatel: odberatel, suma: suma, datum: new Date().toISOString(), pdfData: base64Pdf });
-                    localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
-                    renderArchivFaktur();
-                } catch(e) { alert("Paměť pro ukládání faktur je plná. Smažte staré faktury z archivu."); }
+            
+            let existuje = archiv.find(f => f.cislo === cislo);
+            if (existuje) {
+                alert(currentLang === 'cs' ? 
+                    `Faktura s číslem ${cislo} už v archivu existuje! Změňte prosím číslo faktury.` : 
+                    `Rechnung mit der Nummer ${cislo} existiert bereits! Bitte ändern Sie die Rechnungsnummer.`);
+                return; 
+            }
+
+            if(archiv.length >= 25) { archiv.shift(); } 
+
+            try {
+                archiv.push({ id: Date.now(), cislo: cislo, odberatel: odberatel, suma: suma, datum: new Date().toISOString(), pdfData: base64Pdf });
+                localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
+                renderArchivFaktur();
+                
+                let cisloInput = document.getElementById('fak-cislo');
+                let dnes = new Date();
+                let rok = dnes.getFullYear();
+                let mesic = String(dnes.getMonth() + 1).padStart(2, '0');
+                let aktualniPrefix = `${rok}/${mesic}-`; 
+
+                if (cislo.startsWith(aktualniPrefix)) {
+                    let parts = cislo.split('-'); 
+                    if (parts.length === 2 && !isNaN(parts[1])) {
+                        let nextNum = parseInt(parts[1]) + 1;
+                        cisloInput.value = aktualniPrefix + String(nextNum).padStart(3, '0');
+                    } else {
+                        cisloInput.value = aktualniPrefix + "001";
+                    }
+                } else {
+                    cisloInput.value = aktualniPrefix + "001";
+                }
+                
+            } catch(e) { 
+                alert(currentLang === 'cs' ? 
+                    'Paměť pro ukládání faktur je plná (PDF dokumenty jsou moc velké). Jděte do sekce Faktury a promažte staré záznamy.' : 
+                    'Der Speicher für Rechnungen ist voll. Bitte löschen Sie alte Rechnungen aus dem Archiv.'); 
             }
         }
 
@@ -1193,7 +1248,6 @@
         function stahnoutFakturuZArchivu(id) {
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; let f = archiv.find(x => x.id === id);
             if(f && f.pdfData) { 
-                // Bezpečné otevírání PDF i pro mobily přes převod na Blob
                 fetch(f.pdfData).then(res => res.blob()).then(blob => {
                     let url = URL.createObjectURL(blob);
                     window.open(url, '_blank');
@@ -1214,16 +1268,12 @@
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 let f = archiv.find(x => x.id === id);
                 if(f) {
-                    // Předvyplníme číslo faktury pro nové generování
                     document.getElementById('fak-cislo').value = f.cislo;
-                    // Smažeme fakturu rovnou bez dalšího ptaní
                     smazatFakturuZArchivu(id, true);
-                    // Přesuneme uživatele na záložku Záznamy
                     switchTab('zaznamy', document.querySelectorAll('.tab-item')[1]);
                 }
             }
         }
-
 
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let adresarKlientu = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
@@ -1368,7 +1418,6 @@
             let blob = new Blob([csv], { type: 'text/csv;' }); let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
         }
 
-        // --- CLOUD SYNCHRONIZACE: KOMPLETNÍ PROPOJENÍ TELEFONU A POČÍTAČE ---
         async function generateCloudSync() {
             document.getElementById('qr-modal-hlavicka').innerText = 'Naskenuj QR v telefonu';
             document.getElementById('qr-code-img').style.display = 'none';
@@ -1419,14 +1468,12 @@
             }
         }
 
-        // VYLEPŠENÝ QR KÓD PRO PODPIS Z TELEFONU
         async function generateSignaturePhoneLink(target) {
             document.getElementById('qr-code-img').style.display = 'none';
             document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečné spojení s telefonem...';
             document.getElementById('qr-modal').classList.remove('hidden');
 
             if (API_BASE_URL) {
-                // === Node backend flow ===
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/signature-session`, {
                         method: 'POST',
@@ -1437,7 +1484,6 @@
                     const data = await res.json();
                     const { sessionId, signUrl } = data;
 
-                    // signUrl from local dev is relative; production returns absolute via PUBLIC_URL env var
                     const absoluteSignUrl = (signUrl && signUrl.startsWith('http'))
                         ? signUrl
                         : `${API_BASE_URL}${signUrl}`;
@@ -1463,7 +1509,6 @@
                     document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
                 }
             } else {
-                // === Fallback: jsonblob.com relay (works without a Node backend) ===
                 try {
                     let res = await fetch('https://jsonblob.com/api/jsonBlob', {
                         method: 'POST',
@@ -1497,7 +1542,6 @@
             }
         }
 
-        // Polls the Node backend for a completed signature (used when API_BASE_URL is set)
         function startPollingSignatureApi(sessionId, target) {
             if (pollingInterval) clearInterval(pollingInterval);
             pollingInterval = setInterval(async () => {
@@ -1568,7 +1612,6 @@
                 }
             }
             
-            // Režim podpisu v telefonu
             if (urlParams.has('remoteSig')) {
                 const target = urlParams.get('remoteSig'); 
                 const blobId = urlParams.get('blobId'); 
@@ -1583,8 +1626,8 @@
             }
         }
 
-                async function sendSignatureToPC(blobId, target) {
-                const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+        async function sendSignatureToPC(blobId, target) {
+            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
             if (canvas.toDataURL() === blank.toDataURL()) { alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); return; }
             
             const dataUrl = canvas.toDataURL('image/png');
@@ -1600,7 +1643,6 @@
                 
                 document.getElementById('signature-modal').classList.add('hidden');
                 
-                // Přidáno tlačítko pro návrat do standardního režimu aplikace
                 document.body.innerHTML = `
                     <div style="text-align:center; margin-top:50px; font-family:sans-serif; padding:20px;">
                         <h1 style="color:#2ecc71;">Podpis úspěšně odeslán do PC! ✔️</h1>
@@ -1621,18 +1663,13 @@
             if(signatureTimeout) { clearTimeout(signatureTimeout); signatureTimeout = null; }
         }
 
-              // Inicializace
-        // === MIGRACE DAT (jednorázová) ===
         (function migrateLocalStorage() {
-            // 1. Stará záznamy: 'zaznamy' -> 'pracovni_zaznamy'
             const stareZaznamy = localStorage.getItem('zaznamy');
             if (stareZaznamy && !localStorage.getItem('pracovni_zaznamy')) {
                 localStorage.setItem('pracovni_zaznamy', stareZaznamy);
                 localStorage.removeItem('zaznamy');
-                console.log('Migrace: zaznamy -> pracovni_zaznamy OK');
             }
 
-            // 2. Stará nastavení: 'app_settings' objekt -> individuální cfg_* klíče
             const stareNastaveni = localStorage.getItem('app_settings');
             if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
                 try {
@@ -1647,8 +1684,7 @@
                     if (s.dod_banka)  localStorage.setItem('cfg_dod_banka', s.dod_banka);
                     if (s.dod_kontakt)localStorage.setItem('cfg_dod_kontakt', s.dod_kontakt);
                     localStorage.removeItem('app_settings');
-                    console.log('Migrace: app_settings -> cfg_* OK');
-                } catch(e) { console.warn('Migrace nastavení selhala:', e); }
+                } catch(e) {}
             }
         })();
 
