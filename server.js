@@ -55,11 +55,14 @@ const appRateLimit = rateLimit({
     trustProxy: false
   }
 });
-
 app.get('/', appRateLimit, (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
-app.use(express.static(path.join(__dirname, 'public')));
+
+// static až potom
+app.use(express.static(__dirname)); // kvůli index.html + css/js v rootu
+
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 function isAllowedOrigin(origin) {
   // Allow GitHub Pages origin for this repository
