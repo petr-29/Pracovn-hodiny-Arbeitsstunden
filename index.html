@@ -2051,6 +2051,70 @@
 
         processFullSyncMode();
         loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
+
+    // --- FUNKCE PRO KOMPLETNÍ ZÁLOHU A OBNOVU DAT ---
+
+function exportDataToFile() {
+    let allData = {};
+    // Projdeme celou paměť prohlížeče a uložíme úplně všechno
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        allData[key] = localStorage.getItem(key);
+    }
+    
+    let dataStr = JSON.stringify(allData);
+    let blob = new Blob([dataStr], { type: "application/json" });
+    let url = URL.createObjectURL(blob);
+    
+    let a = document.createElement("a");
+    a.href = url;
+    
+    // Vytvoříme hezký název souboru s dnešním datem
+    let d = new Date();
+    let dateString = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    a.download = `Kralovstvi_Hodin_Zaloha_${dateString}.json`;
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importDataFromFile(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let importedData = JSON.parse(e.target.result);
+            
+            // Pojistka, aby se uživatel nepřeklikl
+            let msg = currentLang === 'cs' ? 
+                "Pozor: Chystáš se přepsat všechna aktuální data v této aplikaci těmi ze záložního souboru. Chceš pokračovat?" : 
+                "Achtung: Sie sind dabei, alle aktuellen Daten mit dem Backup zu überschreiben. Fortfahren?";
+                
+            if (confirm(msg)) {
+                // Vymažeme stará data a nahrajeme nová ze souboru
+                localStorage.clear();
+                for (let key in importedData) {
+                    localStorage.setItem(key, importedData[key]);
+                }
+                
+                let successMsg = currentLang === 'cs' ? "Data byla úspěšně nahrána! Aplikace se nyní obnoví." : "Daten erfolgreich geladen! App wird neu gestartet.";
+                alert(successMsg);
+                window.location.reload(); // Obnovíme stránku, aby se data propsala do UI
+            }
+        } catch (error) {
+            let errorMsg = currentLang === 'cs' ? "Chyba při čtení souboru. Ujisti se, že jde o platný záložní .json soubor." : "Fehler beim Lesen der Datei.";
+            alert(errorMsg);
+        }
+        
+        // Vyresetujeme input, aby šel případně nahrát stejný soubor znovu
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+}
     </script>
 </body>
 </html>
