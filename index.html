@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -1890,7 +1889,9 @@
                             document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`;
                         }
                         updateLivePreview();
-                        alert("Podpis úspěšně přenesen do PC!");
+                        setTimeout(() => {
+                            alert("Podpis úspěšně přenesen do PC!");
+                        }, 100);
                     }
                 } catch(e) { console.error('Chyba při získávání podpisu:', e); }
             }, 2000);
@@ -1903,10 +1904,22 @@
                     let res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`);
                     let data = await res.json();
                     if (data && data.status === 'done' && data.signature) {
-                        clearInterval(pollingInterval); closeQrModal();
-                        if (target === 'kunde') { dataPodpisuKunde = data.signature; document.getElementById('box-kunde').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; } 
-                        else { dataPodpisuIch = data.signature; document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; }
-                        updateLivePreview(); alert("Podpis úspěšně přenesen do PC!");
+                        clearInterval(pollingInterval); 
+                        pollingInterval = null;
+                        closeQrModal();
+                        
+                        if (target === 'kunde') { 
+                            dataPodpisuKunde = data.signature; 
+                            document.getElementById('box-kunde').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; 
+                        } else { 
+                            dataPodpisuIch = data.signature; 
+                            document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; 
+                        }
+                        updateLivePreview(); 
+                        
+                        setTimeout(() => {
+                            alert("Podpis úspěšně přenesen do PC!");
+                        }, 100);
                     }
                 } catch(e) {}
             }, 2000); 
