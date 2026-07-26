@@ -386,6 +386,15 @@
                     <div class="card-title" style="color: #2980b9;" data-cs="☁️ Propojení telefonu a počítače" data-de="☁️ Telefon & PC verbinden">☁️ Propojení telefonu a počítače</div>
                     <p style="font-size: 13px; margin-bottom: 15px; color: #000;">Vygeneruj QR kód na počítači a naskenuj ho telefonem. Aplikace v telefonu si okamžitě stáhne všechna tvoje data (záznamy, firmy, nastavení) a bude fungovat jako přesná kopie.</p>
                     <button class="btn-main" style="background: #3498db; color: white; margin-bottom: 10px;" onclick="generateCloudSync()" data-cs="📲 Odeslat data do telefonu (QR kód)" data-de="📲 Daten ans Telefon senden (QR)">📲 Odeslat data do telefonu (Zobrazit QR kód)</button>
+                    <hr style="border:0; border-top:1px dashed #bdc3c7; margin:15px 0;">
+                    <div class="card-title" style="color: #27ae60; font-size: 13px; margin-bottom: 8px;" data-cs="📡 Adresa serveru pro vzdálený podpis" data-de="📡 Serveradresse für Fernunterschrift">📡 Adresa serveru pro vzdálený podpis</div>
+                    <p style="font-size: 12px; margin-bottom: 8px; color: #000;" data-cs="Telefon i PC musí být na stejné Wi-Fi. Zadejte IP adresu tohoto PC a port, např. 192.168.1.100:3000. Server spustíte příkazem: node server.js" data-de="Telefon und PC müssen im selben WLAN sein. PC-IP und Port eingeben, z.B. 192.168.1.100:3000. Server starten mit: node server.js">Telefon i PC musí být na stejné Wi-Fi. Zadejte IP adresu tohoto PC a port, např. 192.168.1.100:3000. Server spustíte příkazem: node server.js</p>
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label data-cs="IP adresa a port PC serveru" data-de="IP-Adresse und Port des PC-Servers">IP adresa a port PC serveru</label>
+                        <input type="text" id="cfg-server-addr" placeholder="192.168.1.100:3000">
+                    </div>
+                    <button class="btn-sec" onclick="saveServerAddr()" style="background:#27ae60; color:white; width:100%;" data-cs="💾 Uložit adresu serveru" data-de="💾 Serveradresse speichern">💾 Uložit adresu serveru</button>
+                    <p id="server-addr-hint" style="font-size:11px; margin-top:6px; color:#7f8c8d;"></p>
                 </div>
 
                 <div class="card">
@@ -530,7 +539,8 @@
             <h3 style="margin-bottom: 10px;" id="qr-modal-hlavicka" data-cs="Naskenujte QR kód telefonem" data-de="QR-Code mit dem Telefon scannen">Naskenujte QR kód telefonem</h3>
             <p style="font-size: 14px; color: #7f8c8d;" id="qr-modal-text" data-cs="Otevřete fotoaparát v telefonu a naskenujte QR kód. Přenos dat se spustí automaticky." data-de="Öffnen Sie die Kamera am Telefon und scannen Sie den QR-Code. Die Datenübertragung startet automatisch.">Otevřete fotoaparát v telefonu a naskenujte QR kód. Přenos dat se spustí automaticky.</p>
             <img id="qr-code-img" src="" alt="QR Code">
-            <p style="font-size: 12px; margin-bottom: 20px; color: #e74c3c; font-weight: bold;" id="qr-session-id-display"></p>
+            <p style="font-size: 12px; margin-bottom: 5px; color: #e74c3c; font-weight: bold;" id="qr-session-id-display"></p>
+            <p style="font-size: 10px; margin-bottom: 15px; color: #2980b9; word-break: break-all;" id="qr-url-display"></p>
             <button class="btn-sec" style="width: 100%; padding: 12px; font-weight: bold;" onclick="closeQrModal()" data-cs="Zavřít" data-de="Schließen">Zavřít</button>
         </div>
     </div>
@@ -620,6 +630,7 @@
         let remoteMode = false; let currentExportType = ''; let currentDrawSessionId = null;
         let dataPodpisuKunde = null; let dataPodpisuIch = null; let targetSignature = ''; 
         let pollingInterval = null;
+        let pollingTimeout = null;
         let cloudSyncTimeout = null;
         let signatureTimeout = null;
         const SESSION_EXPIRY_MS = 5 * 60 * 1000;
@@ -1426,6 +1437,43 @@
                 html += `    </div>`;
                 html += `  </div>`;
 
+        function saveServerAddr() {
+            const val = (document.getElementById('cfg-server-addr').value || '').trim();
+            localStorage.setItem('cfg_server_addr', val);
+            alert(currentLang === 'cs' ? 'Adresa serveru uložena!' : 'Serveradresse gespeichert!');
+        }
+
+        function loadSettings() {
+            if(localStorage.getItem('cfg_jmeno')) document.getElementById('cfg-jmeno').value = localStorage.getItem('cfg_jmeno');
+            if(localStorage.getItem('cfg_firma')) document.getElementById('cfg-firma').value = localStorage.getItem('cfg_firma');
+            if(localStorage.getItem('cfg_adresa')) document.getElementById('cfg-adresa').value = localStorage.getItem('cfg_adresa');
+            if(localStorage.getItem('cfg_mesto')) document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto');
+            if(localStorage.getItem('cfg_podpis')) document.getElementById('cfg-podpis').value = localStorage.getItem('cfg_podpis');
+            if(localStorage.getItem('cfg_ico_odberatel')) document.getElementById('cfg-ico-odberatel').value = localStorage.getItem('cfg_ico_odberatel');
+            if(localStorage.getItem('cfg_dod_adresa')) document.getElementById('cfg-dod-adresa').value = localStorage.getItem('cfg_dod_adresa');
+            if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
+            if(localStorage.getItem('cfg_dod_banka')) document.getElementById('cfg-dod-banka').value = localStorage.getItem('cfg_dod_banka');
+            if(localStorage.getItem('cfg_dod_kontakt')) document.getElementById('cfg-dod-kontakt').value = localStorage.getItem('cfg_dod_kontakt');
+            if(localStorage.getItem('cfg_logo')) { document.getElementById('preview-logo').src = localStorage.getItem('cfg_logo'); document.getElementById('preview-logo').style.display = 'block'; }
+            if(localStorage.getItem('cfg_razitko')) { document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko'); document.getElementById('preview-razitko').style.display = 'block'; }
+            const cfgServerAddr = localStorage.getItem('cfg_server_addr'); if(cfgServerAddr) document.getElementById('cfg-server-addr').value = cfgServerAddr;
+            _updateServerAddrHint();
+        }
+
+        function _updateServerAddrHint() {
+            const hintEl = document.getElementById('server-addr-hint');
+            if (!hintEl) return;
+            if (window.location.protocol === 'file:') {
+                hintEl.style.color = '#e74c3c';
+                hintEl.innerText = '⚠️ Aplikace je otevřena ze souboru – pro vzdálený podpis spusťte server a otevřete přes HTTP (http://VAŠE_IP:3000).';
+            } else if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                hintEl.style.color = '#7f8c8d';
+                hintEl.innerText = '✓ Detekováno: ' + window.location.hostname + ':' + (window.location.port || '3000') + ' (použito pokud necháte pole prázdné)';
+            } else {
+                hintEl.style.color = '#e67e22';
+                hintEl.innerText = '⚠️ Server běží na localhost – telefon se nepřipojí přes QR! Zadejte LAN IP adresu výše (např. 192.168.1.100:3000).';
+            }
+        }
                 html += `  <div class="faktura-gray-bar"><div>${t_platba}</div></div>`;
                 html += `  <div style="padding: 20px; font-size: 12px; display:flex; justify-content: space-between;">`;
                 html += `    <div>`;
@@ -2530,18 +2578,114 @@
             }
         }
 
-        // VYLEPŠENÝ QR KÓD PRO PODPIS Z TELEFONU
+        // VZDÁLENÝ PODPIS PŘES TELEFON (LAN server)
+        function _getSignatureServerBaseUrl() {
+            // Prefer explicitly configured address
+            let saved = (localStorage.getItem('cfg_server_addr') || '').trim();
+            if (saved) {
+                // Strip any protocol prefix the user may have entered (e.g. http://)
+                saved = saved.replace(/^https?:\/\//i, '');
+                return 'http://' + saved;
+            }
+            // If served from HTTP, use current origin (works for API calls)
+            if (window.location.protocol === 'http:') return window.location.origin;
+            // file:// or https:// without config - cannot determine server
+            return null;
+        }
+
         async function generateSignaturePhoneLink(target) {
+            // Stop any previous polling
+            if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+            if (pollingTimeout) { clearTimeout(pollingTimeout); pollingTimeout = null; }
+
+            const serverBaseUrl = _getSignatureServerBaseUrl();
+            if (!serverBaseUrl) {
+                alert(currentLang === 'cs'
+                    ? 'Pro vzdálený podpis je nutný Node.js server.\n\n1. Spusťte: node server.js\n2. Otevřete aplikaci přes http://VAŠE_IP:3000\n3. Nebo vyplňte adresu serveru v Nastavení → Adresa serveru.'
+                    : 'Für die Fernunterschrift wird ein Node.js-Server benötigt.\n\n1. Starten: node server.js\n2. App über http://IHRE_IP:3000 öffnen\n3. Oder Serveradresse in Einstellungen → Serveradresse eingeben.');
+                return;
+            }
+
+            // Determine host/port for QR URL (must be reachable by phone on LAN)
+            // Strip protocol prefix in case user included it, then split host:port
+            const savedAddr = (localStorage.getItem('cfg_server_addr') || '').trim().replace(/^https?:\/\//i, '');
+            let qrHost, qrPort;
+            if (savedAddr) {
+                // Handle format host:port (IPv6 not supported – use LAN IPv4)
+                const colonIdx = savedAddr.lastIndexOf(':');
+                if (colonIdx > 0 && /^\d+$/.test(savedAddr.slice(colonIdx + 1))) {
+                    qrHost = savedAddr.slice(0, colonIdx);
+                    qrPort = savedAddr.slice(colonIdx + 1);
+                } else {
+                    qrHost = savedAddr;
+                    qrPort = '3000';
+                }
+            } else {
+                qrHost = window.location.hostname;
+                qrPort = window.location.port || '3000';
+            }
+
+            // Show loading state in modal
+            document.getElementById('qr-modal-hlavicka').innerText = currentLang === 'cs' ? '📱 Podpis přes telefon' : '📱 Unterschrift per Telefon';
+            document.getElementById('qr-modal-text').innerText = currentLang === 'cs'
+                ? '📶 Telefon a PC musí být na stejné Wi-Fi síti!'
+                : '📶 Telefon und PC müssen im selben WLAN sein!';
             document.getElementById('qr-code-img').style.display = 'none';
-            document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečné spojení s telefonem...';
+            document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
+            document.getElementById('qr-session-id-display').innerText = currentLang === 'cs' ? 'Vytvářím relaci na serveru...' : 'Erstelle Sitzung auf dem Server...';
+            const urlDisplay = document.getElementById('qr-url-display');
+            if (urlDisplay) urlDisplay.innerText = '';
             document.getElementById('qr-modal').classList.remove('hidden');
-            
+
             try {
-                let res = await fetch('https://jsonblob.com/api/jsonBlob', {
+                const res = await fetch(serverBaseUrl + '/api/signature-session', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ status: 'waiting', signature: null })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: target })
                 });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (!data.sessionId) throw new Error(currentLang === 'cs' ? 'Neplatná odpověď serveru' : 'Ungültige Serverantwort');
+                const sessionId = data.sessionId;
+
+                // Build URL phone will open — must use LAN IP (localhost on phone = phone itself)
+                // host + port params are passed so sign.html can POST the signature back to the server
+                const phoneUrl = 'http://' + qrHost + ':' + qrPort
+                    + '/sign?sessionId=' + encodeURIComponent(sessionId)
+                    + '&target=' + encodeURIComponent(target)
+                    + '&lang=' + encodeURIComponent(currentLang)
+                    + '&host=' + encodeURIComponent(qrHost)
+                    + '&port=' + encodeURIComponent(qrPort);
+
+                // QRious is loaded via CDN script tag in <head> — generates QR locally, no external request
+                const qr = new QRious({ value: phoneUrl, size: 250 });
+                document.getElementById('qr-code-img').src = qr.toDataURL();
+                document.getElementById('qr-code-img').style.display = 'block';
+
+                const isLocalhost = (qrHost === 'localhost' || qrHost === '127.0.0.1');
+                const sessionIdEl = document.getElementById('qr-session-id-display');
+                if (isLocalhost) {
+                    sessionIdEl.style.color = '#e74c3c';
+                    sessionIdEl.innerText = currentLang === 'cs'
+                        ? '⚠️ QR obsahuje "localhost" – telefon se nepřipojí! V Nastavení zadejte LAN IP adresu PC.'
+                        : '⚠️ QR enthält "localhost" – Telefon kann nicht verbinden! LAN-IP in Einstellungen eintragen.';
+                } else {
+                    sessionIdEl.style.color = '#7f8c8d';
+                    sessionIdEl.innerText = 'ID: ' + sessionId;
+                }
+                if (urlDisplay) { urlDisplay.style.color = '#2980b9'; urlDisplay.style.fontWeight = 'bold'; urlDisplay.innerText = phoneUrl; }
+
+                startPollingSignature(sessionId, target, serverBaseUrl);
+            } catch (e) {
+                document.getElementById('qr-session-id-display').style.color = '#e74c3c';
+                document.getElementById('qr-session-id-display').innerText = (currentLang === 'cs' ? 'Chyba: ' : 'Fehler: ') + e.message + (currentLang === 'cs' ? '. Zkontrolujte zda server běží.' : '. Überprüfen Sie ob der Server läuft.');
+            }
+        }
+
+        function startPollingSignature(sessionId, target, serverBaseUrl) {
+            if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+            if (pollingTimeout) { clearTimeout(pollingTimeout); pollingTimeout = null; }
+
                 let blobId = res.headers.get('Location').split('/').pop();
                 const baseUrl = window.location.href.split('?')[0]; 
                 const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
@@ -2729,16 +2873,53 @@
             if(pollingInterval) clearInterval(pollingInterval);
             pollingInterval = setInterval(async () => {
                 try {
-                    let res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`);
-                    let data = await res.json();
-                    if (data && data.status === 'done' && data.signature) {
-                        clearInterval(pollingInterval); closeQrModal();
-                        if (target === 'kunde') { dataPodpisuKunde = data.signature; document.getElementById('box-kunde').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; } 
-                        else { dataPodpisuIch = data.signature; document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; }
-                        updateLivePreview(); alert("Podpis úspěšně přenesen do PC!");
+                    const res = await fetch(serverBaseUrl + '/api/signature/' + sessionId);
+                    if (res.status === 404) {
+                        clearInterval(pollingInterval); pollingInterval = null;
+                        if (!document.getElementById('qr-modal').classList.contains('hidden')) {
+                            document.getElementById('qr-session-id-display').style.color = '#e74c3c';
+                            document.getElementById('qr-session-id-display').innerText = currentLang === 'cs' ? 'Relace vypršela nebo nebyla nalezena.' : 'Sitzung abgelaufen oder nicht gefunden.';
+                        }
+                        return;
                     }
-                } catch(e) {}
-            }, 2000); 
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data && data.signature) {
+                        clearInterval(pollingInterval); pollingInterval = null;
+                        if (pollingTimeout) { clearTimeout(pollingTimeout); pollingTimeout = null; }
+                        // Use DOM creation to avoid innerHTML with untrusted content
+                        const sigImg = document.createElement('img');
+                        sigImg.className = 'signature-display-img';
+                        sigImg.src = data.signature;
+                        if (target === 'kunde') {
+                            dataPodpisuKunde = data.signature;
+                            const box = document.getElementById('box-kunde');
+                            box.innerHTML = ''; box.appendChild(sigImg);
+                        } else {
+                            dataPodpisuIch = data.signature;
+                            const box = document.getElementById('box-ich');
+                            box.innerHTML = ''; box.appendChild(sigImg);
+                        }
+                        updateLivePreview();
+                        closeQrModal();
+                        alert(currentLang === 'cs' ? '✅ Podpis byl úspěšně přijat z telefonu!' : '✅ Unterschrift erfolgreich vom Telefon empfangen!');
+                    }
+                } catch (e) {
+                    // Network error during polling – keep trying silently
+                }
+            }, 2000);
+
+            // Auto-cancel after 5 minutes
+            pollingTimeout = setTimeout(() => {
+                if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+                pollingTimeout = null;
+                if (!document.getElementById('qr-modal').classList.contains('hidden')) {
+                    document.getElementById('qr-session-id-display').style.color = '#e74c3c';
+                    document.getElementById('qr-session-id-display').innerText = currentLang === 'cs'
+                        ? '⏱ Časový limit 5 minut vypršel. Zavřete okno a zkuste znovu.'
+                        : '⏱ Zeitlimit 5 Minuten abgelaufen. Fenster schließen und erneut versuchen.';
+                }
+            }, 5 * 60 * 1000);
         }
 
         async function processFullSyncMode() {
@@ -2818,6 +2999,7 @@
             }
         }
 
+        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; } if(pollingTimeout) { clearTimeout(pollingTimeout); pollingTimeout = null; } }
         function closeQrModal() {
             document.getElementById('qr-modal').classList.add('hidden');
             if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
