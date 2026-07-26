@@ -280,7 +280,11 @@
                         <div class="row">
                             <div class="form-group">
                                 <label>Datum vystavení</label>
-                                <input type="date" id="fak-vystaveni" onchange="updateLivePreview()">
+                                <input type="date" id="fak-vystaveni" onchange="onVystaveniChange(); updateLivePreview();">
+                            </div>
+                            <div class="form-group">
+                                <label>Splatnost (dny)</label>
+                                <input type="number" id="fak-splatnost-dni" value="14" oninput="onSplatnostDniChange(); updateLivePreview();" style="font-weight: bold; background: #fff3e0;">
                             </div>
                             <div class="form-group">
                                 <label>Datum splatnosti</label>
@@ -345,6 +349,18 @@
                     <div class="row" id="export-card-actions">
                         <button class="btn-sec" style="flex:1;" onclick="closeExportCard()" data-cs="Zrušit" data-de="Abbrechen">Zrušit</button>
                         <button class="btn-main" id="btn-execute-export" style="flex:2; background:#2c3e50; color:white;" onclick="executePDFExport()" data-cs="Uložit PDF" data-de="PDF speichern">Uložit PDF</button>
+                    </div>
+                </div>
+
+                <!-- MĚSÍČNÍ SOUHRN V ZÁZNAMECH -->
+                <div class="card" id="mesicni-souhrn-card" style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #bdc3c7;" id="lbl-mesicni-souhrn">Měsíční souhrn</div>
+                        <div id="mesicni-souhrn-label" style="font-size: 16px; font-weight: bold; margin-top: 2px;">Aktuální měsíc</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: bold; color: #2ecc71;" id="mesicni-souhrn-penize">0.00 €</div>
+                        <div style="font-size: 13px; color: #ecf0f1;" id="mesicni-souhrn-hodiny">0.00 h</div>
                     </div>
                 </div>
 
@@ -701,14 +717,40 @@
                 document.getElementById('abnahme-fields').classList.add('hidden'); 
                 
                 document.getElementById('fak-vystaveni').valueAsDate = new Date();
-                let d = new Date();
                 let splatnostDni = parseInt(localStorage.getItem('cfg_splatnost')) || 14;
+                document.getElementById('fak-splatnost-dni').value = splatnostDni;
+                
+                let d = new Date();
                 d.setDate(d.getDate() + splatnostDni);
                 document.getElementById('fak-splatnost').valueAsDate = d;
             } else {
                 document.getElementById('btn-execute-export').style.background = '#f39c12';
             }
             updateLivePreview(); window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function onVystaveniChange() {
+            let vystaveniEl = document.getElementById('fak-vystaveni');
+            let dniEl = document.getElementById('fak-splatnost-dni');
+            let splatnostEl = document.getElementById('fak-splatnost');
+            if (vystaveniEl.valueAsDate) {
+                let d = new Date(vystaveniEl.valueAsDate);
+                let dni = parseInt(dniEl.value) || 14;
+                d.setDate(d.getDate() + dni);
+                splatnostEl.valueAsDate = d;
+            }
+        }
+
+        function onSplatnostDniChange() {
+            let vystaveniEl = document.getElementById('fak-vystaveni');
+            let dniEl = document.getElementById('fak-splatnost-dni');
+            let splatnostEl = document.getElementById('fak-splatnost');
+            if (vystaveniEl.valueAsDate) {
+                let d = new Date(vystaveniEl.valueAsDate);
+                let dni = parseInt(dniEl.value) || 0;
+                d.setDate(d.getDate() + dni);
+                splatnostEl.valueAsDate = d;
+            }
         }
 
         function formatMena(castka) { let parts = castka.toFixed(2).split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " "); return parts.join(',') + ' EUR'; }
@@ -949,7 +991,6 @@
                 return false; 
             }
 
-            // Ukládáme pouze lehká metadata a konfiguraci, nikoliv celý těžký PDF řetězec
             archiv.push({ 
                 id: Date.now(), 
                 cislo: cislo, 
@@ -1382,7 +1423,6 @@
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
             let f = archiv.find(x => x.id === id);
             if(f && f.vybraneZaznamy) { 
-                // Vygenerujeme PDF za letu z uložených metadat a záznamů
                 let doc = buildFakturaDoc(f.vybraneZaznamy, f.fakturaData);
                 doc.save(`Faktura_${f.cislo.replace('/','-')}.pdf`);
             } else { 
@@ -1570,6 +1610,28 @@
         function renderZaznamy() {
             let container = document.getElementById('seznam-container'); 
             container.innerHTML = '';
+
+            // VÝPOČET A AKTUALIZACE MĚSÍČNÍHO SOUHRNU (AKTUÁLNÍ MĚSÍC)
+            let dnes = new Date();
+            let aktualniMesic = dnes.getMonth();
+            let aktualniRok = dnes.getFullYear();
+            let mesicniHodiny = 0;
+            let mesicniPeneze = 0;
+
+            zaznamy.forEach(z => {
+                let zd = new Date(z.datum);
+                if (zd.getMonth() === aktualniMesic && zd.getFullYear() === aktualniRok) {
+                    let h = kalkulujCisteHodiny(z);
+                    mesicniHodiny += h;
+                    mesicniPeneze += h * z.sazba;
+                }
+            });
+
+            const nazvyMesicuCS = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
+            document.getElementById('mesicni-souhrn-label').innerText = `${nazvyMesicuCS[aktualniMesic]} ${aktualniRok}`;
+            document.getElementById('mesicni-souhrn-penize').innerText = formatMena(mesicniPeneze);
+            document.getElementById('mesicni-souhrn-hodiny').innerText = `${mesicniHodiny.toFixed(2)} h`;
+
             if (zaznamy.length === 0) { 
                 container.innerHTML = `<p style="text-align:center;padding:20px;">${currentLang === 'cs' ? 'Žádné záznamy' : 'Keine Einträge'}</p>`; 
                 return; 
@@ -1927,7 +1989,7 @@
                 localStorage.removeItem('zaznamy');
             }
 
-            const stareNastaveni = localStorage.getItem('app_settings`');
+            const stareNastaveni = localStorage.getItem('app_settings');
             if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
                 try {
                     const s = JSON.parse(stareNastaveni);
