@@ -417,7 +417,7 @@
                         <textarea id="cfg-koncovy-firma" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label data-cs="Adresa a Město (Místo výkonu)" data-de="Adresse und Ort">Adresa a Město (Místo výkonu)</label>
+                        <label data-cs="Adresa a Město (Místo výkonu)" data-de="Adresse und Ort">Adresa und Ort</label>
                         <textarea id="cfg-koncovy-adresa" rows="2"></textarea>
                     </div>
 
@@ -1128,7 +1128,14 @@
             let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate; 
             let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
 
-            let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
+            let sumEUR = 0; 
+            let totalH = 0; 
+            vybrane.forEach(z => { 
+                let h = kalkulujCisteHodiny(z);
+                totalH += h;
+                sumEUR += (h * z.sazba); 
+            });
+            let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
 
             let t_faktura = currentLang === 'cs' ? "Faktura c." : "Rechnung Nr.";
             let t_neplatce = currentLang === 'cs' ? "Neplatce DPH" : "Kleinunternehmer (Kein USt-Ausweis)";
