@@ -282,7 +282,6 @@
                             </div>
                         </div>
                         
-                        <!-- OPRAVA: Pevná černá barva textu pro tmavý režim -->
                         <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dcdde1; margin-top: 10px; color: #000;">
                             <label style="color: #2c3e50; font-weight: bold; margin-bottom: 10px; display: block;" data-cs="Vyberte přílohu k faktuře:" data-de="Anlage zur Rechnung auswählen:">Vyberte přílohu k faktuře:</label>
                             <div style="display:flex; flex-direction:column; gap: 10px;">
@@ -325,7 +324,6 @@
 
                     <hr style="border:0; border-top:2px solid #2c3e50; margin:15px 0;">
 
-                    <!-- OPRAVA: Vrácení smazaných tlačítek pro QR kódy -->
                     <div style="margin-bottom: 12px;" id="wrapper-kunde">
                         <label style="font-weight:bold; font-size:14px; color:#2980b9;" data-cs="1. Podpis klienta / Stavbyvedoucího:" data-de="1. Unterschrift Kunde/Bauleiter:">1. Podpis klienta / Stavbyvedoucího:</label>
                         <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')" data-cs="Klikněte pro podepsání" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání</div>
@@ -374,7 +372,6 @@
                 <div class="card">
                     <div class="card-title" style="color: #e67e22;" data-cs="Adresář klientů (Uložení firem)" data-de="Kundenverzeichnis">Adresář klientů (Uložení firem)</div>
                     <div class="form-group">
-                        <!-- OPRAVA: Pevná černá barva textu pro dropdown v tmavém režimu -->
                         <select id="adresar-select" onchange="nactiZAdresare()" style="background: #fff3e0; border-color: #f39c12; color: #000;">
                             <option value="-1">-- Vyber uloženou firmu --</option>
                         </select>
@@ -386,13 +383,13 @@
                     
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
 
-                    <div class="card-title" data-cs="Aktuální Klient / Odběratel" data-de="Aktueller Kunde">Aktuální Klient / Odběratel</div>
+                    <div class="card-title" data-cs="Aktuální Klient / Odběratel (Pro Fakturu)" data-de="Aktueller Kunde (Für Rechnung)">Aktuální Klient / Odběratel (Pro Fakturu)</div>
                     <div class="form-group">
-                        <label data-cs="Název projektu / Klienta" data-de="Projektname / Kunde">Název firmy</label>
+                        <label data-cs="Název firmy (Fakturační údaje)" data-de="Firmenname (Rechnungsdaten)">Název firmy (Fakturační údaje)</label>
                         <textarea id="cfg-firma" rows="2">Consilium Pro s. r. o.</textarea>
                     </div>
                     <div class="form-group">
-                        <label data-cs="Adresa" data-de="Adresse">Ulice a číslo popisné</label>
+                        <label data-cs="Adresa (Fakturační sídlo)" data-de="Adresse (Rechnungsadresse)">Adresa (Fakturační sídlo)</label>
                         <input type="text" id="cfg-adresa" value="Piaristická 276/46">
                     </div>
                     <div class="form-group">
@@ -406,6 +403,18 @@
                     <div class="form-group">
                         <label data-cs="Odpovědná osoba (Klient / Šéf)" data-de="Verantwortliche Person (Kunde / Chef)">Odpovědná osoba (Klient / Šéf)</label>
                         <input type="text" id="cfg-podpis" value="Albert Orság">
+                    </div>
+
+                    <!-- NOVÉ: Místo výkonu / Koncový zákazník -->
+                    <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
+                    <div class="card-title" style="color: #8e44ad;" data-cs="Koncový Zákazník / Místo výkonu" data-de="Endkunde / Einsatzort">Koncový Zákazník / Místo výkonu</div>
+                    <div class="form-group">
+                        <label data-cs="Název firmy / Projektu (Pro koho se reálně dělalo)" data-de="Projektname (Realer Einsatzort)">Název firmy / Projektu (Pro koho se reálně dělalo)</label>
+                        <textarea id="cfg-koncovy-firma" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label data-cs="Adresa a Město (Místo výkonu)" data-de="Adresse und Ort">Adresa a Město (Místo výkonu)</label>
+                        <textarea id="cfg-koncovy-adresa" rows="2"></textarea>
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
@@ -461,7 +470,6 @@
         </nav>
     </div>
 
-    <!-- OSTATNÍ MODALY VLOŽENY ZDE (mimo main-app) -->
     <div id="signature-modal" class="signature-modal hidden">
         <div class="modal-content">
             <h3 id="modal-sig-title">Podpis</h3>
@@ -494,7 +502,6 @@
         </div>
     </div>
 <script>
-  
         // SPUŠTĚNÍ ÚVODNÍ ANIMACE
         window.addEventListener('load', () => {
             if(window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) return; 
@@ -549,7 +556,6 @@
             let tydenDate = new Date(); tydenDate.setDate(tydenDate.getDate() + 14);
             document.getElementById('fak-splatnost').valueAsDate = tydenDate;
             
-            // Nastavení aktuálního čísla faktury podle měsíce
             nastavCisloNoveFaktury();
         }
 
@@ -918,8 +924,13 @@
         }
 
         function drawStandardReportToDoc(doc, vybrane) {
-            let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value.replace(/\n/g, ", ");
-            let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
+            let jmeno = document.getElementById('cfg-jmeno').value; 
+            let koncovaFirmaData = document.getElementById('cfg-koncovy-firma') ? document.getElementById('cfg-koncovy-firma').value : '';
+            let koncovaAdresaData = document.getElementById('cfg-koncovy-adresa') ? document.getElementById('cfg-koncovy-adresa').value : '';
+            let firma = koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", ");
+            let adresa = koncovaAdresaData ? koncovaAdresaData : document.getElementById('cfg-adresa').value;
+            let mesto = koncovaAdresaData ? "" : document.getElementById('cfg-mesto').value;
+
             let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
             let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '';
             let kwNum = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)) : '---';
@@ -984,8 +995,14 @@
         }
 
         function drawAbnahmeReportToDoc(doc, vybrane) {
-            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); let firma = bezDiakritiky(document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
-            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
+            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
+            
+            let koncovaFirmaData = document.getElementById('cfg-koncovy-firma') ? document.getElementById('cfg-koncovy-firma').value : '';
+            let koncovaAdresaData = document.getElementById('cfg-koncovy-adresa') ? document.getElementById('cfg-koncovy-adresa').value : '';
+            let firma = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
+            let adresa = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData : document.getElementById('cfg-adresa').value);
+            let mesto = bezDiakritiky(koncovaAdresaData ? "" : document.getElementById('cfg-mesto').value);
+            
             let podpisKundeText = bezDiakritiky(document.getElementById('cfg-podpis').value || '---');
 
             let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
@@ -1184,7 +1201,17 @@
                 doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 2/2", 195, 285, {align: 'right'});
             } else { doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 1/1", 195, 285, {align: 'right'}); }
 
-            if(!returnBlob) { let base64Pdf = doc.output('datauristring'); ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, base64Pdf); }
+            if(!returnBlob) { 
+                let base64Pdf = doc.output('datauristring'); 
+                ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, base64Pdf); 
+                
+                if (confirm(currentLang === 'cs' ? 'Faktura i s výkazem byla úspěšně vystavena a uložena do Archivu!\n\nChcete nyní smazat tyto vyfakturované řádky hodin ze záložky "Záznamy" (aby se Vám do budoucna nepletly)?' : 'Rechnung gespeichert! Möchten Sie die abgerechneten Arbeitsstunden aus der Liste löschen?')) {
+                    zaznamy = zaznamy.filter(z => !z.selected);
+                    localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+                    renderZaznamy();
+                    updateStatistiky();
+                }
+            }
             if(returnBlob) return doc.output('blob');
             doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
             closeExportCard();
@@ -1256,6 +1283,7 @@
             }
         }
 
+        let editRecordId = null; 
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let adresarKlientu = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
         let currentLang = localStorage.getItem('app_lang') || 'cs';
@@ -1324,17 +1352,70 @@
             let cisty = (konec - start - Number(zaznam.prestavka)) / 60; return cisty > 0 ? cisty : 0;
         }
 
+        function editZaznam(id) {
+            let z = zaznamy.find(x => x.id === id);
+            if(!z) return;
+            editRecordId = id;
+
+            document.getElementById('inp-datum').value = z.datum;
+            document.getElementById('inp-zacatek').value = z.zacatek;
+            document.getElementById('inp-konec').value = z.konec;
+            document.getElementById('inp-prestavka').value = z.prestavka;
+            document.getElementById('inp-zakazka').value = z.cisloZakazky || '';
+            document.getElementById('inp-sazba').value = z.sazba;
+
+            if (z.popisPraceImg) {
+                setInputMode('draw');
+                actPopisImgData = z.popisPraceImg;
+                document.getElementById('drawn-preview-img').src = actPopisImgData;
+                document.getElementById('preview-drawn-image').style.display = 'block';
+            } else {
+                setInputMode('text');
+                document.getElementById('inp-popis').value = z.popisPrace || '';
+            }
+
+            switchTab('kalkulacka', document.querySelectorAll('.tab-item')[0]);
+            document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit úpravu' : 'Änderung speichern';
+            document.getElementById('btn-speichern').style.background = '#e67e22'; 
+        }
+
         function ulozZaznam() {
             let popisText = ''; if (currentInputMode === 'text') { popisText = document.getElementById('inp-popis').value; }
-            let novy = {
-                id: Date.now(), datum: document.getElementById('inp-datum').value, zacatek: document.getElementById('inp-zacatek').value,
-                konec: document.getElementById('inp-konec').value, prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
-                popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
-                projekt: document.getElementById('cfg-firma').value, selected: false
-            };
-            zaznamy.push(novy); localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-            document.getElementById('inp-popis').value = ''; actPopisImgData = null; document.getElementById('preview-drawn-image').style.display = 'none'; document.getElementById('drawn-preview-img').src = '';
-            alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); updateStatistiky();
+
+            if (editRecordId) {
+                let idx = zaznamy.findIndex(x => x.id === editRecordId);
+                if(idx > -1) {
+                    zaznamy[idx].datum = document.getElementById('inp-datum').value;
+                    zaznamy[idx].zacatek = document.getElementById('inp-zacatek').value;
+                    zaznamy[idx].konec = document.getElementById('inp-konec').value;
+                    zaznamy[idx].prestavka = document.getElementById('inp-prestavka').value;
+                    zaznamy[idx].cisloZakazky = document.getElementById('inp-zakazka').value;
+                    zaznamy[idx].popisPrace = popisText;
+                    zaznamy[idx].popisPraceImg = actPopisImgData;
+                    zaznamy[idx].sazba = parseFloat(document.getElementById('inp-sazba').value) || 0;
+                }
+                editRecordId = null;
+                document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
+                document.getElementById('btn-speichern').style.background = 'var(--primary)';
+            } else {
+                let novy = {
+                    id: Date.now(), datum: document.getElementById('inp-datum').value, zacatek: document.getElementById('inp-zacatek').value,
+                    konec: document.getElementById('inp-konec').value, prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
+                    popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
+                    projekt: document.getElementById('cfg-firma').value, selected: false
+                };
+                zaznamy.push(novy);
+            }
+
+            localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+            
+            document.getElementById('inp-popis').value = ''; 
+            actPopisImgData = null; 
+            document.getElementById('preview-drawn-image').style.display = 'none'; 
+            document.getElementById('drawn-preview-img').src = '';
+            
+            alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
+            updateStatistiky();
         }
 
         function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
@@ -1352,16 +1433,51 @@
         }
 
         function renderZaznamy() {
-            let container = document.getElementById('seznam-container'); container.innerHTML = '';
-            if (zaznamy.length === 0) { container.innerHTML = `<p style="text-align:center;padding:20px;">${currentLang === 'cs' ? 'Žádné záznamy' : 'Keine Einträge'}</p>`; return; }
-            zaznamy.forEach((z, index) => {
-                let h = kalkulujCisteHodiny(z); let item = document.createElement('div'); item.className = 'zaznam-item';
+            let container = document.getElementById('seznam-container'); 
+            container.innerHTML = '';
+            if (zaznamy.length === 0) { 
+                container.innerHTML = `<p style="text-align:center;padding:20px;">${currentLang === 'cs' ? 'Žádné záznamy' : 'Keine Einträge'}</p>`; 
+                return; 
+            }
+
+            let sortedZaznamy = [...zaznamy].sort((a,b) => new Date(b.datum) - new Date(a.datum));
+            let currentWeekStr = "";
+
+            sortedZaznamy.forEach((z) => {
+                let d = new Date(z.datum);
+                let wk = getWeekNumber(d);
+                let yr = d.getFullYear();
+                let weekKey = `${wk}-${yr}`;
+
+                if (currentWeekStr !== weekKey) {
+                    currentWeekStr = weekKey;
+                    let weekHeader = document.createElement('div');
+                    weekHeader.style = "background: #34495e; color: #fff; padding: 8px 15px; font-weight: bold; border-radius: 6px; margin: 20px 0 10px 0; font-size: 14px; text-align: center; text-transform: uppercase;";
+                    weekHeader.innerText = currentLang === 'cs' ? `Týden ${wk} / Rok ${yr}` : `Woche ${wk} / Jahr ${yr}`;
+                    container.appendChild(weekHeader);
+                }
+
+                let h = kalkulujCisteHodiny(z); 
+                let item = document.createElement('div'); 
+                item.className = 'zaznam-item';
                 let descPreview = z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`;
-                item.innerHTML = `<div class="checkbox-container"><input type="checkbox" ${z.selected ? 'checked' : ''} onchange="zaznamy[${index}].selected=!zaznamy[${index}].selected; localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy));">
-                    <div><div><strong>${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>${descPreview}</div></div>
-                    <button class="btn-sec" style="background:#ff7675; color:white;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy();">🗑️</button>`;
+                
+                item.innerHTML = `<div class="checkbox-container"><input type="checkbox" id="chk-${z.id}" ${z.selected ? 'checked' : ''} onchange="toggleZaznamSelection(${z.id})">
+                    <label for="chk-${z.id}" style="cursor:pointer; display:flex; flex-direction:column; font-weight:normal;"><div><strong style="color:var(--text);">${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>${descPreview}</label></div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-sec" style="background:#f39c12; color:white; padding:10px;" onclick="editZaznam(${z.id})">✏️</button>
+                        <button class="btn-sec" style="background:#ff7675; color:white; padding:10px;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy(); updateStatistiky();">🗑️</button>
+                    </div>`;
                 container.appendChild(item);
             });
+        }
+
+        function toggleZaznamSelection(id) {
+            let z = zaznamy.find(x => x.id === id);
+            if(z) {
+                z.selected = !z.selected;
+                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+            }
         }
 
         function selectAllZaznamy() {
@@ -1370,12 +1486,21 @@
         }
 
         function saveSettings() {
-            localStorage.setItem('cfg_jmeno', document.getElementById('cfg-jmeno').value); localStorage.setItem('cfg_firma', document.getElementById('cfg-firma').value);
-            localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value); localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
+            localStorage.setItem('cfg_jmeno', document.getElementById('cfg-jmeno').value); 
+            localStorage.setItem('cfg_firma', document.getElementById('cfg-firma').value);
+            localStorage.setItem('cfg_adresa', document.getElementById('cfg-adresa').value); 
+            localStorage.setItem('cfg_mesto', document.getElementById('cfg-mesto').value);
             localStorage.setItem('cfg_podpis', document.getElementById('cfg-podpis').value); 
-            localStorage.setItem('cfg_ico_odberatel', document.getElementById('cfg-ico-odberatel').value); localStorage.setItem('cfg_dod_adresa', document.getElementById('cfg-dod-adresa').value);
-            localStorage.setItem('cfg_dod_ico', document.getElementById('cfg-dod-ico').value); localStorage.setItem('cfg_dod_banka', document.getElementById('cfg-dod-banka').value);
-            localStorage.setItem('cfg_dod_kontakt', document.getElementById('cfg-dod-kontakt').value); alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
+            localStorage.setItem('cfg_ico_odberatel', document.getElementById('cfg-ico-odberatel').value); 
+            
+            localStorage.setItem('cfg_koncovy_firma', document.getElementById('cfg-koncovy-firma').value);
+            localStorage.setItem('cfg_koncovy_adresa', document.getElementById('cfg-koncovy-adresa').value);
+
+            localStorage.setItem('cfg_dod_adresa', document.getElementById('cfg-dod-adresa').value);
+            localStorage.setItem('cfg_dod_ico', document.getElementById('cfg-dod-ico').value); 
+            localStorage.setItem('cfg_dod_banka', document.getElementById('cfg-dod-banka').value);
+            localStorage.setItem('cfg_dod_kontakt', document.getElementById('cfg-dod-kontakt').value); 
+            alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
         }
 
         function loadSettings() {
@@ -1385,6 +1510,10 @@
             if(localStorage.getItem('cfg_mesto')) document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto');
             if(localStorage.getItem('cfg_podpis')) document.getElementById('cfg-podpis').value = localStorage.getItem('cfg_podpis');
             if(localStorage.getItem('cfg_ico_odberatel')) document.getElementById('cfg-ico-odberatel').value = localStorage.getItem('cfg_ico_odberatel');
+            
+            if(localStorage.getItem('cfg_koncovy_firma')) document.getElementById('cfg-koncovy-firma').value = localStorage.getItem('cfg_koncovy_firma');
+            if(localStorage.getItem('cfg_koncovy_adresa')) document.getElementById('cfg-koncovy-adresa').value = localStorage.getItem('cfg_koncovy_adresa');
+
             if(localStorage.getItem('cfg_dod_adresa')) document.getElementById('cfg-dod-adresa').value = localStorage.getItem('cfg_dod_adresa');
             if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
             if(localStorage.getItem('cfg_dod_banka')) document.getElementById('cfg-dod-banka').value = localStorage.getItem('cfg_dod_banka');
