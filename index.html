@@ -1747,8 +1747,17 @@
             let lightStorage = {};
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
+                // Vyloučíme archivy, logo, razítko a obrázky z nákresů v záznamech
                 if (key !== 'archiv_faktur' && key !== 'cfg_logo' && key !== 'cfg_razitko') {
-                    lightStorage[key] = localStorage.getItem(key);
+                    let val = localStorage.getItem(key);
+                    if (key === 'pracovni_zaznamy') {
+                        try {
+                            let parsedZaznamy = JSON.parse(val);
+                            parsedZaznamy.forEach(z => { delete z.popisPraceImg; }); // odstraní velké base64 obrázky z nákresů
+                            val = JSON.stringify(parsedZaznamy);
+                        } catch(e) {}
+                    }
+                    lightStorage[key] = val;
                 }
             }
 
