@@ -1433,9 +1433,8 @@
                 let blobId = res.headers.get('Location').split('/').pop();
                 const baseUrl = window.location.href.split('?')[0]; 
                 const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-                
-                document.getElementById('qr-code-img').src = qrUrl; 
+                const qr = new QRious({ value: phoneUrl, size: 250 });
+                document.getElementById('qr-code-img').src = qr.toDataURL('image/png');
                 document.getElementById('qr-code-img').style.display = 'block';
                 document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
                 document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
