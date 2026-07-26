@@ -1017,7 +1017,9 @@
                 suma: suma, 
                 datum: new Date().toISOString(),
                 vybraneZaznamy: vybraneZaznamy,
-                fakturaData: fakturaData
+                fakturaData: fakturaData,
+                zalohy: 0, 
+                zaplaceno: false
             });
 
             try {
@@ -1424,20 +1426,141 @@
             }
             
             archiv.sort((a,b) => new Date(b.datum) - new Date(a.datum));
+            let dnes = new Date();
+            dnes.setHours(0, 0, 0, 0);
+
+            let overdueCount = 0;
+
             archiv.forEach(f => {
-                let item = document.createElement('div'); item.className = 'faktura-item';
-                item.innerHTML = `<div style="flex-grow: 1;"><div style="font-weight:bold; color:#2980b9;">Faktura ${f.cislo}</div>
-                    <div style="font-size:12px;">${f.odberatel} | ${new Date(f.datum).toLocaleDateString()}</div>
-                    <div style="font-weight:bold; color:#2ecc71;">${f.suma.toFixed(2)} EUR</div></div>
-                    <div style="display:flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
-                        <button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">👁️ Stáhnout PDF</button>
-                        <button class="btn-sec" style="background:#f39c12; color:white; padding: 10px;" onclick="opravitFakturu(${f.id})">✏️ Přepsat</button>
-                        <button class="btn-sec" style="background:#e74c3c; color:white; padding: 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button>
+                let zalohy = f.zalohy || 0;
+                let zaplaceno = f.zaplaceno || false;
+                let zbyva = f.suma - zalohy;
+                if (zbyva <= 0) zaplaceno = true;
+
+                let splatnostDatum = (f.fakturaData && f.fakturaData.splatnost) ? new Date(f.fakturaData.splatnost) : null;
+                if (splatnostDatum) splatnostDatum.setHours(0, 0, 0, 0);
+
+                let statusHtml = '';
+                let upominkaBtn = '';
+                
+                if (zaplaceno) {
+                    statusHtml = `<span style="background:#2ecc71; color:white; padding:3px 6px; border-radius:4px; font-size:11px; font-weight:bold;">✅ ZAPLACENO</span>`;
+                } else if (splatnostDatum) {
+                    let diffTime = splatnostDatum.getTime() - dnes.getTime();
+                    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        overdueCount++;
+                        let d = Math.abs(diffDays);
+                        statusHtml = `<span style="background:#e74c3c; color:white; padding:3px 6px; border-radius:4px; font-size:11px; font-weight:bold;">⚠️ PO SPLATNOSTI (${d} dní)</span>`;
+                        upominkaBtn = `<button class="btn-sec" style="background:#c0392b; color:white; padding: 5px 10px; font-size: 11px; margin-right: 5px;" onclick="poslatUpominku(${f.id})">✉️ Upomínka</button>`;
+                    } else if (diffDays === 0) {
+                        statusHtml = `<span style="background:#f39c12; color:white; padding:3px 6px; border-radius:4px; font-size:11px; font-weight:bold;">Splatnost DNES</span>`;
+                    } else {
+                        statusHtml = `<span style="background:#3498db; color:white; padding:3px 6px; border-radius:4px; font-size:11px; font-weight:bold;">Zbývá ${diffDays} dní</span>`;
+                    }
+                }
+
+                let item = document.createElement('div'); 
+                item.className = 'faktura-item';
+                item.style.flexDirection = 'column';
+                item.style.alignItems = 'stretch';
+                item.style.gap = '10px';
+
+                item.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex-grow: 1;">
+                            <div style="font-weight:bold; color:#2980b9; font-size: 14px;">Faktura ${f.cislo} ${statusHtml}</div>
+                            <div style="font-size:12px; margin-top:4px;">${f.odberatel}</div>
+                            <div style="font-size:11px; color:#7f8c8d; margin-top: 2px;">Vystaveno: ${new Date(f.datum).toLocaleDateString()} ${splatnostDatum ? '| Splatnost: ' + splatnostDatum.toLocaleDateString() : ''}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight:bold; font-size:16px; color:${zaplaceno ? '#2ecc71' : '#e74c3c'};">${f.suma.toFixed(2)} EUR</div>
+                            ${(!zaplaceno && zalohy > 0) ? `<div style="font-size:11px; color:#f39c12;">Zálohy: ${zalohy.toFixed(2)} EUR</div><div style="font-size:12px; font-weight:bold; color:#e74c3c;">Zbývá: ${zbyva.toFixed(2)} EUR</div>` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-wrap: wrap; justify-content: flex-start; background: #f8f9fa; padding: 8px; border-radius: 6px; gap: 5px;">
+                        ${!zaplaceno ? `<button class="btn-sec" style="background:#3498db; color:white; padding: 5px 10px; font-size: 11px;" onclick="pridatZalohu(${f.id})">💰 Přidat platbu</button>` : ''}
+                        <button class="btn-sec" style="background:${zaplaceno ? '#95a5a6' : '#27ae60'}; color:white; padding: 5px 10px; font-size: 11px;" onclick="toggleZaplaceno(${f.id})">${zaplaceno ? '❌ Zrušit zaplacení' : '✅ Zaplaceno'}</button>
+                        ${upominkaBtn}
+                        <div style="flex-grow: 1;"></div>
+                        <button class="btn-sec" style="background:#2c3e50; color:white; padding: 5px 10px; font-size: 11px;" onclick="stahnoutFakturuZArchivu(${f.id})">👁️ PDF</button>
+                        <button class="btn-sec" style="background:#f39c12; color:white; padding: 5px 10px; font-size: 11px;" onclick="opravitFakturu(${f.id})">✏️</button>
+                        <button class="btn-sec" style="background:#e74c3c; color:white; padding: 5px 10px; font-size: 11px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button>
                     </div>`;
                 container.appendChild(item);
             });
+
+            if (overdueCount > 0) {
+                let alertDiv = document.createElement('div');
+                let txt = currentLang === 'cs' ? `⚠️ Pozor! Máš ${overdueCount} nezaplacených faktur po splatnosti!` : `⚠️ Achtung! Sie haben ${overdueCount} überfällige unbezahlte Rechnungen!`;
+                alertDiv.style = "background: #ffeaa7; color: #d35400; padding: 10px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; text-align: center; border: 1px solid #f1c40f; font-size: 13px;";
+                alertDiv.innerHTML = txt;
+                container.prepend(alertDiv);
+            }
         }
         
+        function pridatZalohu(id) {
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            let idx = archiv.findIndex(x => x.id === id);
+            if (idx === -1) return;
+            
+            let f = archiv[idx];
+            let stavajiciZalohy = f.zalohy || 0;
+            let zbyva = f.suma - stavajiciZalohy;
+            
+            let msgZadej = currentLang === 'cs' ? `Zadej částku (v EUR), kterou jsi obdržel.\nZbývá doplatit: ${zbyva.toFixed(2)} EUR` : `Betrag eingeben (in EUR).\nVerbleibend: ${zbyva.toFixed(2)} EUR`;
+            let castkaStr = prompt(msgZadej, zbyva.toFixed(2));
+            if (castkaStr === null || castkaStr.trim() === "") return;
+            
+            let castka = parseFloat(castkaStr.replace(',','.'));
+            if (isNaN(castka) || castka <= 0) {
+                alert(currentLang === 'cs' ? "Neplatná částka." : "Ungültiger Betrag.");
+                return;
+            }
+            
+            archiv[idx].zalohy = stavajiciZalohy + castka;
+            if (archiv[idx].zalohy >= f.suma) {
+                archiv[idx].zaplaceno = true;
+                archiv[idx].zalohy = f.suma; 
+            }
+            
+            localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
+            renderArchivFaktur();
+        }
+
+        function toggleZaplaceno(id) {
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            let idx = archiv.findIndex(x => x.id === id);
+            if (idx === -1) return;
+            
+            archiv[idx].zaplaceno = !(archiv[idx].zaplaceno || false);
+            if (archiv[idx].zaplaceno) {
+                archiv[idx].zalohy = archiv[idx].suma;
+            } else {
+                archiv[idx].zalohy = 0; 
+            }
+            
+            localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
+            renderArchivFaktur();
+        }
+
+        function poslatUpominku(id) {
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            let f = archiv.find(x => x.id === id);
+            if (!f) return;
+            
+            let zbyva = f.suma - (f.zalohy || 0);
+            let jmeno = document.getElementById('cfg-jmeno').value;
+            
+            let subject = currentLang === 'cs' ? `Upomínka k faktuře č. ${f.cislo}` : `Zahlungserinnerung: Rechnung Nr. ${f.cislo}`;
+            let body = currentLang === 'cs' ? 
+                `Dobrý den,\n\ndovoluji si Vás upozornit, že faktura č. ${f.cislo} s nedoplatkem ${zbyva.toFixed(2)} EUR je po splatnosti.\n\nProsím o její brzké uhrazení.\nV příloze zasílám kopii faktury.\n\nDěkuji a přeji hezký den.\n\nS pozdravem,\n${jmeno}` : 
+                `Guten Tag,\n\nich möchte Sie daran erinnern, dass die Rechnung Nr. ${f.cislo} über den ausstehenden Betrag von ${zbyva.toFixed(2)} EUR fällig ist.\n\nIch bitte um zeitnahe Überweisung.\nIm Anhang finden Sie eine Kopie der Rechnung.\n\nMit freundlichen Grüßen,\n${jmeno}`;
+            
+            window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+
         function stahnoutFakturuZArchivu(id) {
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
             let f = archiv.find(x => x.id === id);
