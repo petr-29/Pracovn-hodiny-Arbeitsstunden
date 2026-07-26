@@ -231,8 +231,9 @@
         const sessionId = params.get('sessionId');
         const target = params.get('target') || 'kunde';
         const lang = params.get('lang') || 'cs';
-        const pcHostname = params.get('host') || window.location.hostname;
-        const pcPort = params.get('port') || '3000';
+        const token = params.get('token');
+        const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const tokenPattern = /^[0-9a-f]{64}$/i;
         
         let isDrawing = false;
         let hasDrawn = false;
@@ -275,6 +276,13 @@
         
         // === INICIALIZACE ===
         function init() {
+            if (!sessionId || !token || !sessionIdPattern.test(sessionId) || !tokenPattern.test(token)) {
+                updateStatus(t.error);
+                document.getElementById('btnSend').disabled = true;
+                alert(lang === 'cs' ? 'Chybí bezpečnostní token nebo ID relace.' : 'Sicherheits-Token oder Sitzungs-ID fehlt.');
+                return;
+            }
+
             // Nastavit canvas velikost
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
@@ -415,12 +423,12 @@
             showLoading(true);
             
             try {
-                const response = await fetch(`http://${pcHostname}:${pcPort}/api/signature/${sessionId}/upload`, {
+                const response = await fetch(`/api/signature/${encodeURIComponent(sessionId)}/upload`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ signature: signatureData })
+                    body: JSON.stringify({ signature: signatureData, token })
                 });
                 
                 if (!response.ok) {
