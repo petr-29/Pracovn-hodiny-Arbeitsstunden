@@ -1278,7 +1278,7 @@
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
             const matchedBtn = document.querySelector(`.lang-btn[onclick="setLanguage('${lang}')"]`);
             if(matchedBtn) matchedBtn.classList.add('active');
-            document.querySelectorAll('[data-cs]').forEach(el => { el.innerHTML = el.getAttribute('data-' + lang); });
+            document.querySelectorAll('[data-cs]').forEach(el => { el.textContent = el.getAttribute('data-' + lang) || ''; });
             document.querySelectorAll('[data-ph-cs]').forEach(el => { el.setAttribute('placeholder', el.getAttribute('data-ph-' + lang)); });
             updateStatistiky(); renderZaznamy(); renderArchivFaktur();
         }
