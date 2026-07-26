@@ -417,7 +417,7 @@
                         <textarea id="cfg-koncovy-firma" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label data-cs="Adresa a Město (Místo výkonu)" data-de="Adresse und Ort">Adresa und Ort</label>
+                        <label data-cs="Adresa a Město (Místo výkonu)" data-de="Adresse und Ort">Adresse und Ort</label>
                         <textarea id="cfg-koncovy-adresa" rows="2"></textarea>
                     </div>
 
@@ -938,7 +938,7 @@
             return qr.toDataURL('image/png');
         }
 
-        function ulozitFakturuDoArchivu(cislo, odberatel, suma, base64Pdf) {
+        function ulozitFakturuDoArchivu(cislo, odberatel, suma, vybraneZaznamy, fakturaData) {
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             
             let existuje = archiv.find(f => f.cislo === cislo);
@@ -946,20 +946,30 @@
                 alert(currentLang === 'cs' ? 
                     `Faktura s číslem ${cislo} už v archivu existuje! Změňte prosím číslo faktury.` : 
                     `Rechnung mit der Nummer ${cislo} existiert bereits! Bitte ändern Sie die Rechnungsnummer.`);
-                return; 
+                return false; 
             }
 
-            if(archiv.length >= 25) { archiv.shift(); } 
+            // Ukládáme pouze lehká metadata a konfiguraci, nikoliv celý těžký PDF řetězec
+            archiv.push({ 
+                id: Date.now(), 
+                cislo: cislo, 
+                odberatel: odberatel, 
+                suma: suma, 
+                datum: new Date().toISOString(),
+                vybraneZaznamy: vybraneZaznamy,
+                fakturaData: fakturaData
+            });
 
             try {
-                archiv.push({ id: Date.now(), cislo: cislo, odberatel: odberatel, suma: suma, datum: new Date().toISOString(), pdfData: base64Pdf });
                 localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
                 renderArchivFaktur();
                 nastavCisloNoveFaktury();
+                return true;
             } catch(e) { 
                 alert(currentLang === 'cs' ? 
-                    'Paměť pro ukládání faktur je plná (PDF dokumenty jsou moc velké). Jděte do sekce Faktury a promažte staré záznamy.' : 
-                    'Der Speicher für Rechnungen ist voll. Bitte löschen Sie alte Rechnungen aus dem Archiv.'); 
+                    'Paměť prohlížeče je plná. Promažte prosím stará data.' : 
+                    'Der Speicher ist voll.'); 
+                return false;
             }
         }
 
@@ -1105,12 +1115,11 @@
             if (currentExportType === 'abnahme') return exportAbnahmePDF(returnBlob);
         }
 
-        function exportFakturaPDF(returnBlob = false) {
+        function buildFakturaDoc(vybrane, overrideData = null) {
             const { jsPDF } = window.jspdf; 
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            
             doc.setFont("courier", "normal");
-            let vybrane = zaznamy.filter(z => z.selected); 
+            
             vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             
             let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
@@ -1124,9 +1133,9 @@
             let dodBanka = bezDiakritiky(document.getElementById('cfg-dod-banka').value); 
             let dodKontakt = bezDiakritiky(document.getElementById('cfg-dod-kontakt').value);
 
-            let cisloFaktury = bezDiakritiky(document.getElementById('fak-cislo').value);
-            let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate; 
-            let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
+            let cisloFaktury = overrideData ? overrideData.cisloFaktury : bezDiakritiky(document.getElementById('fak-cislo').value);
+            let datumVystaveni = overrideData && overrideData.vystaveni ? new Date(overrideData.vystaveni) : document.getElementById('fak-vystaveni').valueAsDate; 
+            let datumSplatnosti = overrideData && overrideData.splatnost ? new Date(overrideData.splatnost) : document.getElementById('fak-splatnost').valueAsDate;
 
             let sumEUR = 0; 
             let totalH = 0; 
@@ -1256,7 +1265,9 @@
             doc.text((currentLang === 'cs' ? "Podpis" : "Unterschrift"), 162.5, footerY + 5, {align:'center'}); doc.setFontSize(8); doc.setFont("courier", "normal");
             doc.text(t_rejstrik, 15, footerY + 5);
             
-            let prilohaTyp = document.querySelector('input[name="fak-priloha-typ"]:checked').value; doc.setTextColor(150, 150, 150);
+            let prilohaTyp = overrideData ? overrideData.prilohaTyp : document.querySelector('input[name="fak-priloha-typ"]:checked').value; 
+            doc.setTextColor(150, 150, 150);
+            
             if (prilohaTyp !== 'none') {
                 doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 1/2`, 195, 285, {align: 'right'});
                 doc.addPage(); doc.setTextColor(0, 0, 0); 
@@ -1266,27 +1277,48 @@
                 doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 2/2`, 195, 285, {align: 'right'});
             } else { doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 1/1`, 195, 285, {align: 'right'}); }
 
+            return doc;
+        }
+
+        function exportFakturaPDF(returnBlob = false) {
+            let vybrane = zaznamy.filter(z => z.selected); 
+            let doc = buildFakturaDoc(vybrane);
+            
             if(!returnBlob) { 
-                let base64Pdf = doc.output('datauristring'); 
-                ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, base64Pdf); 
+                let cisloFaktury = document.getElementById('fak-cislo').value;
+                let firma = document.getElementById('cfg-firma').value;
+                let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
+                let prilohaTyp = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
+
+                let fakturaDataMeta = {
+                    cisloFaktury: cisloFaktury,
+                    vystaveni: document.getElementById('fak-vystaveni').value,
+                    splatnost: document.getElementById('fak-splatnost').value,
+                    prilohaTyp: prilohaTyp
+                };
+
+                let ulozeno = ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, vybrane, fakturaDataMeta); 
                 
-                zaznamy.filter(z => z.selected).forEach(z => {
-                    z.pdfFaktura = true;
-                    if(prilohaTyp === 'standard') z.pdfStandard = true;
-                    if(prilohaTyp === 'abnahme') z.pdfAbnahme = true;
-                });
-                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-                
-                if (confirm(currentLang === 'cs' ? 'Faktura i s výkazem byla úspěšně vystavena a uložena do Archivu!\n\nChcete nyní smazat tyto vyfakturované řádky hodin ze záložky "Záznamy" (aby se Vám do budoucna nepletly)?' : 'Rechnung gespeichert! Möchten Sie die abgerechneten Arbeitsstunden aus der Liste löschen?')) {
-                    zaznamy = zaznamy.filter(z => !z.selected);
+                if (ulozeno) {
+                    vybrane.forEach(z => {
+                        z.pdfFaktura = true;
+                        if(prilohaTyp === 'standard') z.pdfStandard = true;
+                        if(prilohaTyp === 'abnahme') z.pdfAbnahme = true;
+                    });
                     localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+                    
+                    if (confirm(currentLang === 'cs' ? 'Faktura byla uložena do archivu!\n\nChcete nyní smazat tyto vyfakturované řádky hodin ze záložky "Záznamy"?' : 'Rechnung gespeichert! Möchten Sie die abgerechneten Arbeitsstunden löschen?')) {
+                        zaznamy = zaznamy.filter(z => !z.selected);
+                        localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+                    }
+                    renderZaznamy();
+                    updateStatistiky();
+                    doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
+                    closeExportCard();
                 }
-                renderZaznamy();
-                updateStatistiky();
+            } else {
+                return doc.output('blob');
             }
-            if(returnBlob) return doc.output('blob');
-            doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
-            closeExportCard();
         }
 
         function exportStandardPDF(returnBlob = false) {
@@ -1322,9 +1354,15 @@
         }
 
         function renderArchivFaktur() {
-            let container = document.getElementById('archiv-faktur-container'); let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            let container = document.getElementById('archiv-faktur-container'); 
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             container.innerHTML = '';
-            if (archiv.length === 0) { container.innerHTML = `<p style="text-align:center;padding:20px;">Zatím nemáš uložené žádné faktury.</p>`; return; }
+            
+            if (archiv.length === 0) { 
+                container.innerHTML = `<p style="text-align:center;padding:20px;">Zatím nemáš uložené žádné faktury.</p>`; 
+                return; 
+            }
+            
             archiv.sort((a,b) => new Date(b.datum) - new Date(a.datum));
             archiv.forEach(f => {
                 let item = document.createElement('div'); item.className = 'faktura-item';
@@ -1332,7 +1370,7 @@
                     <div style="font-size:12px;">${f.odberatel} | ${new Date(f.datum).toLocaleDateString()}</div>
                     <div style="font-weight:bold; color:#2ecc71;">${f.suma.toFixed(2)} EUR</div></div>
                     <div style="display:flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
-                        <button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">👁️ Otevřít</button>
+                        <button class="btn-sec" style="background:#3498db; color:white; padding: 10px;" onclick="stahnoutFakturuZArchivu(${f.id})">👁️ Stáhnout PDF</button>
                         <button class="btn-sec" style="background:#f39c12; color:white; padding: 10px;" onclick="opravitFakturu(${f.id})">✏️ Přepsat</button>
                         <button class="btn-sec" style="background:#e74c3c; color:white; padding: 10px;" onclick="smazatFakturuZArchivu(${f.id})">🗑️</button>
                     </div>`;
@@ -1341,25 +1379,28 @@
         }
         
         function stahnoutFakturuZArchivu(id) {
-            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; let f = archiv.find(x => x.id === id);
-            if(f && f.pdfData) { 
-                fetch(f.pdfData).then(res => res.blob()).then(blob => {
-                    let url = URL.createObjectURL(blob);
-                    window.open(url, '_blank');
-                }).catch(() => alert("Nepodařilo se otevřít PDF."));
-            } 
-            else { alert("Data PDF pro tuto fakturu chybí."); }
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
+            let f = archiv.find(x => x.id === id);
+            if(f && f.vybraneZaznamy) { 
+                // Vygenerujeme PDF za letu z uložených metadat a záznamů
+                let doc = buildFakturaDoc(f.vybraneZaznamy, f.fakturaData);
+                doc.save(`Faktura_${f.cislo.replace('/','-')}.pdf`);
+            } else { 
+                alert("Data pro vygenerování faktury chybí."); 
+            }
         }
 
         function smazatFakturuZArchivu(id, force = false) {
-            if(force || confirm("Opravdu smazat z archivu? Tvé záznamy práce ti zůstanou, ale toto PDF bude ztraceno.")) {
+            if(force || confirm("Opravdu smazat z archivu?")) {
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-                archiv = archiv.filter(f => f.id !== id); localStorage.setItem('archiv_faktur', JSON.stringify(archiv)); renderArchivFaktur();
+                archiv = archiv.filter(f => f.id !== id); 
+                localStorage.setItem('archiv_faktur', JSON.stringify(archiv)); 
+                renderArchivFaktur();
             }
         }
 
         function opravitFakturu(id) {
-            if(confirm("Pro opravu se tato faktura z archivu smaže. Následně vás přesměruji do Záznamů, kde můžete opravit data a vygenerovat fakturu znovu. Chcete pokračovat?")) {
+            if(confirm("Pro opravu se tato faktura z archivu smaže. Následně vás přesměruji do Záznamů. Chcete pokračovat?")) {
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 let f = archiv.find(x => x.id === id);
                 if(f) {
@@ -1886,7 +1927,7 @@
                 localStorage.removeItem('zaznamy');
             }
 
-            const stareNastaveni = localStorage.getItem('app_settings');
+            const stareNastaveni = localStorage.getItem('app_settings`');
             if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
                 try {
                     const s = JSON.parse(stareNastaveni);
