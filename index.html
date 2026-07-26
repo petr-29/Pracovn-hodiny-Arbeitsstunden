@@ -156,7 +156,6 @@
 </head>
 <body>
 
-    <!-- ÚVODNÍ ANIMACE -->
     <div id="welcome-screen">
         <div id="anim-scene">
             <div id="a-paper" class="anim-paper">📋</div>
@@ -207,16 +206,23 @@
                     <div class="row">
                         <div class="form-group">
                             <label id="lbl-beginn" data-cs="Začátek" data-de="Beginn">Začátek</label>
-                            <input type="time" id="inp-zacatek" value="07:30">
+                            <input type="time" id="inp-zacatek" value="07:30" oninput="updateLiveHours()">
                         </div>
                         <div class="form-group">
                             <label id="lbl-ende" data-cs="Konec" data-de="Ende">Konec</label>
-                            <input type="time" id="inp-konec" value="17:00">
+                            <input type="time" id="inp-konec" value="17:00" oninput="updateLiveHours()">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label id="lbl-pause" data-cs="Přestávka (minut)" data-de="Pause (Minuten)">Přestávka (minut)</label>
-                        <input type="number" id="inp-prestavka" value="30" step="5">
+                    
+                    <div class="row">
+                        <div class="form-group" style="flex: 2;">
+                            <label id="lbl-pause" data-cs="Přestávka (minut)" data-de="Pause (Minuten)">Přestávka (minut)</label>
+                            <input type="number" id="inp-prestavka" value="30" step="5" oninput="updateLiveHours()">
+                        </div>
+                        <div class="form-group" style="flex: 1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom: 5px;">
+                            <span style="font-size:12px; color:#7f8c8d; margin-bottom:2px;" data-cs="Čistý čas" data-de="Nettozeit">Čistý čas</span>
+                            <span id="live-calc-result" style="font-size:18px; font-weight:bold; color:var(--primary);">0.00 h</span>
+                        </div>
                     </div>
 
                     <div class="card-title" id="lbl-details" style="margin-top:20px;" data-cs="Detaily práce" data-de="Arbeitsdetails">Detaily práce</div>
@@ -345,7 +351,6 @@
                 <div class="card" id="seznam-container"></div>
             </div>
 
-            <!-- ZÁLOŽKA FAKTURY (ARCHIV) -->
             <div id="view-faktury" class="tab-content hidden">
                 <div class="card">
                     <div class="card-title" data-cs="Uložené faktury (Archiv)" data-de="Gespeicherte Rechnungen (Archiv)">Uložené faktury (Archiv)</div>
@@ -405,7 +410,6 @@
                         <input type="text" id="cfg-podpis" value="Albert Orság">
                     </div>
 
-                    <!-- NOVÉ: Místo výkonu / Koncový zákazník -->
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
                     <div class="card-title" style="color: #8e44ad;" data-cs="Koncový Zákazník / Místo výkonu" data-de="Endkunde / Einsatzort">Koncový Zákazník / Místo výkonu</div>
                     <div class="form-group">
@@ -438,6 +442,11 @@
                     <div class="form-group">
                         <label>Telefon a E-mail</label>
                         <input type="text" id="cfg-dod-kontakt" value="Tel: +420 601 515 360 | Email: el.michalekpetr@gmail.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label data-cs="Výchozí splatnost faktury (dny)" data-de="Standard-Zahlungsfrist (Tage)">Výchozí splatnost faktury (dny)</label>
+                        <input type="number" id="cfg-splatnost" value="14">
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
@@ -502,7 +511,6 @@
         </div>
     </div>
 <script>
-        // SPUŠTĚNÍ ÚVODNÍ ANIMACE
         window.addEventListener('load', () => {
             if(window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) return; 
             
@@ -552,11 +560,9 @@
                 const app = document.getElementById('main-app');
                 app.classList.remove('hidden'); app.style.display = 'block';
             }, 500);
-            document.getElementById('fak-vystaveni').valueAsDate = new Date();
-            let tydenDate = new Date(); tydenDate.setDate(tydenDate.getDate() + 14);
-            document.getElementById('fak-splatnost').valueAsDate = tydenDate;
             
             nastavCisloNoveFaktury();
+            updateLiveHours();
         }
 
         function nastavCisloNoveFaktury() {
@@ -693,6 +699,12 @@
             } else if (type === 'faktura') {
                 document.getElementById('faktura-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#e74c3c';
                 document.getElementById('abnahme-fields').classList.add('hidden'); 
+                
+                document.getElementById('fak-vystaveni').valueAsDate = new Date();
+                let d = new Date();
+                let splatnostDni = parseInt(localStorage.getItem('cfg_splatnost')) || 14;
+                d.setDate(d.getDate() + splatnostDni);
+                document.getElementById('fak-splatnost').valueAsDate = d;
             } else {
                 document.getElementById('btn-execute-export').style.background = '#f39c12';
             }
@@ -703,6 +715,17 @@
         
         function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
         function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
+
+        function updateLiveHours() {
+            let z = document.getElementById('inp-zacatek').value;
+            let k = document.getElementById('inp-konec').value;
+            let p = document.getElementById('inp-prestavka').value;
+            if(!z || !k) { document.getElementById('live-calc-result').innerText = "0.00 h"; return; }
+            let [h1, m1] = z.split(':').map(Number); let [h2, m2] = k.split(':').map(Number);
+            let start = h1 * 60 + m1; let konec = h2 * 60 + m2; if (konec < start) konec += 24 * 60;
+            let cisty = (konec - start - Number(p)) / 60;
+            document.getElementById('live-calc-result').innerText = (cisty > 0 ? cisty : 0).toFixed(2) + " h";
+        }
 
         function updateLivePreview() {
             let vybrane = zaznamy.filter(z => z.selected);
@@ -725,40 +748,57 @@
 
                 let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
 
+                let t_faktura = currentLang === 'cs' ? "Faktura č." : "Rechnung Nr.";
+                let t_neplatce = currentLang === 'cs' ? "Neplátce DPH" : "Kleinunternehmer (Kein USt-Ausweis)";
+                let t_dodavatel = currentLang === 'cs' ? "Dodavatel" : "Auftragnehmer";
+                let t_odberatel = currentLang === 'cs' ? "Odběratel" : "Auftraggeber";
+                let t_vystavil = currentLang === 'cs' ? "Vystavil:" : "Ausgestellt von:";
+                let t_platba = currentLang === 'cs' ? "Způsob platby: Bankovní převod" : "Zahlungsart: Banküberweisung";
+                let t_vystaveno = currentLang === 'cs' ? "DATUM VYSTAVENÍ" : "RECHNUNGSDATUM";
+                let t_splatnost = currentLang === 'cs' ? "DATUM SPLATNOSTI" : "FÄLLIGKEITSDATUM";
+                let t_popis = currentLang === 'cs' ? "Popis" : "Beschreibung";
+                let t_mnozstvi = currentLang === 'cs' ? "Množství" : "Menge";
+                let t_cena = currentLang === 'cs' ? "Cena/mj." : "Einzelpreis";
+                let t_celkem = currentLang === 'cs' ? "Celkem" : "Gesamt";
+                let t_pracH = currentLang === 'cs' ? "Pracovní hodiny dle výkazu" : "Arbeitsstunden laut Nachweis";
+                let t_kUhrade = currentLang === 'cs' ? "Celkem k úhradě:" : "Gesamtbetrag:";
+                let t_rejstrik = currentLang === 'cs' ? "Podnikatel je zapsán v živnostenském rejstříku." : "Der Unternehmer ist im Gewerberegister eingetragen.";
+
                 html += `<div class="faktura-box">`;
                 html += `  <div class="faktura-red-header">`;
-                html += `    <div style="font-size: 24px; font-weight: bold;">Faktura č. ${cisloFaktury}</div>`;
-                html += `    <div style="font-size: 14px; font-weight: normal; margin-top: 5px;">Neplátce DPH</div>`;
+                html += `    <div style="font-size: 24px; font-weight: bold;">${t_faktura} ${cisloFaktury}</div>`;
+                html += `    <div style="font-size: 14px; font-weight: normal; margin-top: 5px;">${t_neplatce}</div>`;
                 html += `  </div>`;
                 
                 html += `  <div class="faktura-grid">`;
                 html += `    <div>`;
                 let lData = localStorage.getItem('cfg_logo'); if(lData) { html += `      <img src="${lData}" style="max-height:35px; margin-bottom: 8px; display:block;">`; }
-                html += `      <div class="faktura-modry-text">Dodavatel</div>`;
-                html += `      <strong>${jmeno}</strong><br>${dodAdresa}<br>IČO: ${dodIco}<br><br>${dodBanka}<br>Vystavil: ${jmeno}<br>${dodKontakt}`;
+                html += `      <div class="faktura-modry-text">${t_dodavatel}</div>`;
+                html += `      <strong>${jmeno}</strong><br>${dodAdresa}<br>IČO: ${dodIco}<br><br>${dodBanka}<br>${t_vystavil} ${jmeno}<br>${dodKontakt}`;
                 html += `    </div>`;
                 html += `    <div>`;
-                html += `      <div class="faktura-modry-text">Odběratel</div>`;
+                html += `      <div class="faktura-modry-text">${t_odberatel}</div>`;
                 html += `      <strong>${firma.replace(/\n/g, "<br>")}</strong><br>${adresa}<br>${mesto}<br><br>${icoOdberatel}`;
                 html += `    </div>`;
                 html += `  </div>`;
 
-                html += `  <div class="faktura-gray-bar"><div>Způsob platby: Bankovní převod</div></div>`;
+                html += `  <div class="faktura-gray-bar"><div>${t_platba}</div></div>`;
                 html += `  <div style="padding: 20px; font-size: 12px; display:flex; justify-content: space-between;">`;
                 html += `    <div>`;
-                html += `      <div style="color: #2980b9; margin-bottom: 10px;">DATUM VYSTAVENÍ: <strong>${datumVystaveni ? datumVystaveni.toLocaleDateString('cs-CZ') : ''}</strong></div>`;
-                html += `      <div style="color: #2980b9;">DATUM SPLATNOSTI: <strong>${datumSplatnosti ? datumSplatnosti.toLocaleDateString('cs-CZ') : ''}</strong></div>`;
+                let localeDate = currentLang === 'cs' ? 'cs-CZ' : 'de-DE';
+                html += `      <div style="color: #2980b9; margin-bottom: 10px;">${t_vystaveno}: <strong>${datumVystaveni ? datumVystaveni.toLocaleDateString(localeDate) : ''}</strong></div>`;
+                html += `      <div style="color: #2980b9;">${t_splatnost}: <strong>${datumSplatnosti ? datumSplatnosti.toLocaleDateString(localeDate) : ''}</strong></div>`;
                 html += `    </div>`;
                 html += `  </div>`;
 
                 html += `  <table class="faktura-table">`;
-                html += `    <tr><th>Popis</th><th>Množství</th><th>Cena za mj.</th><th style="text-align:right;">Celkem</th></tr>`;
+                html += `    <tr><th>${t_popis}</th><th>${t_mnozstvi}</th><th>${t_cena}</th><th style="text-align:right;">${t_celkem}</th></tr>`;
                 
                 let totalH = 0; vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
                 let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
                 
                 html += `    <tr>`;
-                html += `      <td>Pracovní hodiny dle výkazu (${startDatum(vybrane)} - ${endDatum(vybrane)})</td>`;
+                html += `      <td>${t_pracH} (${startDatum(vybrane)} - ${endDatum(vybrane)})</td>`;
                 html += `      <td>${totalH.toFixed(2)} h</td>`;
                 html += `      <td>${typSazby} €</td>`;
                 html += `      <td style="text-align:right;">${formatMena(sumEUR)}</td>`;
@@ -766,18 +806,18 @@
                 html += `  </table>`;
 
                 html += `  <div style="padding: 20px; text-align: right;">`;
-                html += `    <div style="font-size: 20px; font-weight: bold;">Celkem k úhradě: ${formatMena(sumEUR)}</div>`;
+                html += `    <div style="font-size: 20px; font-weight: bold;">${t_kUhrade} ${formatMena(sumEUR)}</div>`;
                 html += `    <div style="margin-top: 40px; display:flex; justify-content:flex-end;">`;
                 html += `      <div style="width: 250px; text-align:center; border-top: 1px solid #000; padding-top:5px; position:relative;">`;
                 
                 let rData = localStorage.getItem('cfg_razitko');
                 if(rData) { html += `        <img src="${rData}" style="max-height:50px; position:absolute; bottom: 5px; left: 50%; transform: translateX(-50%); opacity:0.8;">`; }
                 if(dataPodpisuIch) { html += `        <img src="${dataPodpisuIch}" style="max-height:50px; position:absolute; bottom: 25px; left: 50%; transform: translateX(-50%); z-index:2;">`; }
-                html += `         Podpis`;
+                html += (currentLang === 'cs' ? `Podpis` : `Unterschrift`);
                 html += `      </div>`;
                 html += `    </div>`;
                 html += `  </div>`;
-                html += `  <div style="padding: 20px; font-size: 10px; color: #555; text-align:left;">Podnikatel je zapsán v živnostenském rejstříku.</div>`;
+                html += `  <div style="padding: 20px; font-size: 10px; color: #555; text-align:left;">${t_rejstrik}</div>`;
                 html += `</div>`;
                 
                 let vybranaPriloha = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
@@ -1090,15 +1130,34 @@
 
             let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
 
+            let t_faktura = currentLang === 'cs' ? "Faktura c." : "Rechnung Nr.";
+            let t_neplatce = currentLang === 'cs' ? "Neplatce DPH" : "Kleinunternehmer (Kein USt-Ausweis)";
+            let t_dodavatel = currentLang === 'cs' ? "Dodavatel" : "Auftragnehmer";
+            let t_odberatel = currentLang === 'cs' ? "Odberatel" : "Auftraggeber";
+            let t_vystavil = currentLang === 'cs' ? "Vystavil:" : "Ausgestellt von:";
+            let t_platba = currentLang === 'cs' ? "Zpusob platby: Bankovni prevod" : "Zahlungsart: Bankuberweisung";
+            let t_vystaveno = currentLang === 'cs' ? "DATUM VYSTAVENI" : "RECHNUNGSDATUM";
+            let t_splatnost = currentLang === 'cs' ? "DATUM SPLATNOSTI" : "FALLIGKEITSDATUM";
+            let t_popis = currentLang === 'cs' ? "Popis" : "Beschreibung";
+            let t_mnozstvi = currentLang === 'cs' ? "Mnozstvi" : "Menge";
+            let t_cena = currentLang === 'cs' ? "Cena/mj." : "Einzelpreis";
+            let t_celkem = currentLang === 'cs' ? "Celkem" : "Gesamt";
+            let t_pracH = currentLang === 'cs' ? "Pracovni hodiny dle vykazu" : "Arbeitsstunden laut Nachweis";
+            let t_kUhrade = currentLang === 'cs' ? "Celkem k uhrade:" : "Gesamtbetrag:";
+            let t_rejstrik = currentLang === 'cs' ? "Podnikatel je zapsan v zivnostenskem rejstriku." : "Der Unternehmer ist im Gewerberegister eingetragen.";
+            let t_strana = currentLang === 'cs' ? "Strana" : "Seite";
+            let t_vystS = currentLang === 'cs' ? "Vystaveno v systemu aplikace" : "Erstellt im App-System";
+            let t_qr = currentLang === 'cs' ? "QR Platba" : "QR-Zahlung";
+
             doc.setFillColor(179, 57, 57); 
             doc.rect(15, 10, 180, 25, 'F'); 
             doc.setTextColor(255, 255, 255);
             doc.setFont("courier", "bold"); 
             doc.setFontSize(20);
-            doc.text(`Faktura c. ${cisloFaktury}`, 190, 22, {align: 'right'});
+            doc.text(`${t_faktura} ${cisloFaktury}`, 190, 22, {align: 'right'});
             doc.setFont("courier", "normal"); 
             doc.setFontSize(10); 
-            doc.text("Neplatce DPH", 190, 29, {align: 'right'});
+            doc.text(t_neplatce, 190, 29, {align: 'right'});
 
             let logoData = localStorage.getItem('cfg_logo');
             if (logoData) {
@@ -1112,7 +1171,7 @@
             }
 
             doc.setTextColor(41, 128, 185); doc.setFontSize(16); 
-            doc.text("Dodavatel", 15, 55); doc.text("Odberatel", 100, 55);
+            doc.text(t_dodavatel, 15, 55); doc.text(t_odberatel, 100, 55);
 
             doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold"); doc.setFontSize(9);
             
@@ -1123,7 +1182,7 @@
             let bankParts = dodBanka.split('|'); 
             if(bankParts.length > 0) { doc.text(bankParts[0].trim(), 15, yL); yL+=5; }
             if(bankParts.length > 1) { doc.text(bankParts[1].trim(), 15, yL); yL+=5; }
-            doc.text(`Vystavil: ${jmeno}`, 15, yL); yL+=5;
+            doc.text(`${t_vystavil} ${jmeno}`, 15, yL); yL+=5;
             let kontParts = dodKontakt.split('|'); 
             if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=5; }
             if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=5; }
@@ -1135,13 +1194,14 @@
 
             let currentY = Math.max(yL, yR) + 10;
             let grayY = currentY; doc.setFillColor(242, 242, 242); doc.rect(15, grayY, 120, 9, 'F');
-            doc.setTextColor(100, 100, 100); doc.text("Zpusob platby: Bankovni prevod", 20, grayY+6);
+            doc.setTextColor(100, 100, 100); doc.text(t_platba, 20, grayY+6);
 
             let dateY = grayY + 17; doc.setTextColor(41, 128, 185); doc.setFontSize(9);
-            doc.text("DATUM VYSTAVENI", 20, dateY); doc.text("DATUM SPLATNOSTI", 70, dateY);
+            doc.text(t_vystaveno, 20, dateY); doc.text(t_splatnost, 70, dateY);
             doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold");
-            if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString('cs-CZ'), 20, dateY+5);
-            if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString('cs-CZ'), 70, dateY+5);
+            let localeDate = currentLang === 'cs' ? 'cs-CZ' : 'de-DE';
+            if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString(localeDate), 20, dateY+5);
+            if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString(localeDate), 70, dateY+5);
 
             let cleanIbanMatch = dodBanka.replace(/\s/g, '').match(/[A-Za-z]{2}[0-9A-Za-z]{13,32}/);
             if (cleanIbanMatch) {
@@ -1149,28 +1209,26 @@
                 let qrData = getQrBase64(iban, sumEUR.toFixed(2), vs);
                 doc.addImage(qrData, 'PNG', 145, grayY, 40, 40);
                 doc.setFontSize(8); doc.setFont("courier", "normal"); doc.setTextColor(100, 100, 100); 
-                doc.text("QR Platba", 165, grayY + 44, {align: 'center'});
+                doc.text(t_qr, 165, grayY + 44, {align: 'center'});
             }
 
             let tableY = grayY + 50; doc.setFillColor(179, 57, 57); doc.rect(15, tableY, 180, 8, 'F');
             doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(9);
-            doc.text("Popis", 20, tableY+5.5); doc.text("Mnozstvi", 125, tableY+5.5, {align:'center'}); 
-            doc.text("Cena/mj.", 155, tableY+5.5, {align:'center'}); doc.text("Celkem", 190, tableY+5.5, {align:'right'});
+            doc.text(t_popis, 20, tableY+5.5); doc.text(t_mnozstvi, 125, tableY+5.5, {align:'center'}); 
+            doc.text(t_cena, 155, tableY+5.5, {align:'center'}); doc.text(t_celkem, 190, tableY+5.5, {align:'right'});
 
             doc.setTextColor(0, 0, 0); doc.setFont("courier", "normal"); 
             let itemY = tableY + 8;
-            let totalH = 0; vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
-            let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
-            let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
             
-            doc.text(`Pracovni hodiny dle vykazu`, 20, itemY+4); doc.text(`(${dateStr})`, 20, itemY+9);
+            let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
+            doc.text(t_pracH, 20, itemY+4); doc.text(`(${dateStr})`, 20, itemY+9);
             doc.text(`${totalH.toFixed(2)} h`, 125, itemY+6.5, {align:'center'});
             doc.text(`${typSazby} EUR`, 155, itemY+6.5, {align:'center'});
             doc.text(formatMena(sumEUR), 190, itemY+6.5, {align:'right'});
             doc.setDrawColor(200, 200, 200); doc.line(15, itemY+14, 195, itemY+14);
 
             let totalY = itemY + 25; doc.setFillColor(245, 245, 245); doc.rect(15, totalY, 180, 12, 'F'); 
-            doc.setFont("courier", "bold"); doc.setFontSize(14); doc.text("Celkem k uhrade:", 135, totalY + 8, {align:'right'});
+            doc.setFont("courier", "bold"); doc.setFontSize(14); doc.text(t_kUhrade, 135, totalY + 8, {align:'right'});
             doc.setFontSize(15); doc.text(formatMena(sumEUR), 190, totalY + 8, {align:'right'});
 
             let footerY = totalY + 40;
@@ -1188,29 +1246,36 @@
 
             if(dataPodpisuIch) { doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY - 20, 40, 15); }
             doc.setDrawColor(0, 0, 0); doc.line(130, footerY, 195, footerY); doc.setFontSize(9);
-            doc.text("Podpis", 162.5, footerY + 5, {align:'center'}); doc.setFontSize(8); doc.setFont("courier", "normal");
-            doc.text("Podnikatel je zapsan v zivnostenskem rejstriku.", 15, footerY + 5);
+            doc.text((currentLang === 'cs' ? "Podpis" : "Unterschrift"), 162.5, footerY + 5, {align:'center'}); doc.setFontSize(8); doc.setFont("courier", "normal");
+            doc.text(t_rejstrik, 15, footerY + 5);
             
             let prilohaTyp = document.querySelector('input[name="fak-priloha-typ"]:checked').value; doc.setTextColor(150, 150, 150);
             if (prilohaTyp !== 'none') {
-                doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 1/2", 195, 285, {align: 'right'});
+                doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 1/2`, 195, 285, {align: 'right'});
                 doc.addPage(); doc.setTextColor(0, 0, 0); 
                 if (prilohaTyp === 'standard') { drawStandardReportToDoc(doc, vybrane); }
                 else if (prilohaTyp === 'abnahme') { drawAbnahmeReportToDoc(doc, vybrane); }
                 doc.setFontSize(8); doc.setTextColor(150, 150, 150);
-                doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 2/2", 195, 285, {align: 'right'});
-            } else { doc.text("Vystaveno v systemu aplikace", 15, 285); doc.text("Strana 1/1", 195, 285, {align: 'right'}); }
+                doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 2/2`, 195, 285, {align: 'right'});
+            } else { doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 1/1`, 195, 285, {align: 'right'}); }
 
             if(!returnBlob) { 
                 let base64Pdf = doc.output('datauristring'); 
                 ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, base64Pdf); 
                 
+                zaznamy.filter(z => z.selected).forEach(z => {
+                    z.pdfFaktura = true;
+                    if(prilohaTyp === 'standard') z.pdfStandard = true;
+                    if(prilohaTyp === 'abnahme') z.pdfAbnahme = true;
+                });
+                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+                
                 if (confirm(currentLang === 'cs' ? 'Faktura i s výkazem byla úspěšně vystavena a uložena do Archivu!\n\nChcete nyní smazat tyto vyfakturované řádky hodin ze záložky "Záznamy" (aby se Vám do budoucna nepletly)?' : 'Rechnung gespeichert! Möchten Sie die abgerechneten Arbeitsstunden aus der Liste löschen?')) {
                     zaznamy = zaznamy.filter(z => !z.selected);
                     localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-                    renderZaznamy();
-                    updateStatistiky();
                 }
+                renderZaznamy();
+                updateStatistiky();
             }
             if(returnBlob) return doc.output('blob');
             doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
@@ -1221,14 +1286,29 @@
             const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' }); doc.setFont("courier", "normal");
             let vybrane = zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             drawStandardReportToDoc(doc, vybrane);
+            
+            if(!returnBlob) {
+                vybrane.forEach(z => z.pdfStandard = true);
+                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+                renderZaznamy();
+            }
+            
             if(returnBlob) return doc.output('blob');
             doc.save("Tatigkeitsnachweis.pdf");
+            closeExportCard();
         }
 
         function exportAbnahmePDF(returnBlob = false) {
             const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' }); doc.setFont("courier", "normal");
             let vybrane = zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             drawAbnahmeReportToDoc(doc, vybrane);
+            
+            if(!returnBlob) {
+                vybrane.forEach(z => z.pdfAbnahme = true);
+                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+                renderZaznamy();
+            }
+            
             if(returnBlob) return doc.output('blob');
             doc.save("AbnahmeProtokoll.pdf");
             closeExportCard();
@@ -1363,6 +1443,8 @@
             document.getElementById('inp-prestavka').value = z.prestavka;
             document.getElementById('inp-zakazka').value = z.cisloZakazky || '';
             document.getElementById('inp-sazba').value = z.sazba;
+            
+            updateLiveHours();
 
             if (z.popisPraceImg) {
                 setInputMode('draw');
@@ -1393,6 +1475,10 @@
                     zaznamy[idx].popisPrace = popisText;
                     zaznamy[idx].popisPraceImg = actPopisImgData;
                     zaznamy[idx].sazba = parseFloat(document.getElementById('inp-sazba').value) || 0;
+                    
+                    zaznamy[idx].pdfStandard = false;
+                    zaznamy[idx].pdfAbnahme = false;
+                    zaznamy[idx].pdfFaktura = false;
                 }
                 editRecordId = null;
                 document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
@@ -1402,7 +1488,8 @@
                     id: Date.now(), datum: document.getElementById('inp-datum').value, zacatek: document.getElementById('inp-zacatek').value,
                     konec: document.getElementById('inp-konec').value, prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
                     popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
-                    projekt: document.getElementById('cfg-firma').value, selected: false
+                    projekt: document.getElementById('cfg-firma').value, selected: false,
+                    pdfStandard: false, pdfAbnahme: false, pdfFaktura: false
                 };
                 zaznamy.push(novy);
             }
@@ -1460,7 +1547,13 @@
                 let h = kalkulujCisteHodiny(z); 
                 let item = document.createElement('div'); 
                 item.className = 'zaznam-item';
-                let descPreview = z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`;
+                
+                let badges = '';
+                if(z.pdfFaktura) badges += `<span style="background:#e74c3c; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">FA</span>`;
+                if(z.pdfStandard) badges += `<span style="background:#f39c12; color:black; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">STD</span>`;
+                if(z.pdfAbnahme) badges += `<span style="background:#3498db; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">ABN</span>`;
+
+                let descPreview = badges + (z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`);
                 
                 item.innerHTML = `<div class="checkbox-container"><input type="checkbox" id="chk-${z.id}" ${z.selected ? 'checked' : ''} onchange="toggleZaznamSelection(${z.id})">
                     <label for="chk-${z.id}" style="cursor:pointer; display:flex; flex-direction:column; font-weight:normal;"><div><strong style="color:var(--text);">${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>${descPreview}</label></div>
@@ -1500,6 +1593,9 @@
             localStorage.setItem('cfg_dod_ico', document.getElementById('cfg-dod-ico').value); 
             localStorage.setItem('cfg_dod_banka', document.getElementById('cfg-dod-banka').value);
             localStorage.setItem('cfg_dod_kontakt', document.getElementById('cfg-dod-kontakt').value); 
+            
+            localStorage.setItem('cfg_splatnost', document.getElementById('cfg-splatnost').value);
+            
             alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
         }
 
@@ -1518,6 +1614,9 @@
             if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
             if(localStorage.getItem('cfg_dod_banka')) document.getElementById('cfg-dod-banka').value = localStorage.getItem('cfg_dod_banka');
             if(localStorage.getItem('cfg_dod_kontakt')) document.getElementById('cfg-dod-kontakt').value = localStorage.getItem('cfg_dod_kontakt');
+            
+            if(localStorage.getItem('cfg_splatnost')) document.getElementById('cfg-splatnost').value = localStorage.getItem('cfg_splatnost');
+
             if(localStorage.getItem('cfg_logo')) { document.getElementById('preview-logo').src = localStorage.getItem('cfg_logo'); document.getElementById('preview-logo').style.display = 'block'; }
             if(localStorage.getItem('cfg_razitko')) { document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko'); document.getElementById('preview-razitko').style.display = 'block'; }
         }
