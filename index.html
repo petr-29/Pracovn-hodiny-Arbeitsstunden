@@ -673,6 +673,8 @@
         
         function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
         function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
+        function escapeHtml(text) { return String(text ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
+        function escapeHtmlWithBreaks(text) { return escapeHtml(text).replace(/\n/g, "<br>"); }
 
         function updateLivePreview() {
             let vybrane = zaznamy.filter(z => z.selected);
@@ -681,6 +683,8 @@
             let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value;
             let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
             let icoOdberatel = document.getElementById('cfg-ico-odberatel').value || ''; let pKunde = document.getElementById('cfg-podpis').value || '---';
+            let safeJmeno = escapeHtml(jmeno); let safeFirma = escapeHtml(firma); let safeFirmaBr = escapeHtmlWithBreaks(firma);
+            let safeAdresa = escapeHtml(adresa); let safeMesto = escapeHtml(mesto); let safeIcoOdberatel = escapeHtml(icoOdberatel); let safePKunde = escapeHtml(pKunde);
 
             let html = '';
             
@@ -689,15 +693,16 @@
                 let datumVystaveni = document.getElementById('fak-vystaveni').valueAsDate;
                 let datumSplatnosti = document.getElementById('fak-splatnost').valueAsDate;
                 let dodIco = document.getElementById('cfg-dod-ico').value;
-                let dodAdresa = document.getElementById('cfg-dod-adresa').value.replace(/\n/g, "<br>");
+                let dodAdresa = escapeHtmlWithBreaks(document.getElementById('cfg-dod-adresa').value);
                 let dodBanka = document.getElementById('cfg-dod-banka').value;
                 let dodKontakt = document.getElementById('cfg-dod-kontakt').value;
+                let safeCisloFaktury = escapeHtml(cisloFaktury); let safeDodIco = escapeHtml(dodIco); let safeDodBanka = escapeHtml(dodBanka); let safeDodKontakt = escapeHtml(dodKontakt);
 
                 let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
 
                 html += `<div class="faktura-box">`;
                 html += `  <div class="faktura-red-header">`;
-                html += `    <div style="font-size: 24px; font-weight: bold;">Faktura č. ${cisloFaktury}</div>`;
+                html += `    <div style="font-size: 24px; font-weight: bold;">Faktura č. ${safeCisloFaktury}</div>`;
                 html += `    <div style="font-size: 14px; font-weight: normal; margin-top: 5px;">Neplátce DPH</div>`;
                 html += `  </div>`;
                 
@@ -705,11 +710,11 @@
                 html += `    <div>`;
                 let lData = localStorage.getItem('cfg_logo'); if(lData) { html += `      <img src="${lData}" style="max-height:35px; margin-bottom: 8px; display:block;">`; }
                 html += `      <div class="faktura-modry-text">Dodavatel</div>`;
-                html += `      <strong>${jmeno}</strong><br>${dodAdresa}<br>IČO: ${dodIco}<br><br>${dodBanka}<br>Vystavil: ${jmeno}<br>${dodKontakt}`;
+                html += `      <strong>${safeJmeno}</strong><br>${dodAdresa}<br>IČO: ${safeDodIco}<br><br>${safeDodBanka}<br>Vystavil: ${safeJmeno}<br>${safeDodKontakt}`;
                 html += `    </div>`;
                 html += `    <div>`;
                 html += `      <div class="faktura-modry-text">Odběratel</div>`;
-                html += `      <strong>${firma.replace(/\n/g, "<br>")}</strong><br>${adresa}<br>${mesto}<br><br>${icoOdberatel}`;
+                html += `      <strong>${safeFirmaBr}</strong><br>${safeAdresa}<br>${safeMesto}<br><br>${safeIcoOdberatel}`;
                 html += `    </div>`;
                 html += `  </div>`;
 
@@ -769,9 +774,9 @@
                 html += `  <div style="text-align:center; font-weight:bold; font-size:18px; margin-bottom: 20px;">TÄTIGKEITSNACHWEIS</div>`;
                 html += `  <div style="width:250px; margin:0 auto 20px auto; border:1px solid #000; font-size:12px;">`;
                 html += `    <div style="border-bottom:1px solid #000; padding:4px;">Kundenanschrift:</div>`;
-                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${firma.replace(/\n/g, ", ")}</div>`;
-                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${adresa}</div>`;
-                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${mesto}</div>`;
+                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${safeFirma.replace(/\n/g, ", ")}</div>`;
+                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${safeAdresa}</div>`;
+                html += `    <div style="border-bottom:1px solid #000; padding:4px; height:20px;">${safeMesto}</div>`;
                 html += `    <div style="padding:4px; height:20px;"></div>`;
                 html += `  </div>`;
                 html += `  <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center;">`;
@@ -785,7 +790,7 @@
                     let rec = dayRecords[i];
                     if(rec) {
                         let h = kalkulujCisteHodiny(rec); totalWeekHours += h;
-                        html += `<tr><td>${ordDays[i]}</td><td>${new Date(rec.datum).toLocaleDateString('de-DE')}</td><td>${rec.zacatek}</td><td>${rec.konec}</td><td>---</td><td>${rec.prestavka}</td><td>${h.toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${ordDays[i]}</td><td>${new Date(rec.datum).toLocaleDateString('de-DE')}</td><td>${escapeHtml(rec.zacatek)}</td><td>${escapeHtml(rec.konec)}</td><td>---</td><td>${escapeHtml(rec.prestavka)}</td><td>${h.toFixed(2)}</td></tr>`;
                     } else {
                         html += `<tr><td>${ordDays[i]}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
                     }
@@ -809,15 +814,16 @@
                 let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
                 let startD = startDatum(vybrane); let endD = endDatum(vybrane);
                 let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
+                let safeCisloZ = escapeHtml(cisloZ); let safeVadyText = escapeHtml(vadyText); let safeOdstraneniDo = escapeHtml(odstraneniDo);
 
                 html += `<div class="preview-header-full">ABNAHME- & FORTSCHRITTSPROTOKOLL</div>`;
                 html += `<div class="preview-meta-grid" style="font-family:'Courier New', Courier, monospace;">`;
-                html += `  <div class="preview-meta-item"><strong>Vorname, Name:</strong><br>${jmeno}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Kunde:</strong><br>${firma.replace(/\n/g, ", ")}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Projekt-Nr:</strong><br>${cisloZ}</div>`;
-                html += `  <div class="preview-meta-item"><strong>Anschrift:</strong><br>${adresa}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Vorname, Name:</strong><br>${safeJmeno}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Kunde:</strong><br>${safeFirma.replace(/\n/g, ", ")}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Projekt-Nr:</strong><br>${safeCisloZ}</div>`;
+                html += `  <div class="preview-meta-item"><strong>Anschrift:</strong><br>${safeAdresa}</div>`;
                 html += `  <div class="preview-meta-item"><strong>Leistungszeitraum:</strong><br>${startD} - ${endD}</div>`;
-                html += `  <div class="preview-meta-item"><strong>PLZ, Ort:</strong><br>${mesto}</div>`;
+                html += `  <div class="preview-meta-item"><strong>PLZ, Ort:</strong><br>${safeMesto}</div>`;
                 html += `</div>`;
                 html += `<p style="font-weight:bold; margin-top:10px; font-family:'Courier New', Courier, monospace;">Leistungsbeschreibung / Tätigkeitsbeschreibung</p>`;
                 html += `<table class="preview-table" style="font-family:'Courier New', Courier, monospace;">`;
@@ -825,7 +831,7 @@
                 let celkem = 0;
                 vybrane.forEach(z => {
                     let h = kalkulujCisteHodiny(z); celkem += h;
-                    let popisRender = z.popisPraceImg ? `<img src="${z.popisPraceImg}" style="max-height:25px; background:white; border-radius:4px;">` : (z.popisPrace || '---');
+                    let popisRender = z.popisPraceImg ? `<img src="${z.popisPraceImg}" style="max-height:25px; background:white; border-radius:4px;">` : escapeHtml(z.popisPrace || '---');
                     html += `  <tr><td>${new Date(z.datum).toLocaleDateString('de-DE')}</td><td>${popisRender}</td><td style="text-align:right;">${h.toFixed(2)}</td></tr>`;
                 });
                 html += `  <tr><td colspan="2" style="text-align:right; font-weight:bold;">Gesamt:</td><td style="text-align:right; font-weight:bold;">${celkem.toFixed(2)}</td></tr>`;
@@ -834,17 +840,17 @@
                 html += `  <strong>Bei der Abnahme wurde festgestellt:</strong><br>`;
                 html += `  [${bezZkousky ? 'X' : ' '}] die Leistung/en sind ohne Funktionsprüfung abgenommen<br>`;
                 html += `  [${seZkouskou ? 'X' : ' '}] die Leistung/en sind mit Funktionsprüfung abgenommen<br>`;
-                html += `  [${sVadami ? 'X' : ' '}] Mängel festgestellt: ${sVadami ? vadyText : 'Nein'}<br>`;
-                if(sVadami) html += `  Mängel werden bis spätestens <strong>${odstraneniDo}</strong> behoben.<br>`;
+                html += `  [${sVadami ? 'X' : ' '}] Mängel festgestellt: ${sVadami ? safeVadyText : 'Nein'}<br>`;
+                if(sVadami) html += `  Mängel werden bis spätestens <strong>${safeOdstraneniDo}</strong> behoben.<br>`;
                 html += `</div>`;
                 html += `<div style="margin-top:40px; display:flex; justify-content:space-between; font-family:'Courier New', Courier, monospace;">`;
                 html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
                 if(dataPodpisuKunde) html += `<img src="${dataPodpisuKunde}" style="max-height:40px; margin-bottom:5px;"><br>`;
-                html += `    <strong>${pKunde}</strong><br><span style="font-size:9px; color:#555;">*Unterschrift Auftraggeber</span>`;
+                html += `    <strong>${safePKunde}</strong><br><span style="font-size:9px; color:#555;">*Unterschrift Auftraggeber</span>`;
                 html += `  </div>`;
                 html += `  <div style="width:45%; border-top:1px solid #000; text-align:center; padding-top:5px; font-size:11px;">`;
                 if(dataPodpisuIch) html += `<img src="${dataPodpisuIch}" style="max-height:40px; margin-bottom:5px;"><br>`;
-                html += `    <strong>${jmeno}</strong><br><span style="font-size:9px; color:#555;">Unterschrift Auftragnehmer</span>`;
+                html += `    <strong>${safeJmeno}</strong><br><span style="font-size:9px; color:#555;">Unterschrift Auftragnehmer</span>`;
                 html += `  </div>`;
                 html += `</div>`;
             }
