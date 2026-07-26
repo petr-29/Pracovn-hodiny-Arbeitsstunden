@@ -401,7 +401,26 @@
                         <button class="btn-sec" style="background: #f39c12; color: #fff; flex: 2;" onclick="ulozDoAdresare()">Uložit klienta</button>
                         <button class="btn-sec" style="background: #e74c3c; color: #fff; flex: 1;" onclick="smazZAdresare()">Smazat</button>
                     </div>
-                    
+                   <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;"> 
+
+                   <div class="card" style="border: 2px solid #27ae60; background: #e9f7ef;">
+                   <div class="card-title" style="color: #27ae60;" data-cs="💾 Kompletní Záloha a Synchronizace" data-de="💾 Komplettes Backup">💾 Kompletní Záloha a Synchronizace</div>
+                       <p style="font-size: 13px; margin-bottom: 15px; color: #000;">Tato funkce uloží <b>úplně všechna tvá data</b> (včetně historie faktur, nastavení, loga a razítka) do záložního souboru. Soubor si můžeš poslat (např. přes AirDrop nebo email) do druhého zařízení a tam ho načíst.</p>
+                 
+                       <div class="row">
+                  
+                       <button class="btn-main" style="background: #27ae60; color: white; flex: 1;" onclick="exportDataToFile()" data-cs="⬇️ Stáhnout zálohu" data-de="⬇️ Backup herunterladen">⬇️ Stáhnout zálohu</button>
+                      
+                           <label class="btn-main" style="background: #e67e22; color: white; flex: 1; text-align: center; cursor: pointer; margin-bottom: 0;">
+                 
+                               <span data-cs="⬆️ Nahrát ze souboru" data-de="⬆️ Aus Datei laden">⬆️ Nahrát ze souboru</span>
+                  
+                               <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importDataFromFile(event)">
+            
+                           </label>
+                       </div>
+                   </div> 
+                 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
 
                     <div class="card-title" data-cs="Aktuální Klient / Odběratel (Pro Fakturu)" data-de="Aktueller Kunde (Für Rechnung)">Aktuální Klient / Odběratel (Pro Fakturu)</div>
