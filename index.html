@@ -1448,23 +1448,26 @@
             let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
             
             doc.setFont("helvetica", "normal");
-            doc.setFontSize(8.5);
+            doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
 
-            // --- OPRAVENÉ SOUŘADNICE HLAVIČKY (Bílé pole, Y=17) ---
-            doc.text(firma, 15, 17, { maxWidth: 55 }); 
-            doc.text(jmeno, 75, 17, { maxWidth: 45 }); 
-            doc.text(adresa + ", " + mesto, 125, 17, { maxWidth: 45 }); 
-            doc.text(startD + " - " + endD, 175, 17, { maxWidth: 30 }); 
+            // --- HLAVIČKA ---
+            // Změněny Y souřadnice na 30.5 (aby padly do prázdných bílých boxů pod modrým nadpisem)
+            // Změněno na zarovnání na střed (align: center) pro každý box
+            doc.text(firma, 29, 30.5, { align: 'center', maxWidth: 55 }); 
+            doc.text(jmeno, 79, 30.5, { align: 'center', maxWidth: 40 }); 
+            doc.text(adresa + ", " + mesto, 132, 30.5, { align: 'center', maxWidth: 60 }); 
+            doc.text(startD + " - " + endD, 187, 30.5, { align: 'center', maxWidth: 40 }); 
 
-            // --- OPRAVENÉ SOUŘADNICE TABULKY (Pod modrou hlavičkou) ---
-            let startY = 48.5; // První řádek (Montag)
-            let radkovani = 6.4; 
+            // --- TABULKA DNŮ ---
+            let startY = 47.2; // Opravený výchozí bod (Pondělí)
+            let radkovani = 5.75; // Opravená výška řádku, aby se vešly přesně
             let dayRecords = new Array(7).fill(null);
             let totalWeekHours = 0;
             
             vybrane.forEach(z => { 
-                let d = new Date(z.datum).getDay(); 
+                // Fix pro časové zóny: vynutíme poledne, aby .getDay() nevrátil kvůli posunu špatný den (např. pátek na sobotu)
+                let d = new Date(z.datum + "T12:00:00").getDay(); 
                 let idx = d === 0 ? 6 : d - 1; 
                 dayRecords[idx] = z; 
             });
@@ -1476,27 +1479,31 @@
                     let h = kalkulujCisteHodiny(rec); 
                     totalWeekHours += h;
                     
-                    // X souřadnice posunuté přesně pod nadpisy sloupců
-                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), 28, rowY, { align: 'center' }); // Datum
-                    doc.text(rec.zacatek, 43, rowY, { align: 'center' }); // Beginn
-                    doc.text(rec.prestavka.toString(), 59, rowY, { align: 'center' }); // Pause
-                    doc.text(rec.konec, 75, rowY, { align: 'center' }); // Ende
-                    doc.text(h.toFixed(2), 92, rowY, { align: 'center' }); // Stunden
-                    doc.text(rec.cisloZakazky || cisloZ, 140, rowY, { align: 'center', maxWidth: 60 }); // Montagetagebuch
+                    // Sloupce posunuty tak, aby perfektně pasovaly do mřížky
+                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), 18, rowY, { align: 'center' }); 
+                    doc.text(rec.zacatek, 40.5, rowY, { align: 'center' }); 
+                    doc.text(rec.prestavka.toString(), 55, rowY, { align: 'center' }); // Trefí se mezi VON a BIS
+                    doc.text(rec.konec, 70, rowY, { align: 'center' }); 
+                    doc.text(h.toFixed(2), 84, rowY, { align: 'center' }); 
+                    doc.text(rec.cisloZakazky || cisloZ, 94, rowY, { maxWidth: 70 }); 
                 }
             }
 
             // --- CELKOVÉ HODINY (Insgesamt in der Woche) ---
             doc.setFont("helvetica", "bold");
-            doc.text(totalWeekHours.toFixed(2), 92, 93.5, { align: 'center' });
+            // Posunuto výše přímo do modrého řádku Ingesat
+            doc.text(totalWeekHours.toFixed(2), 84, 86.5, { align: 'center' });
 
             // --- SPODNÍ ČÁST (Místo, Datum, Podpisy) ---
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
-            doc.text(mesto + ", " + new Date().toLocaleDateString('de-DE'), 25, 134);
+            
+            // Text s místem a datem dole
+            doc.text(mesto + ", " + new Date().toLocaleDateString('de-DE'), 15, 137.5);
 
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 85, 118, 35, 12);
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 155, 118, 35, 12);
+            // Levý podpis (Pracovník) a Pravý podpis (Stavbyvedoucí) - posunuty bezpečně nad čáry
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 30, 124, 35, 12);
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 130, 124, 35, 12);
         }
 
         function exportConsiliumPDF(returnBlob = false) {
