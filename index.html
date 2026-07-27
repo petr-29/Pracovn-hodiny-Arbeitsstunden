@@ -265,6 +265,7 @@
                     <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">Standard PDF</button>
                     <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
                     <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">Faktura PDF</button>
+                    <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Consilium PDF</button>
                 </div>
 
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
@@ -497,6 +498,12 @@
                         <input type="file" id="inp-razitko" accept="image/png, image/jpeg" onchange="nahratObrazek(this, 'cfg_razitko', 'preview-razitko')">
                         <img id="preview-razitko" style="max-height: 50px; margin-top: 10px; display: none;">
                         <button class="btn-sec" style="margin-top:5px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_razitko', 'preview-razitko', 'inp-razitko')">Smazat razítko</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Šablona Consilium (formát A5 naležato jako JPG/PNG)</label>
+                        <input type="file" id="inp-tpl-consilium" accept="image/png, image/jpeg" onchange="nahratObrazek(this, 'cfg_tpl_consilium', 'preview-tpl-consilium')">
+                        <img id="preview-tpl-consilium" style="max-height: 80px; margin-top: 10px; display: none; border: 1px solid #ccc;">
+                        <button class="btn-sec" style="margin-top:5px; width: 130px; font-size: 12px;" onclick="smazatObrazek('cfg_tpl_consilium', 'preview-tpl-consilium', 'inp-tpl-consilium')">Smazat šablonu</button>
                     </div>
 
                     <button class="btn-main" onclick="saveSettings()" style="margin-top:15px;" data-cs="Uložit Nastavení" data-de="Einstellungen speichern">Uložit Nastavení</button>
@@ -742,6 +749,8 @@
                 let d = new Date();
                 d.setDate(d.getDate() + splatnostDni);
                 document.getElementById('fak-splatnost').valueAsDate = d;
+            } else if (type === 'consilium') {
+                document.getElementById('btn-execute-export').style.background = '#8e44ad';
             } else {
                 document.getElementById('btn-execute-export').style.background = '#f39c12';
             }
@@ -934,6 +943,9 @@
                 html += `      </div>`;
                 html += `  </div>`;
                 html += `</div>`;
+            } else if (currentExportType === 'consilium') {
+                html += `<div class="preview-header-full">CONSILIUM PRO - STUNDENZETTEL (A5 Naležato)</div>`;
+                html += `<div style="text-align:center; margin-bottom: 20px; font-family:'Courier New', Courier, monospace;">Tento export využívá A5 šablonu naležato z nastavení a generuje se přímo do PDF.</div>`;
             } else {
                 let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
                 let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
@@ -1175,6 +1187,7 @@
             if (currentExportType === 'faktura') return exportFakturaPDF(returnBlob);
             if (currentExportType === 'standard') return exportStandardPDF(returnBlob);
             if (currentExportType === 'abnahme') return exportAbnahmePDF(returnBlob);
+            if (currentExportType === 'consilium') return exportConsiliumPDF(returnBlob);
         }
 
         function buildFakturaDoc(vybrane, overrideData = null) {
@@ -1412,6 +1425,92 @@
             
             if(returnBlob) return doc.output('blob');
             doc.save("AbnahmeProtokoll.pdf");
+            closeExportCard();
+        }
+
+        function drawConsiliumReportToDoc(doc, vybrane) {
+            let tplData = localStorage.getItem('cfg_tpl_consilium');
+            if (!tplData) {
+                alert(currentLang === 'cs' ? "Nejprve prosím nahraj A5 šablonu formuláře v Nastavení!" : "Bitte A5-Vorlage in den Einstellungen hochladen!");
+                return;
+            }
+
+            // Vložení šablony na A5 NALEŽATO (210 x 148 mm)
+            let imgType = tplData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+            doc.addImage(tplData, imgType, 0, 0, 210, 148, '', 'FAST');
+
+            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value);
+            let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
+            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value);
+            let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
+            let startD = bezDiakritiky(startDatum(vybrane)); 
+            let endD = bezDiakritiky(endDatum(vybrane));
+            let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8.5);
+            doc.setTextColor(0, 0, 0);
+
+            // --- OPRAVENÉ SOUŘADNICE HLAVIČKY (Bílé pole, Y=17) ---
+            doc.text(firma, 15, 17, { maxWidth: 55 }); 
+            doc.text(jmeno, 75, 17, { maxWidth: 45 }); 
+            doc.text(adresa + ", " + mesto, 125, 17, { maxWidth: 45 }); 
+            doc.text(startD + " - " + endD, 175, 17, { maxWidth: 30 }); 
+
+            // --- OPRAVENÉ SOUŘADNICE TABULKY (Pod modrou hlavičkou) ---
+            let startY = 48.5; // První řádek (Montag)
+            let radkovani = 6.4; 
+            let dayRecords = new Array(7).fill(null);
+            let totalWeekHours = 0;
+            
+            vybrane.forEach(z => { 
+                let d = new Date(z.datum).getDay(); 
+                let idx = d === 0 ? 6 : d - 1; 
+                dayRecords[idx] = z; 
+            });
+
+            for(let i=0; i<7; i++) {
+                let rec = dayRecords[i];
+                let rowY = startY + (i * radkovani);
+                if(rec) {
+                    let h = kalkulujCisteHodiny(rec); 
+                    totalWeekHours += h;
+                    
+                    // X souřadnice posunuté přesně pod nadpisy sloupců
+                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), 28, rowY, { align: 'center' }); // Datum
+                    doc.text(rec.zacatek, 43, rowY, { align: 'center' }); // Beginn
+                    doc.text(rec.prestavka.toString(), 59, rowY, { align: 'center' }); // Pause
+                    doc.text(rec.konec, 75, rowY, { align: 'center' }); // Ende
+                    doc.text(h.toFixed(2), 92, rowY, { align: 'center' }); // Stunden
+                    doc.text(rec.cisloZakazky || cisloZ, 140, rowY, { align: 'center', maxWidth: 60 }); // Montagetagebuch
+                }
+            }
+
+            // --- CELKOVÉ HODINY (Insgesamt in der Woche) ---
+            doc.setFont("helvetica", "bold");
+            doc.text(totalWeekHours.toFixed(2), 92, 93.5, { align: 'center' });
+
+            // --- SPODNÍ ČÁST (Místo, Datum, Podpisy) ---
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.text(mesto + ", " + new Date().toLocaleDateString('de-DE'), 25, 134);
+
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 85, 118, 35, 12);
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 155, 118, 35, 12);
+        }
+
+        function exportConsiliumPDF(returnBlob = false) {
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'landscape' }); 
+            doc.setFont("courier", "normal");
+            
+            let vybrane = zaznamy.filter(z => z.selected); 
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            
+            drawConsiliumReportToDoc(doc, vybrane);
+            
+            if(returnBlob) return doc.output('blob');
+            doc.save("Consilium_Abnahmeprotokoll_A5_Landscape.pdf");
             closeExportCard();
         }
 
@@ -1753,7 +1852,6 @@
             let container = document.getElementById('seznam-container'); 
             container.innerHTML = '';
 
-            // VÝPOČET A AKTUALIZACE MĚSÍČNÍHO SOUHRNU (AKTUÁLNÍ MĚSÍC)
             let dnes = new Date();
             let aktualniMesic = dnes.getMonth();
             let aktualniRok = dnes.getFullYear();
@@ -1871,6 +1969,7 @@
 
             if(localStorage.getItem('cfg_logo')) { document.getElementById('preview-logo').src = localStorage.getItem('cfg_logo'); document.getElementById('preview-logo').style.display = 'block'; }
             if(localStorage.getItem('cfg_razitko')) { document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko'); document.getElementById('preview-razitko').style.display = 'block'; }
+            if(localStorage.getItem('cfg_tpl_consilium')) { document.getElementById('preview-tpl-consilium').src = localStorage.getItem('cfg_tpl_consilium'); document.getElementById('preview-tpl-consilium').style.display = 'block'; }
         }
 
         function exportCSV() {
@@ -1889,13 +1988,12 @@
             let lightStorage = {};
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                // Vyloučíme archivy, logo, razítko a obrázky z nákresů v záznamech
-                if (key !== 'archiv_faktur' && key !== 'cfg_logo' && key !== 'cfg_razitko') {
+                if (key !== 'archiv_faktur' && key !== 'cfg_logo' && key !== 'cfg_razitko' && key !== 'cfg_tpl_consilium') {
                     let val = localStorage.getItem(key);
                     if (key === 'pracovni_zaznamy') {
                         try {
                             let parsedZaznamy = JSON.parse(val);
-                            parsedZaznamy.forEach(z => { delete z.popisPraceImg; }); // odstraní velké base64 obrázky z nákresů
+                            parsedZaznamy.forEach(z => { delete z.popisPraceImg; });
                             val = JSON.stringify(parsedZaznamy);
                         } catch(e) {}
                     }
@@ -2179,7 +2277,6 @@
 
 function exportDataToFile() {
     let allData = {};
-    // Projdeme celou paměť prohlížeče a uložíme úplně všechno
     for (let i = 0; i < localStorage.length; i++) {
         let key = localStorage.key(i);
         allData[key] = localStorage.getItem(key);
@@ -2192,7 +2289,6 @@ function exportDataToFile() {
     let a = document.createElement("a");
     a.href = url;
     
-    // Vytvoříme hezký název souboru s dnešním datem
     let d = new Date();
     let dateString = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     a.download = `Kralovstvi_Hodin_Zaloha_${dateString}.json`;
@@ -2211,14 +2307,11 @@ function importDataFromFile(event) {
     reader.onload = function(e) {
         try {
             let importedData = JSON.parse(e.target.result);
-            
-            // Pojistka, aby se uživatel nepřeklikl
             let msg = currentLang === 'cs' ? 
                 "Pozor: Chystáš se přepsat všechna aktuální data v této aplikaci těmi ze záložního souboru. Chceš pokračovat?" : 
                 "Achtung: Sie sind dabei, alle aktuellen Daten mit dem Backup zu überschreiben. Fortfahren?";
                 
             if (confirm(msg)) {
-                // Vymažeme stará data a nahrajeme nová ze souboru
                 localStorage.clear();
                 for (let key in importedData) {
                     localStorage.setItem(key, importedData[key]);
@@ -2226,14 +2319,12 @@ function importDataFromFile(event) {
                 
                 let successMsg = currentLang === 'cs' ? "Data byla úspěšně nahrána! Aplikace se nyní obnoví." : "Daten erfolgreich geladen! App wird neu gestartet.";
                 alert(successMsg);
-                window.location.reload(); // Obnovíme stránku, aby se data propsala do UI
+                window.location.reload();
             }
         } catch (error) {
             let errorMsg = currentLang === 'cs' ? "Chyba při čtení souboru. Ujisti se, že jde o platný záložní .json soubor." : "Fehler beim Lesen der Datei.";
             alert(errorMsg);
         }
-        
-        // Vyresetujeme input, aby šel případně nahrát stejný soubor znovu
         event.target.value = '';
     };
     reader.readAsText(file);
