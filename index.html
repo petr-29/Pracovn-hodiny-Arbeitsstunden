@@ -215,9 +215,13 @@
                     </div>
                     
                     <div class="row">
-                        <div class="form-group" style="flex: 2;">
-                            <label id="lbl-pause" data-cs="Přestávka (minut)" data-de="Pause (Minuten)">Přestávka (minut)</label>
-                            <input type="number" id="inp-prestavka" value="30" step="5" oninput="updateLiveHours()">
+                        <div class="form-group" style="flex: 2; display: flex; flex-direction: column;">
+                            <label data-cs="Přestávka (Od - Do)" data-de="Pause (Von - Bis)">Přestávka (Od - Do)</label>
+                            <div style="display: flex; gap: 5px; align-items: center;">
+                                <input type="time" id="inp-prestavka-od" value="12:00" oninput="updateLiveHours()" style="flex: 1;">
+                                <span style="font-weight: bold;">-</span>
+                                <input type="time" id="inp-prestavka-do" value="12:30" oninput="updateLiveHours()" style="flex: 1;">
+                            </div>
                         </div>
                         <div class="form-group" style="flex: 1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom: 5px;">
                             <span style="font-size:12px; color:#7f8c8d; margin-bottom:2px;" data-cs="Čistý čas" data-de="Nettozeit">Čistý čas</span>
@@ -786,14 +790,48 @@
         function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
         function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
 
+        function kalkulujCisteHodiny(zaznam) {
+            let [h1, m1] = zaznam.zacatek.split(':').map(Number);
+            let [h2, m2] = zaznam.konec.split(':').map(Number);
+            let start = h1 * 60 + m1;
+            let konec = h2 * 60 + m2;
+            if (konec < start) konec += 24 * 60;
+
+            let pauseMinut = 0;
+            if (zaznam.prestavkaOd && zaznam.prestavkaDo) {
+                let [ph1, pm1] = zaznam.prestavkaOd.split(':').map(Number);
+                let [ph2, pm2] = zaznam.prestavkaDo.split(':').map(Number);
+                let pStart = ph1 * 60 + pm1; let pKonec = ph2 * 60 + pm2;
+                if (pKonec < pStart) pKonec += 24 * 60;
+                pauseMinut = pKonec - pStart;
+            } else if (zaznam.prestavka) {
+                pauseMinut = Number(zaznam.prestavka);
+            }
+
+            let cisty = (konec - start - pauseMinut) / 60;
+            return cisty > 0 ? cisty : 0;
+        }
+
         function updateLiveHours() {
             let z = document.getElementById('inp-zacatek').value;
             let k = document.getElementById('inp-konec').value;
-            let p = document.getElementById('inp-prestavka').value;
+            let pOd = document.getElementById('inp-prestavka-od').value;
+            let pDo = document.getElementById('inp-prestavka-do').value;
+            
             if(!z || !k) { document.getElementById('live-calc-result').innerText = "0.00 h"; return; }
             let [h1, m1] = z.split(':').map(Number); let [h2, m2] = k.split(':').map(Number);
             let start = h1 * 60 + m1; let konec = h2 * 60 + m2; if (konec < start) konec += 24 * 60;
-            let cisty = (konec - start - Number(p)) / 60;
+            
+            let pauseMinut = 0;
+            if (pOd && pDo) {
+                let [ph1, pm1] = pOd.split(':').map(Number);
+                let [ph2, pm2] = pDo.split(':').map(Number);
+                let pStart = ph1 * 60 + pm1; let pKonec = ph2 * 60 + pm2;
+                if (pKonec < pStart) pKonec += 24 * 60;
+                pauseMinut = pKonec - pStart;
+            }
+
+            let cisty = (konec - start - pauseMinut) / 60;
             document.getElementById('live-calc-result').innerText = (cisty > 0 ? cisty : 0).toFixed(2) + " h";
         }
 
@@ -925,7 +963,8 @@
                     let rec = dayRecords[i];
                     if(rec) {
                         let h = kalkulujCisteHodiny(rec); totalWeekHours += h;
-                        html += `<tr><td>${ordDays[i]}</td><td>${new Date(rec.datum).toLocaleDateString('de-DE')}</td><td>${rec.zacatek}</td><td>${rec.konec}</td><td>---</td><td>${rec.prestavka}</td><td>${h.toFixed(2)}</td></tr>`;
+                        let pauseStr = (rec.prestavkaOd && rec.prestavkaDo) ? `${rec.prestavkaOd}-${rec.prestavkaDo}` : (rec.prestavka || '0');
+                        html += `<tr><td>${ordDays[i]}</td><td>${new Date(rec.datum).toLocaleDateString('de-DE')}</td><td>${rec.zacatek}</td><td>${rec.konec}</td><td>---</td><td>${pauseStr}</td><td>${h.toFixed(2)}</td></tr>`;
                     } else {
                         html += `<tr><td>${ordDays[i]}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
                     }
@@ -1098,12 +1137,13 @@
                 let rec = dayRecords[i];
                 if(rec) {
                     let dFmt = new Date(rec.datum).toLocaleDateString('de-DE'); let h = kalkulujCisteHodiny(rec); totalWeekHours += h;
-                    let start = rec.zacatek; let end = rec.konec; let pause = rec.prestavka;
+                    let start = rec.zacatek; let end = rec.konec; 
+                    let pauseTxt = (rec.prestavkaOd && rec.prestavkaDo) ? `${rec.prestavkaOd}-${rec.prestavkaDo}` : (rec.prestavka ? rec.prestavka.toString() : '0');
                     let [h1, m1] = start.split(':').map(Number); let [h2, m2] = end.split(':').map(Number);
                     let startM = h1*60+m1; let endM = h2*60+m2; if(endM < startM) endM += 24*60;
                     let totalH = (endM - startM) / 60; 
                     doc.text(dFmt, cols[1]+12, y, {align:'center'}); doc.text(start, cols[2]+8, y, {align:'center'}); doc.text(end, cols[3]+8, y, {align:'center'});
-                    doc.text(totalH.toFixed(2), cols[4]+8, y, {align:'center'}); doc.text(pause.toString(), cols[5]+8, y, {align:'center'}); doc.text(h.toFixed(2), cols[6]+12, y, {align:'center'});
+                    doc.text(totalH.toFixed(2), cols[4]+8, y, {align:'center'}); doc.text(pauseTxt, cols[5]+8, y, {align:'center'}); doc.text(h.toFixed(2), cols[6]+12, y, {align:'center'});
                 }
             }
 
@@ -1435,38 +1475,34 @@
                 return;
             }
 
-            // Vložení šablony na A5 NALEŽATO (210 x 148 mm)
             let imgType = tplData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
             doc.addImage(tplData, imgType, 0, 0, 210, 148, '', 'FAST');
 
             let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value);
-            let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
-            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value);
-            let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
+            let koncovaFirmaData = document.getElementById('cfg-koncovy-firma') ? document.getElementById('cfg-koncovy-firma').value : '';
+            let koncovaAdresaData = document.getElementById('cfg-koncovy-adresa') ? document.getElementById('cfg-koncovy-adresa').value : '';
+            let firma = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
+            let adresaMesto = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData.replace(/\n/g, ", ") : (document.getElementById('cfg-adresa').value + ", " + document.getElementById('cfg-mesto').value));
+            
             let startD = bezDiakritiky(startDatum(vybrane)); 
             let endD = bezDiakritiky(endDatum(vybrane));
             let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
             
             doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
+            doc.setFontSize(9);
             doc.setTextColor(0, 0, 0);
 
-            // --- HLAVIČKA ---
-            // Změněny Y souřadnice na 30.5 (aby padly do prázdných bílých boxů pod modrým nadpisem)
-            // Změněno na zarovnání na střed (align: center) pro každý box
-            doc.text(firma, 29, 30.5, { align: 'center', maxWidth: 55 }); 
-            doc.text(jmeno, 79, 30.5, { align: 'center', maxWidth: 40 }); 
-            doc.text(adresa + ", " + mesto, 132, 30.5, { align: 'center', maxWidth: 60 }); 
-            doc.text(startD + " - " + endD, 187, 30.5, { align: 'center', maxWidth: 40 }); 
+            doc.text(firma, 35, 41.5, { align: 'center', maxWidth: 65 }); 
+            doc.text(jmeno, 93, 41.5, { align: 'center', maxWidth: 50 }); 
+            doc.text(adresaMesto, 148, 41.5, { align: 'center', maxWidth: 55 }); 
+            doc.text(`${startD} - ${endD}`, 192, 41.5, { align: 'center', maxWidth: 30 }); 
 
-            // --- TABULKA DNŮ ---
-            let startY = 47.2; // Opravený výchozí bod (Pondělí)
-            let radkovani = 5.75; // Opravená výška řádku, aby se vešly přesně
+            let startY = 60; 
+            let radkovani = 7.3; 
             let dayRecords = new Array(7).fill(null);
             let totalWeekHours = 0;
             
             vybrane.forEach(z => { 
-                // Fix pro časové zóny: vynutíme poledne, aby .getDay() nevrátil kvůli posunu špatný den (např. pátek na sobotu)
                 let d = new Date(z.datum + "T12:00:00").getDay(); 
                 let idx = d === 0 ? 6 : d - 1; 
                 dayRecords[idx] = z; 
@@ -1479,31 +1515,41 @@
                     let h = kalkulujCisteHodiny(rec); 
                     totalWeekHours += h;
                     
-                    // Sloupce posunuty tak, aby perfektně pasovaly do mřížky
-                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), 18, rowY, { align: 'center' }); 
-                    doc.text(rec.zacatek, 40.5, rowY, { align: 'center' }); 
-                    doc.text(rec.prestavka.toString(), 55, rowY, { align: 'center' }); // Trefí se mezi VON a BIS
-                    doc.text(rec.konec, 70, rowY, { align: 'center' }); 
-                    doc.text(h.toFixed(2), 84, rowY, { align: 'center' }); 
-                    doc.text(rec.cisloZakazky || cisloZ, 94, rowY, { maxWidth: 70 }); 
+                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), 28, rowY, { align: 'center' }); 
+                    doc.text(rec.zacatek, 48.5, rowY, { align: 'center' }); 
+                    
+                    if (rec.prestavkaOd && rec.prestavkaDo) {
+                        doc.text(rec.prestavkaOd, 61, rowY, { align: 'center' }); 
+                        doc.text(rec.prestavkaDo, 73, rowY, { align: 'center' }); 
+                    } else if (rec.prestavka && rec.prestavka > 0) {
+                        doc.text(`${rec.prestavka}m`, 67.5, rowY, { align: 'center' }); 
+                    } else {
+                        doc.text(`-`, 67.5, rowY, { align: 'center' });
+                    }
+
+                    doc.text(rec.konec, 85, rowY, { align: 'center' }); 
+                    doc.text(h.toFixed(2), 101, rowY, { align: 'center' }); 
+                    
+                    if (rec.popisPrace) {
+                        doc.text(bezDiakritiky(rec.popisPrace).substring(0, 50), 110, rowY, { maxWidth: 65 }); 
+                    }
+                    let zakazka = rec.cisloZakazky || cisloZ;
+                    doc.text(zakazka, 192, rowY, { align: 'center', maxWidth: 30 }); 
                 }
             }
 
-            // --- CELKOVÉ HODINY (Insgesamt in der Woche) ---
             doc.setFont("helvetica", "bold");
-            // Posunuto výše přímo do modrého řádku Ingesat
-            doc.text(totalWeekHours.toFixed(2), 84, 86.5, { align: 'center' });
+            doc.text(totalWeekHours.toFixed(2), 101, 111, { align: 'center' });
 
-            // --- SPODNÍ ČÁST (Místo, Datum, Podpisy) ---
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
             
-            // Text s místem a datem dole
-            doc.text(mesto + ", " + new Date().toLocaleDateString('de-DE'), 15, 137.5);
+            let mestoPodpis = document.getElementById('cfg-mesto').value;
+            let datumDnes = new Date().toLocaleDateString('de-DE');
+            doc.text(`${mestoPodpis}, ${datumDnes}`, 38, 142, { align: 'center', maxWidth: 70 });
 
-            // Levý podpis (Pracovník) a Pravý podpis (Stavbyvedoucí) - posunuty bezpečně nad čáry
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 30, 124, 35, 12);
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 130, 124, 35, 12);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 78, 128, 35, 12); 
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 150, 128, 35, 12); 
         }
 
         function exportConsiliumPDF(returnBlob = false) {
@@ -1762,12 +1808,6 @@
             if(tabId === 'nastaveni') renderAdresar();
         }
 
-        function kalkulujCisteHodiny(zaznam) {
-            let [h1, m1] = zaznam.zacatek.split(':').map(Number); let [h2, m2] = zaznam.konec.split(':').map(Number);
-            let start = h1 * 60 + m1; let konec = h2 * 60 + m2; if (konec < start) konec += 24 * 60;
-            let cisty = (konec - start - Number(zaznam.prestavka)) / 60; return cisty > 0 ? cisty : 0;
-        }
-
         function editZaznam(id) {
             let z = zaznamy.find(x => x.id === id);
             if(!z) return;
@@ -1776,9 +1816,17 @@
             document.getElementById('inp-datum').value = z.datum;
             document.getElementById('inp-zacatek').value = z.zacatek;
             document.getElementById('inp-konec').value = z.konec;
-            document.getElementById('inp-prestavka').value = z.prestavka;
             document.getElementById('inp-zakazka').value = z.cisloZakazky || '';
             document.getElementById('inp-sazba').value = z.sazba;
+            
+            if (z.prestavkaOd && z.prestavkaDo) {
+                document.getElementById('inp-prestavka-od').value = z.prestavkaOd;
+                document.getElementById('inp-prestavka-do').value = z.prestavkaDo;
+            } else {
+                document.getElementById('inp-prestavka-od').value = "12:00";
+                let doMinut = 12 * 60 + Number(z.prestavka || 30);
+                document.getElementById('inp-prestavka-do').value = `${Math.floor(doMinut/60).toString().padStart(2,'0')}:${(doMinut%60).toString().padStart(2,'0')}`;
+            }
             
             updateLiveHours();
 
@@ -1806,7 +1854,9 @@
                     zaznamy[idx].datum = document.getElementById('inp-datum').value;
                     zaznamy[idx].zacatek = document.getElementById('inp-zacatek').value;
                     zaznamy[idx].konec = document.getElementById('inp-konec').value;
-                    zaznamy[idx].prestavka = document.getElementById('inp-prestavka').value;
+                    zaznamy[idx].prestavkaOd = document.getElementById('inp-prestavka-od').value;
+                    zaznamy[idx].prestavkaDo = document.getElementById('inp-prestavka-do').value;
+                    zaznamy[idx].prestavka = null;
                     zaznamy[idx].cisloZakazky = document.getElementById('inp-zakazka').value;
                     zaznamy[idx].popisPrace = popisText;
                     zaznamy[idx].popisPraceImg = actPopisImgData;
@@ -1821,8 +1871,12 @@
                 document.getElementById('btn-speichern').style.background = 'var(--primary)';
             } else {
                 let novy = {
-                    id: Date.now(), datum: document.getElementById('inp-datum').value, zacatek: document.getElementById('inp-zacatek').value,
-                    konec: document.getElementById('inp-konec').value, prestavka: document.getElementById('inp-prestavka').value, cisloZakazky: document.getElementById('inp-zakazka').value,
+                    id: Date.now(), datum: document.getElementById('inp-datum').value, 
+                    zacatek: document.getElementById('inp-zacatek').value,
+                    konec: document.getElementById('inp-konec').value, 
+                    prestavkaOd: document.getElementById('inp-prestavka-od').value, 
+                    prestavkaDo: document.getElementById('inp-prestavka-do').value,
+                    prestavka: null, cisloZakazky: document.getElementById('inp-zakazka').value,
                     popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
                     projekt: document.getElementById('cfg-firma').value, selected: false,
                     pdfStandard: false, pdfAbnahme: false, pdfFaktura: false
@@ -1980,8 +2034,12 @@
         }
 
         function exportCSV() {
-            let csv = "Datum;Beginn;Ende;Pause;Stunden\n";
-            zaznamy.filter(z => z.selected).forEach(z => { csv += `${z.datum};${z.zacatek};${z.konec};${z.prestavka};${kalkulujCisteHodiny(z).toFixed(2)}\n`; });
+            let csv = "Datum;Beginn;Ende;PauseVon;PauseBis;Stunden\n";
+            zaznamy.filter(z => z.selected).forEach(z => { 
+                let pOd = z.prestavkaOd || ""; let pDo = z.prestavkaDo || "";
+                if(!pOd && z.prestavka) pOd = z.prestavka + "m";
+                csv += `${z.datum};${z.zacatek};${z.konec};${pOd};${pDo};${kalkulujCisteHodiny(z).toFixed(2)}\n`; 
+            });
             let blob = new Blob([csv], { type: 'text/csv;' }); let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
         }
 
@@ -2279,8 +2337,6 @@
 
         processFullSyncMode();
         loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
-
-    // --- FUNKCE PRO KOMPLETNÍ ZÁLOHU A OBNOVU DAT ---
 
 function exportDataToFile() {
     let allData = {};
