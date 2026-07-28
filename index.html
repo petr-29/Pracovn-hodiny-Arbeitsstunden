@@ -1468,13 +1468,23 @@
             closeExportCard();
         }
 
-        function drawConsiliumReportToDoc(doc, vybrane) {
+function drawConsiliumReportToDoc(doc, vybrane) {
             let tplData = localStorage.getItem('cfg_tpl_consilium');
             if (!tplData) {
                 alert(currentLang === 'cs' ? "Nejprve prosím nahraj A5 šablonu formuláře v Nastavení!" : "Bitte A5-Vorlage in den Einstellungen hochladen!");
                 return;
             }
 
+            // --- OVLÁDACÍ PULTÍK SOUŘADNIC (v milimetrech) ---
+            // Pokud bude cokoliv lítat nahoru/dolů, stačí upravit tato čísla:
+            const Y_HLAVICKA = 32;       // Horní modré boxy (bylo 41.5 -> posunuto nahoru)
+            const Y_TABULKA_START = 57;  // První řádek (Pondělí) (bylo 60 -> posunuto nahoru)
+            const RADKOVANI = 7.1;       // Vzdálenost mezi dny
+            const Y_SOUCET = 107;        // Modrý řádek "Insgesamt" dole (bylo 111 -> posunuto nahoru)
+            const Y_PATA = 135;          // Místo, datum a podpisy úplně dole (bylo 142 -> posunuto nahoru)
+            // -------------------------------------------------
+
+            // Vložení šablony na A5 NALEŽATO (210 x 148 mm)
             let imgType = tplData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
             doc.addImage(tplData, imgType, 0, 0, 210, 148, '', 'FAST');
 
@@ -1492,13 +1502,13 @@
             doc.setFontSize(9);
             doc.setTextColor(0, 0, 0);
 
-            doc.text(firma, 35, 41.5, { align: 'center', maxWidth: 65 }); 
-            doc.text(jmeno, 93, 41.5, { align: 'center', maxWidth: 50 }); 
-            doc.text(adresaMesto, 148, 41.5, { align: 'center', maxWidth: 55 }); 
-            doc.text(`${startD} - ${endD}`, 192, 41.5, { align: 'center', maxWidth: 30 }); 
+            // --- HORNÍ MODRÁ TABULKA ---
+            doc.text(firma, 35, Y_HLAVICKA, { align: 'center', maxWidth: 65 }); 
+            doc.text(jmeno, 93, Y_HLAVICKA, { align: 'center', maxWidth: 50 }); 
+            doc.text(adresaMesto, 148, Y_HLAVICKA, { align: 'center', maxWidth: 55 }); 
+            doc.text(`${startD} - ${endD}`, 192, Y_HLAVICKA, { align: 'center', maxWidth: 30 }); 
 
-            let startY = 60; 
-            let radkovani = 7.3; 
+            // --- HLAVNÍ TABULKA DNŮ ---
             let dayRecords = new Array(7).fill(null);
             let totalWeekHours = 0;
             
@@ -1510,7 +1520,7 @@
 
             for(let i=0; i<7; i++) {
                 let rec = dayRecords[i];
-                let rowY = startY + (i * radkovani);
+                let rowY = Y_TABULKA_START + (i * RADKOVANI);
                 if(rec) {
                     let h = kalkulujCisteHodiny(rec); 
                     totalWeekHours += h;
@@ -1538,18 +1548,21 @@
                 }
             }
 
+            // --- CELKOVÉ HODINY (Insgesamt in der Woche) ---
             doc.setFont("helvetica", "bold");
-            doc.text(totalWeekHours.toFixed(2), 101, 111, { align: 'center' });
+            doc.text(totalWeekHours.toFixed(2), 101, Y_SOUCET, { align: 'center' });
 
+            // --- SPODNÍ ČÁST (Podpisy a Datum) ---
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
             
             let mestoPodpis = document.getElementById('cfg-mesto').value;
             let datumDnes = new Date().toLocaleDateString('de-DE');
-            doc.text(`${mestoPodpis}, ${datumDnes}`, 38, 142, { align: 'center', maxWidth: 70 });
+            doc.text(`${mestoPodpis}, ${datumDnes}`, 42, Y_PATA, { align: 'center', maxWidth: 70 });
 
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 78, 128, 35, 12); 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 150, 128, 35, 12); 
+            // Podpisy o 8 mm výše než text s datem, aby hezky seděly na čarách
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 78, Y_PATA - 8, 35, 12); 
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 150, Y_PATA - 8, 35, 12); 
         }
 
         function exportConsiliumPDF(returnBlob = false) {
