@@ -2196,6 +2196,48 @@ function importDataFromFile(event) {
     };
     reader.readAsText(file);
 }
-    </script>
+function executePDFExport() {
+            // Pokud je to Consilium (to poslední, co jsme dělali), má vlastní export naležato
+            if (currentExportType === 'consilium') {
+                exportConsiliumPDF();
+                return;
+            }
+
+            // Pro ostatní (Standard a Abnahme) používáme klasickou A4 na výšku
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            
+            let vybrane = zaznamy.filter(z => z.selected);
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+
+            if (currentExportType === 'standard') {
+                drawStandardReportToDoc(doc, vybrane);
+                doc.save(`Taetigkeitsnachweis_${new Date().getTime()}.pdf`);
+                closeExportCard();
+            } else if (currentExportType === 'abnahme') {
+                drawAbnahmeReportToDoc(doc, vybrane);
+                doc.save(`Abnahmeprotokoll_${new Date().getTime()}.pdf`);
+                closeExportCard();
+            } else if (currentExportType === 'faktura') {
+                let cisloFaktury = document.getElementById('fak-cislo').value;
+                let odberatel = document.getElementById('cfg-firma').value;
+                let suma = 0;
+                
+                vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+                let fakturaData = {
+                    vystaveni: document.getElementById('fak-vystaveni').value,
+                    splatnost: document.getElementById('fak-splatnost').value,
+                    prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value
+                };
+
+                let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+                if (ok) {
+                    alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu! Můžeš si ji stáhnout v záložce Faktury.' : 'Rechnung im Archiv gespeichert!');
+                    closeExportCard();
+                }
+            }
+        } 
+</script>
 </body>
 </html>
