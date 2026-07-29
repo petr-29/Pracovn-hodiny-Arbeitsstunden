@@ -96,8 +96,9 @@
         input, select, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
-        .row { display: flex; gap: 10px; }
-        .row .form-group { flex: 1; }
+        /* Změna pro mobilní zobrazení: flex-wrap zařídí, aby pole nelezla mimo obrazovku */
+        .row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .row .form-group { flex: 1; min-width: 45%; }
 
         button.btn-main { background: var(--primary); color: #000; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button.btn-main:hover { background: var(--primary-hover); color: #fff; }
@@ -336,19 +337,44 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div id="consilium-fields" class="hidden">
+                        <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
+                        <div class="card-title" style="color:#8e44ad;">Vyplnění spodní části (Consilium)</div>
+                        <div class="form-group">
+                            <label>Období (od-do) / Dnes byly přijaty tyto služby:</label>
+                            <input type="text" id="cons-obdobi" placeholder="např. 28.7. - 29.7.2026" oninput="updateLivePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>Závady / Reklamace:</label>
+                            <textarea id="cons-zavady" rows="2" oninput="updateLivePreview()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Závady odstranit do (Datum):</label>
+                            <input type="text" id="cons-odstranit-do" oninput="updateLivePreview()">
+                        </div>
+                        <div class="form-group inline">
+                            <input type="checkbox" id="cons-nabidnuto-chk" onchange="updateLivePreview()">
+                            <label for="cons-nabidnuto-chk" style="font-weight:normal;">Dílo nabídnuto k převzetí</label>
+                        </div>
+                        <div class="form-group">
+                            <label>Datum nabídnutí k převzetí:</label>
+                            <input type="date" id="cons-datum-nabidnuti" onchange="updateLivePreview()">
+                        </div>
+                    </div>
 
                     <hr style="border:0; border-top:2px solid #2c3e50; margin:15px 0;">
 
                     <div style="margin-bottom: 12px;" id="wrapper-kunde">
                         <label style="font-weight:bold; font-size:14px; color:#2980b9;" data-cs="1. Podpis klienta / Stavbyvedoucího:" data-de="1. Unterschrift Kunde/Bauleiter:">1. Podpis klienta / Stavbyvedoucího:</label>
                         <div id="box-kunde" class="signature-placeholder" onclick="openSignatureModal('kunde')" data-cs="Klikněte pro podepsání" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání</div>
-                        <button class="btn-sec" onclick="generateSignaturePhoneLink('kunde')" style="width:100%; margin-top:5px; background:#ecf0f1; color:#000; border:1px solid #bdc3c7;" data-cs="📱 Podepsat přes telefon" data-de="📱 Per Telefon unterschreiben">📱 Podepsat přes telefon</button>
+                        <button class="btn-sec" onclick="generateSignaturePhoneLink('kunde')" style="width:100%; margin-top:5px; background:#ecf0f1; color:#000; border:1px solid #bdc3c7;" data-cs="📱 Podepsat přes telefon" data-de="📱 Per Telefon unterschreiben">📱 Podepsat přes telefon (QR)</button>
                     </div>
 
                     <div style="margin-bottom: 15px;" id="wrapper-ich">
                         <label style="font-weight:bold; font-size:14px; color:#27ae60;" data-cs="2. Váš podpis (Dodavatel):" data-de="2. Ihre Unterschrift (Auftragnehmer):">2. Váš podpis (Dodavatel):</label>
                         <div id="box-ich" class="signature-placeholder" onclick="openSignatureModal('ich')" data-cs="Klikněte pro podepsání" data-de="Klicken zum Unterschreiben">Klikněte pro podepsání</div>
-                        <button class="btn-sec" onclick="generateSignaturePhoneLink('ich')" style="width:100%; margin-top:5px; background:#ecf0f1; color:#000; border:1px solid #bdc3c7;" data-cs="📱 Podepsat přes telefon" data-de="📱 Per Telefon unterschreiben">📱 Podepsat přes telefon</button>
+                        <button class="btn-sec" onclick="generateSignaturePhoneLink('ich')" style="width:100%; margin-top:5px; background:#ecf0f1; color:#000; border:1px solid #bdc3c7;" data-cs="📱 Podepsat přes telefon" data-de="📱 Per Telefon unterschreiben">📱 Podepsat přes telefon (QR)</button>
                     </div>
                     
                     <div class="row" id="export-card-actions">
@@ -380,12 +406,6 @@
             </div>
 
             <div id="view-nastaveni" class="tab-content hidden">
-                
-                <div class="card" style="border: 2px solid #3498db; background: #ebf5fb;">
-                    <div class="card-title" style="color: #2980b9;" data-cs="☁️ Propojení telefonu a počítače" data-de="☁️ Telefon & PC verbinden">☁️ Propojení telefonu a počítače</div>
-                    <p style="font-size: 13px; margin-bottom: 15px; color: #000;">Vygeneruj QR kód na počítači a naskenuj ho telefonem. Aplikace v telefonu si okamžitě stáhne všechna tvoje data (záznamy, firmy, nastavení) a bude fungovat jako přesná kopie.</p>
-                    <button class="btn-main" style="background: #3498db; color: white; margin-bottom: 10px;" onclick="generateCloudSync()" data-cs="📲 Odeslat data do telefonu (QR kód)" data-de="📲 Daten ans Telefon senden (QR)">📲 Odeslat data do telefonu (Zobrazit QR kód)</button>
-                </div>
 
                 <div class="card">
                     <div class="card-title" data-cs="Vzhled aplikace" data-de="App-Design">Vzhled aplikace</div>
@@ -457,8 +477,12 @@
                         <textarea id="cfg-koncovy-firma" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label data-cs="Adresa a Město (Místo výkonu)" data-de="Adresse und Ort">Adresse und Ort</label>
+                        <label data-cs="Adresa (Místo výkonu)" data-de="Adresse (Einsatzort)">Adresa (Místo výkonu)</label>
                         <textarea id="cfg-koncovy-adresa" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label data-cs="Město výkonu stavby (pro tisk u podpisu)" data-de="Ort (Einsatzort für Unterschrift)">Město výkonu stavby (pro tisk u podpisu)</label>
+                        <input type="text" id="cfg-mesto-stavby" value="">
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
@@ -491,7 +515,7 @@
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
                     <div class="card-title" style="color: #8e44ad;" data-cs="Kalibrace Consilium PDF (v milimetrech)" data-de="Consilium PDF Kalibrierung (in mm)">Kalibrace Consilium PDF (v milimetrech)</div>
-                    <p style="font-size: 11px; margin-bottom: 10px; color:#555;" data-cs="Pokud texty v PDF létají mimo kolonky, uprav tyto pozice osy Y (směrem dolů/nahoru). Změna se projeví u dalšího exportu." data-de="Wenn Texte nicht passen, passen Sie die Y-Achse hier an.">Pokud texty v PDF létají mimo kolonky, uprav tyto pozice osy Y (směrem dolů/nahoru). Změna se projeví u dalšího exportu.</p>
+                    <p style="font-size: 11px; margin-bottom: 10px; color:#555;" data-cs="Pokud texty v PDF létají mimo kolonky, uprav tyto pozice osy Y (směrem dolů/nahoru). Změna se projeví u dalšího exportu." data-de="Wenn Texte nicht passen, passen Sie die Y-Achse hier an.">Pokud texty v PDF létají mimo kolonky, uprav tyto pozice (osy X a Y). Změna se projeví u dalšího exportu.</p>
                     <div class="row">
                         <div class="form-group"><label>Hlavička (Y)</label><input type="number" id="cfg-cons-hlavicka" value="32" step="0.5"></div>
                         <div class="form-group"><label>1. Řádek (Y)</label><input type="number" id="cfg-cons-tabulka" value="57" step="0.5"></div>
@@ -501,6 +525,7 @@
                         <div class="form-group"><label>Mezera řádků</label><input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1"></div>
                         <div class="form-group"><label>Součet (Y)</label><input type="number" id="cfg-cons-soucet" value="107" step="0.5"></div>
                         <div class="form-group"><label>Pata (Y)</label><input type="number" id="cfg-cons-pata" value="135" step="0.5"></div>
+                        <div class="form-group"><label style="color:#8e44ad;">Spodní texty (Y)</label><input type="number" id="cfg-cons-spodni" value="115" step="0.5"></div>
                     </div>
                     <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;" data-cs="Kalibrovat šablonu" data-de="Vorlage kalibrieren">Kalibrovat šablonu</button>
 
@@ -652,7 +677,6 @@
         let remoteMode = false; let currentExportType = ''; let currentDrawSessionId = null;
         let dataPodpisuKunde = null; let dataPodpisuIch = null; let targetSignature = ''; 
         let pollingInterval = null;
-        let cloudSyncTimeout = null;
         let signatureTimeout = null;
         const SESSION_EXPIRY_MS = 5 * 60 * 1000;
         const API_BASE_URL = ((window.__API_BASE_URL__ || '').trim()).replace(/\/$/, '');
@@ -753,22 +777,20 @@
             let vybrane = zaznamy.filter(z => z.selected);
             if(vybrane.length === 0) { alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro export!' : 'Bitte wählen Sie zuerst die Zeilen für den Export aus!'); return; }
             currentExportType = type; document.getElementById('export-card').classList.remove('hidden');
-            document.getElementById('abnahme-fields').classList.add('hidden'); document.getElementById('faktura-fields').classList.add('hidden');
+            document.getElementById('abnahme-fields').classList.add('hidden'); 
+            document.getElementById('faktura-fields').classList.add('hidden');
+            document.getElementById('consilium-fields').classList.add('hidden');
 
             if (type === 'abnahme') {
                 document.getElementById('abnahme-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#3498db';
             } else if (type === 'faktura') {
                 document.getElementById('faktura-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#e74c3c';
-                document.getElementById('abnahme-fields').classList.add('hidden'); 
-                
                 document.getElementById('fak-vystaveni').valueAsDate = new Date();
                 let splatnostDni = parseInt(localStorage.getItem('cfg_splatnost')) || 14;
                 document.getElementById('fak-splatnost-dni').value = splatnostDni;
-                
-                let d = new Date();
-                d.setDate(d.getDate() + splatnostDni);
-                document.getElementById('fak-splatnost').valueAsDate = d;
+                let d = new Date(); d.setDate(d.getDate() + splatnostDni); document.getElementById('fak-splatnost').valueAsDate = d;
             } else if (type === 'consilium') {
+                document.getElementById('consilium-fields').classList.remove('hidden');
                 document.getElementById('btn-execute-export').style.background = '#8e44ad';
             } else {
                 document.getElementById('btn-execute-export').style.background = '#f39c12';
@@ -949,8 +971,6 @@
                     html += `ℹ️ PDF bude obsahovat druhou stranu: ${vybranaPriloha === 'standard' ? 'Standardní výkaz' : 'Abnahme Protokoll'}.`;
                     html += `</div>`;
                 }
-                if(vybranaPriloha === 'abnahme') { document.getElementById('abnahme-fields').classList.remove('hidden'); } 
-                else { document.getElementById('abnahme-fields').classList.add('hidden'); }
 
             } else if (currentExportType === 'standard') {
                 let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
@@ -999,7 +1019,7 @@
                 html += `</div>`;
             } else if (currentExportType === 'consilium') {
                 html += `<div class="preview-header-full">CONSILIUM PRO - STUNDENZETTEL (A5 Naležato)</div>`;
-                html += `<div style="text-align:center; margin-bottom: 20px; font-family:'Courier New', Courier, monospace;">Tento export využívá A5 šablonu naležato z nastavení a generuje se přímo do PDF.</div>`;
+                html += `<div style="text-align:center; margin-bottom: 20px; font-family:'Courier New', Courier, monospace;">Tento export využívá A5 šablonu naležato z nastavení a generuje se přímo do PDF. Spodní data vyplňte výše.</div>`;
             } else {
                 let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
                 let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
@@ -1180,6 +1200,7 @@
             let koncovaAdresaData = document.getElementById('cfg-koncovy-adresa') ? document.getElementById('cfg-koncovy-adresa').value : '';
             let firma = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
             let adresa = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData : document.getElementById('cfg-adresa').value);
+            let mestoStavby = bezDiakritiky(document.getElementById('cfg-mesto-stavby').value || document.getElementById('cfg-mesto').value);
             let mesto = bezDiakritiky(koncovaAdresaData ? "" : document.getElementById('cfg-mesto').value);
             
             let podpisKundeText = bezDiakritiky(document.getElementById('cfg-podpis').value || '---');
@@ -1227,7 +1248,7 @@
             y += 7; doc.rect(15, y - 3, 4, 4); if(seZkouskou) doc.text("X", 16, y); doc.text("die Leistung/en sind mit Funktionsprufung abgenommen", 23, y);
             y += 7; doc.rect(15, y - 3, 4, 4); if(sVadami) doc.text("X", 16, y); doc.text(`bis auf folgende Mangel: ${sVadami ? vadyText : 'Nein'}`, 23, y);
             y += 10; doc.text(`Mangel werden bis spatestens ${odstraneniDo} behoben.`, 15, y);
-            y += 15; doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')}`, 15, y);
+            y += 15; doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')} v ${mestoStavby}`, 15, y);
             y += 30;
 
             if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 15, y - 18, 40, 16);
@@ -1491,13 +1512,14 @@
             }
 
             let savedOffsetX = localStorage.getItem('cfg_cons_offset_x');
-            const OFFSET_X = savedOffsetX !== null ? parseFloat(savedOffsetX) : -8; // Tady je to výchozí posunutí doleva
+            const OFFSET_X = savedOffsetX !== null ? parseFloat(savedOffsetX) : -8;
             
             const Y_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_hlavicka')) || 32;
             const Y_TABULKA_START = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 57;
             const RADKOVANI = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
             const Y_SOUCET = parseFloat(localStorage.getItem('cfg_cons_soucet')) || 107;
             const Y_PATA = parseFloat(localStorage.getItem('cfg_cons_pata')) || 135;
+            const Y_SPODNI = parseFloat(localStorage.getItem('cfg_cons_spodni')) || 116; // Kalibrace spodního bloku
 
             let imgType = tplData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
             doc.addImage(tplData, imgType, 0, 0, 210, 148, '', 'FAST');
@@ -1507,6 +1529,9 @@
             let koncovaAdresaData = document.getElementById('cfg-koncovy-adresa') ? document.getElementById('cfg-koncovy-adresa').value : '';
             let firma = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
             let adresaMesto = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData.replace(/\n/g, ", ") : (document.getElementById('cfg-adresa').value + ", " + document.getElementById('cfg-mesto').value));
+            
+            // Nové město pro podpisovou část
+            let mestoStavby = bezDiakritiky(document.getElementById('cfg-mesto-stavby').value || document.getElementById('cfg-mesto').value);
             
             let startD = bezDiakritiky(startDatum(vybrane)); 
             let endD = bezDiakritiky(endDatum(vybrane));
@@ -1552,8 +1577,11 @@
                     doc.text(rec.konec, 85 + OFFSET_X, rowY, { align: 'center' }); 
                     doc.text(h.toFixed(2), 101 + OFFSET_X, rowY, { align: 'center' }); 
                     
+                    // OPRAVA MONTÁŽNÍHO DENÍKU (zrušeno ořezávání, menší text)
                     if (rec.popisPrace) {
-                        doc.text(bezDiakritiky(rec.popisPrace).substring(0, 50), 110 + OFFSET_X, rowY, { maxWidth: 65 }); 
+                        doc.setFontSize(7.5);
+                        doc.text(bezDiakritiky(rec.popisPrace), 110 + OFFSET_X, rowY - 2.5, { maxWidth: 78, lineHeightFactor: 1.15 }); 
+                        doc.setFontSize(9);
                     }
                     let zakazka = rec.cisloZakazky || cisloZ;
                     doc.text(zakazka, 192 + OFFSET_X, rowY, { align: 'center', maxWidth: 30 }); 
@@ -1566,9 +1594,33 @@
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
             
-            let mestoPodpis = document.getElementById('cfg-mesto').value;
+            // OPRAVA - VYPLNĚNÍ SPODNÍ ČÁSTI CONSILIUM VÝKAZU
+            let consObdobi = bezDiakritiky(document.getElementById('cons-obdobi') ? document.getElementById('cons-obdobi').value : '');
+            let consZavady = bezDiakritiky(document.getElementById('cons-zavady') ? document.getElementById('cons-zavady').value : '');
+            let consOdstranitDo = bezDiakritiky(document.getElementById('cons-odstranit-do') ? document.getElementById('cons-odstranit-do').value : '');
+            let consNabidnutoChk = document.getElementById('cons-nabidnuto-chk') ? document.getElementById('cons-nabidnuto-chk').checked : false;
+            let consDatumNabidnuti = document.getElementById('cons-datum-nabidnuti') ? document.getElementById('cons-datum-nabidnuti').value : '';
+
+            if(consDatumNabidnuti) {
+                let [y,m,d] = consDatumNabidnuti.split('-');
+                consDatumNabidnuti = `${d}.${m}.${y}`;
+            }
+
+            if(consObdobi) doc.text(consObdobi, 110 + OFFSET_X, Y_SPODNI, {maxWidth: 85});
+            if(consOdstranitDo) doc.text(consOdstranitDo, 110 + OFFSET_X, Y_SPODNI + 7, {maxWidth: 85});
+            if(consZavady) doc.text(consZavady, 110 + OFFSET_X, Y_SPODNI + 14, {maxWidth: 85});
+
+            if(consNabidnutoChk) {
+                doc.setLineWidth(0.4);
+                // Vykreslení křížku
+                doc.line(17.5 + OFFSET_X, Y_SPODNI + 18, 21.5 + OFFSET_X, Y_SPODNI + 22);
+                doc.line(21.5 + OFFSET_X, Y_SPODNI + 18, 17.5 + OFFSET_X, Y_SPODNI + 22);
+            }
+            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, 94 + OFFSET_X, Y_SPODNI + 20.5);
+
+            // Místo podpisu nyní tahá z Města výkonu stavby
             let datumDnes = new Date().toLocaleDateString('de-DE');
-            doc.text(`${mestoPodpis}, ${datumDnes}`, 42 + OFFSET_X, Y_PATA, { align: 'center', maxWidth: 70 });
+            doc.text(`${mestoStavby}, ${datumDnes}`, 42 + OFFSET_X, Y_PATA, { align: 'center', maxWidth: 70 });
 
             if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 78 + OFFSET_X, Y_PATA - 8, 35, 12); 
             if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 150 + OFFSET_X, Y_PATA - 8, 35, 12); 
@@ -2021,6 +2073,7 @@
             
             localStorage.setItem('cfg_koncovy_firma', document.getElementById('cfg-koncovy-firma').value);
             localStorage.setItem('cfg_koncovy_adresa', document.getElementById('cfg-koncovy-adresa').value);
+            localStorage.setItem('cfg_mesto_stavby', document.getElementById('cfg-mesto-stavby').value);
 
             localStorage.setItem('cfg_dod_adresa', document.getElementById('cfg-dod-adresa').value);
             localStorage.setItem('cfg_dod_ico', document.getElementById('cfg-dod-ico').value); 
@@ -2042,6 +2095,7 @@
             
             if(localStorage.getItem('cfg_koncovy_firma')) document.getElementById('cfg-koncovy-firma').value = localStorage.getItem('cfg_koncovy_firma');
             if(localStorage.getItem('cfg_koncovy_adresa')) document.getElementById('cfg-koncovy-adresa').value = localStorage.getItem('cfg_koncovy_adresa');
+            if(localStorage.getItem('cfg_mesto_stavby')) document.getElementById('cfg-mesto-stavby').value = localStorage.getItem('cfg_mesto_stavby');
 
             if(localStorage.getItem('cfg_dod_adresa')) document.getElementById('cfg-dod-adresa').value = localStorage.getItem('cfg_dod_adresa');
             if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
@@ -2060,6 +2114,7 @@
             if(localStorage.getItem('cfg_cons_soucet')) document.getElementById('cfg-cons-soucet').value = localStorage.getItem('cfg_cons_soucet');
             if(localStorage.getItem('cfg_cons_pata')) document.getElementById('cfg-cons-pata').value = localStorage.getItem('cfg_cons_pata');
             if(localStorage.getItem('cfg_cons_offset_x')) document.getElementById('cfg-cons-offset-x').value = localStorage.getItem('cfg_cons_offset_x');
+            if(localStorage.getItem('cfg_cons_spodni')) document.getElementById('cfg-cons-spodni').value = localStorage.getItem('cfg_cons_spodni');
         }
 
         function saveConsiliumOffsets() {
@@ -2069,6 +2124,7 @@
             localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
             localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
             localStorage.setItem('cfg_cons_offset_x', document.getElementById('cfg-cons-offset-x').value);
+            localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
             alert(currentLang === 'cs' ? 'Kalibrace uložena! Můžeš zkusit export.' : 'Kalibrierung gespeichert!');
         }
 
@@ -2080,64 +2136,6 @@
                 csv += `${z.datum};${z.zacatek};${z.konec};${pOd};${pDo};${kalkulujCisteHodiny(z).toFixed(2)}\n`; 
             });
             let blob = new Blob([csv], { type: 'text/csv;' }); let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
-        }
-
-        async function generateCloudSync() {
-            document.getElementById('qr-modal-hlavicka').innerText = 'Naskenuj QR v telefonu';
-            document.getElementById('qr-code-img').style.display = 'none';
-            document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
-            document.getElementById('qr-session-id-display').innerText = 'Připravuji datový balík...';
-            document.getElementById('qr-modal').classList.remove('hidden');
-            
-            let lightStorage = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key !== 'archiv_faktur' && key !== 'cfg_logo' && key !== 'cfg_razitko' && key !== 'cfg_tpl_consilium') {
-                    let val = localStorage.getItem(key);
-                    if (key === 'pracovni_zaznamy') {
-                        try {
-                            let parsedZaznamy = JSON.parse(val);
-                            parsedZaznamy.forEach(z => { delete z.popisPraceImg; });
-                            val = JSON.stringify(parsedZaznamy);
-                        } catch(e) {}
-                    }
-                    lightStorage[key] = val;
-                }
-            }
-
-            try {
-                let res = await fetch('https://jsonblob.com/api/jsonBlob', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ payload: JSON.stringify(lightStorage) })
-                });
-
-                if(!res.ok) throw new Error('Upload sync dat selhal.');
-                const location = res.headers.get('Location');
-                if(!location) throw new Error('Chybí Location header.');
-                let blobId = location.split('/').pop();
-
-                const baseUrl = window.location.href.split('?')[0];
-                const phoneUrl = `${baseUrl}?fullsync=${blobId}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
-
-                document.getElementById('qr-code-img').src = qrUrl;
-                document.getElementById('qr-code-img').style.display = 'block';
-                document.getElementById('qr-session-id-display').style.color = '#27ae60';
-                document.getElementById('qr-session-id-display').innerText = 'Data nahrána. Otevři foťák v telefonu.';
-
-                if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
-                cloudSyncTimeout = setTimeout(() => {
-                    const display = document.getElementById('qr-session-id-display');
-                    if (display) {
-                        display.style.color = '#e67e22';
-                        display.innerText = 'Relace vypršela. Zkuste znovu.';
-                    }
-                }, SESSION_EXPIRY_MS);
-            } catch(e) {
-                document.getElementById('qr-session-id-display').style.color = '#e74c3c';
-                document.getElementById('qr-session-id-display').innerText = 'Chyba připojení nebo je datový balík pořád moc velký!';
-            }
         }
 
         async function generateSignaturePhoneLink(target) {
@@ -2345,7 +2343,6 @@
         function closeQrModal() {
             document.getElementById('qr-modal').classList.add('hidden');
             if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
-            if(cloudSyncTimeout) { clearTimeout(cloudSyncTimeout); cloudSyncTimeout = null; }
             if(signatureTimeout) { clearTimeout(signatureTimeout); signatureTimeout = null; }
         }
 
