@@ -96,7 +96,6 @@
         input, select, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
-        /* Změna pro mobilní zobrazení: flex-wrap zařídí, aby pole nelezla mimo obrazovku */
         .row { display: flex; gap: 10px; flex-wrap: wrap; }
         .row .form-group { flex: 1; min-width: 45%; }
 
@@ -342,16 +341,16 @@
                         <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
                         <div class="card-title" style="color:#8e44ad;">Vyplnění spodní části (Consilium)</div>
                         <div class="form-group">
-                            <label>Období (od-do) / Dnes byly přijaty tyto služby:</label>
+                            <label>Období (od-do) [1. řádek vpravo]:</label>
                             <input type="text" id="cons-obdobi" placeholder="např. 28.7. - 29.7.2026" oninput="updateLivePreview()">
                         </div>
                         <div class="form-group">
-                            <label>Závady / Reklamace:</label>
-                            <textarea id="cons-zavady" rows="2" oninput="updateLivePreview()"></textarea>
+                            <label>Závady odstranit do [2. řádek vpravo]:</label>
+                            <input type="text" id="cons-odstranit-do" placeholder="např. ------" oninput="updateLivePreview()">
                         </div>
                         <div class="form-group">
-                            <label>Závady odstranit do (Datum):</label>
-                            <input type="text" id="cons-odstranit-do" oninput="updateLivePreview()">
+                            <label>Závady / Reklamace [3. řádek vpravo]:</label>
+                            <textarea id="cons-zavady" rows="2" placeholder="např. zadne" oninput="updateLivePreview()"></textarea>
                         </div>
                         <div class="form-group inline">
                             <input type="checkbox" id="cons-nabidnuto-chk" onchange="updateLivePreview()">
@@ -524,8 +523,8 @@
                     <div class="row">
                         <div class="form-group"><label>Mezera řádků</label><input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1"></div>
                         <div class="form-group"><label>Součet (Y)</label><input type="number" id="cfg-cons-soucet" value="107" step="0.5"></div>
-                        <div class="form-group"><label>Pata (Y)</label><input type="number" id="cfg-cons-pata" value="135" step="0.5"></div>
-                        <div class="form-group"><label style="color:#8e44ad;">Spodní texty (Y)</label><input type="number" id="cfg-cons-spodni" value="115" step="0.5"></div>
+                        <div class="form-group"><label>Pata (Y)</label><input type="number" id="cfg-cons-pata" value="144" step="0.5"></div>
+                        <div class="form-group"><label style="color:#8e44ad;">Spodní texty (Y)</label><input type="number" id="cfg-cons-spodni" value="111" step="0.5"></div>
                     </div>
                     <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;" data-cs="Kalibrovat šablonu" data-de="Vorlage kalibrieren">Kalibrovat šablonu</button>
 
@@ -1259,251 +1258,6 @@
             doc.text(jmeno, 125, y + 4); doc.text("Unterschrift Auftragnehmer", 125, y + 8);
         }
 
-        function executePDFExport(returnBlob = false) {
-            if (currentExportType === 'faktura') return exportFakturaPDF(returnBlob);
-            if (currentExportType === 'standard') return exportStandardPDF(returnBlob);
-            if (currentExportType === 'abnahme') return exportAbnahmePDF(returnBlob);
-            if (currentExportType === 'consilium') return exportConsiliumPDF(returnBlob);
-        }
-
-        function buildFakturaDoc(vybrane, overrideData = null) {
-            const { jsPDF } = window.jspdf; 
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-            doc.setFont("courier", "normal");
-            
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            
-            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
-            let firma = bezDiakritiky(document.getElementById('cfg-firma').value).replace(/\n/g, ", ");
-            let adresa = bezDiakritiky(document.getElementById('cfg-adresa').value); 
-            let mesto = bezDiakritiky(document.getElementById('cfg-mesto').value);
-            let icoOdberatel = bezDiakritiky(document.getElementById('cfg-ico-odberatel').value);
-
-            let dodIco = bezDiakritiky(document.getElementById('cfg-dod-ico').value); 
-            let dodAdresaObj = bezDiakritiky(document.getElementById('cfg-dod-adresa').value).split('\n');
-            let dodBanka = bezDiakritiky(document.getElementById('cfg-dod-banka').value); 
-            let dodKontakt = bezDiakritiky(document.getElementById('cfg-dod-kontakt').value);
-
-            let cisloFaktury = overrideData ? overrideData.cisloFaktury : bezDiakritiky(document.getElementById('fak-cislo').value);
-            let datumVystaveni = overrideData && overrideData.vystaveni ? new Date(overrideData.vystaveni) : document.getElementById('fak-vystaveni').valueAsDate; 
-            let datumSplatnosti = overrideData && overrideData.splatnost ? new Date(overrideData.splatnost) : document.getElementById('fak-splatnost').valueAsDate;
-
-            let sumEUR = 0; 
-            let totalH = 0; 
-            vybrane.forEach(z => { 
-                let h = kalkulujCisteHodiny(z);
-                totalH += h;
-                sumEUR += (h * z.sazba); 
-            });
-            let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
-
-            let t_faktura = currentLang === 'cs' ? "Faktura c." : "Rechnung Nr.";
-            let t_neplatce = currentLang === 'cs' ? "Neplatce DPH" : "Kleinunternehmer (Kein USt-Ausweis)";
-            let t_dodavatel = currentLang === 'cs' ? "Dodavatel" : "Auftragnehmer";
-            let t_odberatel = currentLang === 'cs' ? "Odberatel" : "Auftraggeber";
-            let t_vystavil = currentLang === 'cs' ? "Vystavil:" : "Ausgestellt von:";
-            let t_platba = currentLang === 'cs' ? "Zpusob platby: Bankovni prevod" : "Zahlungsart: Bankuberweisung";
-            let t_vystaveno = currentLang === 'cs' ? "DATUM VYSTAVENI" : "RECHNUNGSDATUM";
-            let t_splatnost = currentLang === 'cs' ? "DATUM SPLATNOSTI" : "FALLIGKEITSDATUM";
-            let t_popis = currentLang === 'cs' ? "Popis" : "Beschreibung";
-            let t_mnozstvi = currentLang === 'cs' ? "Mnozstvi" : "Menge";
-            let t_cena = currentLang === 'cs' ? "Cena/mj." : "Einzelpreis";
-            let t_celkem = currentLang === 'cs' ? "Celkem" : "Gesamt";
-            let t_pracH = currentLang === 'cs' ? "Pracovni hodiny dle vykazu" : "Arbeitsstunden laut Nachweis";
-            let t_kUhrade = currentLang === 'cs' ? "Celkem k uhrade:" : "Gesamtbetrag:";
-            let t_rejstrik = currentLang === 'cs' ? "Podnikatel je zapsan v zivnostenskem rejstriku." : "Der Unternehmer ist im Gewerberegister eingetragen.";
-            let t_strana = currentLang === 'cs' ? "Strana" : "Seite";
-            let t_vystS = currentLang === 'cs' ? "Vystaveno v systemu aplikace" : "Erstellt im App-System";
-            let t_qr = currentLang === 'cs' ? "QR Platba" : "QR-Zahlung";
-
-            doc.setFillColor(179, 57, 57); 
-            doc.rect(15, 10, 180, 25, 'F'); 
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("courier", "bold"); 
-            doc.setFontSize(20);
-            doc.text(`${t_faktura} ${cisloFaktury}`, 190, 22, {align: 'right'});
-            doc.setFont("courier", "normal"); 
-            doc.setFontSize(10); 
-            doc.text(t_neplatce, 190, 29, {align: 'right'});
-
-            let logoData = localStorage.getItem('cfg_logo');
-            if (logoData) {
-                try {
-                    let imgType = logoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
-                    let props = doc.getImageProperties(logoData); let ratio = props.width / props.height;
-                    let targetHeight = 25; let targetWidth = targetHeight * ratio;
-                    if(targetWidth > 60) { targetWidth = 60; targetHeight = targetWidth / ratio; }
-                    doc.addImage(logoData, imgType, 18, 20, targetWidth, targetHeight, '', 'FAST');
-                } catch(e) {}
-            }
-
-            doc.setTextColor(41, 128, 185); doc.setFontSize(16); 
-            doc.text(t_dodavatel, 15, 55); doc.text(t_odberatel, 100, 55);
-
-            doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold"); doc.setFontSize(9);
-            
-            let yL = 61; 
-            doc.text(jmeno, 15, yL); yL+=5; doc.setFont("courier", "normal");
-            dodAdresaObj.forEach(line => { doc.text(line, 15, yL); yL+=5; });
-            doc.text(`ICO: ${dodIco}`, 15, yL); yL+=5;
-            let bankParts = dodBanka.split('|'); 
-            if(bankParts.length > 0) { doc.text(bankParts[0].trim(), 15, yL); yL+=5; }
-            if(bankParts.length > 1) { doc.text(bankParts[1].trim(), 15, yL); yL+=5; }
-            doc.text(`${t_vystavil} ${jmeno}`, 15, yL); yL+=5;
-            let kontParts = dodKontakt.split('|'); 
-            if(kontParts.length > 0) { doc.text(kontParts[0].trim(), 15, yL); yL+=5; }
-            if(kontParts.length > 1) { doc.text(kontParts[1].trim(), 15, yL); yL+=5; }
-
-            let yR = 61; doc.setFont("courier", "bold");
-            let fSplit = firma.split(', '); fSplit.forEach(line => { doc.text(line, 100, yR); yR+=5; });
-            doc.setFont("courier", "normal"); doc.text(adresa, 100, yR); yR+=5; doc.text(mesto, 100, yR); yR+=5;
-            let icoParts = icoOdberatel.split(','); icoParts.forEach(line => { doc.text(line.trim(), 100, yR); yR+=5; });
-
-            let currentY = Math.max(yL, yR) + 10;
-            let grayY = currentY; doc.setFillColor(242, 242, 242); doc.rect(15, grayY, 120, 9, 'F');
-            doc.setTextColor(100, 100, 100); doc.text(t_platba, 20, grayY+6);
-
-            let dateY = grayY + 17; doc.setTextColor(41, 128, 185); doc.setFontSize(9);
-            doc.text(t_vystaveno, 20, dateY); doc.text(t_splatnost, 70, dateY);
-            doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold");
-            let localeDate = currentLang === 'cs' ? 'cs-CZ' : 'de-DE';
-            if(datumVystaveni) doc.text(datumVystaveni.toLocaleDateString(localeDate), 20, dateY+5);
-            if(datumSplatnosti) doc.text(datumSplatnosti.toLocaleDateString(localeDate), 70, dateY+5);
-
-            let cleanIbanMatch = dodBanka.replace(/\s/g, '').match(/[A-Za-z]{2}[0-9A-Za-z]{13,32}/);
-            if (cleanIbanMatch) {
-                let iban = cleanIbanMatch[0].toUpperCase(); let vs = cisloFaktury.replace(/\D/g, ''); 
-                let qrData = getQrBase64(iban, sumEUR.toFixed(2), vs);
-                doc.addImage(qrData, 'PNG', 145, grayY, 40, 40);
-                doc.setFontSize(8); doc.setFont("courier", "normal"); doc.setTextColor(100, 100, 100); 
-                doc.text(t_qr, 165, grayY + 44, {align: 'center'});
-            }
-
-            let tableY = grayY + 50; doc.setFillColor(179, 57, 57); doc.rect(15, tableY, 180, 8, 'F');
-            doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(9);
-            doc.text(t_popis, 20, tableY+5.5); doc.text(t_mnozstvi, 125, tableY+5.5, {align:'center'}); 
-            doc.text(t_cena, 155, tableY+5.5, {align:'center'}); doc.text(t_celkem, 190, tableY+5.5, {align:'right'});
-
-            doc.setTextColor(0, 0, 0); doc.setFont("courier", "normal"); 
-            let itemY = tableY + 8;
-            
-            let dateStr = bezDiakritiky(`${startDatum(vybrane)} - ${endDatum(vybrane)}`);
-            doc.text(t_pracH, 20, itemY+4); doc.text(`(${dateStr})`, 20, itemY+9);
-            doc.text(`${totalH.toFixed(2)} h`, 125, itemY+6.5, {align:'center'});
-            doc.text(`${typSazby} EUR`, 155, itemY+6.5, {align:'center'});
-            doc.text(formatMena(sumEUR), 190, itemY+6.5, {align:'right'});
-            doc.setDrawColor(200, 200, 200); doc.line(15, itemY+14, 195, itemY+14);
-
-            let totalY = itemY + 25; doc.setFillColor(245, 245, 245); doc.rect(15, totalY, 180, 12, 'F'); 
-            doc.setFont("courier", "bold"); doc.setFontSize(14); doc.text(t_kUhrade, 135, totalY + 8, {align:'right'});
-            doc.setFontSize(15); doc.text(formatMena(sumEUR), 190, totalY + 8, {align:'right'});
-
-            let footerY = totalY + 40;
-            let razitkoData = localStorage.getItem('cfg_razitko');
-            if (razitkoData) {
-                try {
-                    let imgType = razitkoData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
-                    let props = doc.getImageProperties(razitkoData); let ratio = props.width / props.height;
-                    let targetWidth = 35; let targetHeight = targetWidth / ratio;
-                    if (targetHeight > 25) { targetHeight = 25; targetWidth = targetHeight * ratio; }
-                    let xPos = 162.5 - (targetWidth / 2); let yPos = footerY - targetHeight - 5;
-                    doc.addImage(razitkoData, imgType, xPos, yPos, targetWidth, targetHeight, '', 'FAST');
-                } catch(e) {}
-            }
-
-            if(dataPodpisuIch) { doc.addImage(dataPodpisuIch, 'JPEG', 140, footerY - 20, 40, 15); }
-            doc.setDrawColor(0, 0, 0); doc.line(130, footerY, 195, footerY); doc.setFontSize(9);
-            doc.text((currentLang === 'cs' ? "Podpis" : "Unterschrift"), 162.5, footerY + 5, {align:'center'}); doc.setFontSize(8); doc.setFont("courier", "normal");
-            doc.text(t_rejstrik, 15, footerY + 5);
-            
-            let prilohaTyp = overrideData ? overrideData.prilohaTyp : document.querySelector('input[name="fak-priloha-typ"]:checked').value; 
-            doc.setTextColor(150, 150, 150);
-            
-            if (prilohaTyp !== 'none') {
-                doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 1/2`, 195, 285, {align: 'right'});
-                doc.addPage(); doc.setTextColor(0, 0, 0); 
-                if (prilohaTyp === 'standard') { drawStandardReportToDoc(doc, vybrane); }
-                else if (prilohaTyp === 'abnahme') { drawAbnahmeReportToDoc(doc, vybrane); }
-                doc.setFontSize(8); doc.setTextColor(150, 150, 150);
-                doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 2/2`, 195, 285, {align: 'right'});
-            } else { doc.text(t_vystS, 15, 285); doc.text(`${t_strana} 1/1`, 195, 285, {align: 'right'}); }
-
-            return doc;
-        }
-
-        function exportFakturaPDF(returnBlob = false) {
-            let vybrane = zaznamy.filter(z => z.selected); 
-            let doc = buildFakturaDoc(vybrane);
-            
-            if(!returnBlob) { 
-                let cisloFaktury = document.getElementById('fak-cislo').value;
-                let firma = document.getElementById('cfg-firma').value;
-                let sumEUR = 0; vybrane.forEach(z => { sumEUR += (kalkulujCisteHodiny(z) * z.sazba); });
-                let prilohaTyp = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
-
-                let fakturaDataMeta = {
-                    cisloFaktury: cisloFaktury,
-                    vystaveni: document.getElementById('fak-vystaveni').value,
-                    splatnost: document.getElementById('fak-splatnost').value,
-                    prilohaTyp: prilohaTyp
-                };
-
-                let ulozeno = ulozitFakturuDoArchivu(cisloFaktury, firma.substring(0, 30), sumEUR, vybrane, fakturaDataMeta); 
-                
-                if (ulozeno) {
-                    vybrane.forEach(z => {
-                        z.pdfFaktura = true;
-                        if(prilohaTyp === 'standard') z.pdfStandard = true;
-                        if(prilohaTyp === 'abnahme') z.pdfAbnahme = true;
-                    });
-                    localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-                    
-                    if (confirm(currentLang === 'cs' ? 'Faktura byla uložena do archivu!\n\nChcete nyní smazat tyto vyfakturované řádky hodin ze záložky "Záznamy"?' : 'Rechnung gespeichert! Möchten Sie die abgerechneten Arbeitsstunden löschen?')) {
-                        zaznamy = zaznamy.filter(z => !z.selected);
-                        localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-                    }
-                    renderZaznamy();
-                    updateStatistiky();
-                    doc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
-                    closeExportCard();
-                }
-            } else {
-                return doc.output('blob');
-            }
-        }
-
-        function exportStandardPDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' }); doc.setFont("courier", "normal");
-            let vybrane = zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            drawStandardReportToDoc(doc, vybrane);
-            
-            if(!returnBlob) {
-                vybrane.forEach(z => z.pdfStandard = true);
-                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-                renderZaznamy();
-            }
-            
-            if(returnBlob) return doc.output('blob');
-            doc.save("Tatigkeitsnachweis.pdf");
-            closeExportCard();
-        }
-
-        function exportAbnahmePDF(returnBlob = false) {
-            const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' }); doc.setFont("courier", "normal");
-            let vybrane = zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            drawAbnahmeReportToDoc(doc, vybrane);
-            
-            if(!returnBlob) {
-                vybrane.forEach(z => z.pdfAbnahme = true);
-                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-                renderZaznamy();
-            }
-            
-            if(returnBlob) return doc.output('blob');
-            doc.save("AbnahmeProtokoll.pdf");
-            closeExportCard();
-        }
-
         function drawConsiliumReportToDoc(doc, vybrane) {
             let tplData = localStorage.getItem('cfg_tpl_consilium');
             if (!tplData) {
@@ -1518,8 +1272,10 @@
             const Y_TABULKA_START = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 57;
             const RADKOVANI = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
             const Y_SOUCET = parseFloat(localStorage.getItem('cfg_cons_soucet')) || 107;
-            const Y_PATA = parseFloat(localStorage.getItem('cfg_cons_pata')) || 135;
-            const Y_SPODNI = parseFloat(localStorage.getItem('cfg_cons_spodni')) || 116; // Kalibrace spodního bloku
+            
+            // Nové upravené výchozí hodnoty
+            const Y_PATA = parseFloat(localStorage.getItem('cfg_cons_pata')) || 144; 
+            const Y_SPODNI = parseFloat(localStorage.getItem('cfg_cons_spodni')) || 111; 
 
             let imgType = tplData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
             doc.addImage(tplData, imgType, 0, 0, 210, 148, '', 'FAST');
@@ -1530,7 +1286,6 @@
             let firma = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
             let adresaMesto = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData.replace(/\n/g, ", ") : (document.getElementById('cfg-adresa').value + ", " + document.getElementById('cfg-mesto').value));
             
-            // Nové město pro podpisovou část
             let mestoStavby = bezDiakritiky(document.getElementById('cfg-mesto-stavby').value || document.getElementById('cfg-mesto').value);
             
             let startD = bezDiakritiky(startDatum(vybrane)); 
@@ -1577,7 +1332,6 @@
                     doc.text(rec.konec, 85 + OFFSET_X, rowY, { align: 'center' }); 
                     doc.text(h.toFixed(2), 101 + OFFSET_X, rowY, { align: 'center' }); 
                     
-                    // OPRAVA MONTÁŽNÍHO DENÍKU (zrušeno ořezávání, menší text)
                     if (rec.popisPrace) {
                         doc.setFontSize(7.5);
                         doc.text(bezDiakritiky(rec.popisPrace), 110 + OFFSET_X, rowY - 2.5, { maxWidth: 78, lineHeightFactor: 1.15 }); 
@@ -1594,7 +1348,7 @@
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
             
-            // OPRAVA - VYPLNĚNÍ SPODNÍ ČÁSTI CONSILIUM VÝKAZU
+            // --- OPRAVA: VYPLNĚNÍ SPODNÍ ČÁSTI CONSILIUM VÝKAZU ---
             let consObdobi = bezDiakritiky(document.getElementById('cons-obdobi') ? document.getElementById('cons-obdobi').value : '');
             let consZavady = bezDiakritiky(document.getElementById('cons-zavady') ? document.getElementById('cons-zavady').value : '');
             let consOdstranitDo = bezDiakritiky(document.getElementById('cons-odstranit-do') ? document.getElementById('cons-odstranit-do').value : '');
@@ -1606,24 +1360,38 @@
                 consDatumNabidnuti = `${d}.${m}.${y}`;
             }
 
-            if(consObdobi) doc.text(consObdobi, 110 + OFFSET_X, Y_SPODNI, {maxWidth: 85});
-            if(consOdstranitDo) doc.text(consOdstranitDo, 110 + OFFSET_X, Y_SPODNI + 7, {maxWidth: 85});
-            if(consZavady) doc.text(consZavady, 110 + OFFSET_X, Y_SPODNI + 14, {maxWidth: 85});
+            // Pozice pravého sloupce pro texty (Období, Termín odstranění, Závady)
+            let pravySloupecX = 122 + OFFSET_X; 
 
+            // 1. Řádek (Am heutigen Tage)
+            if(consObdobi) doc.text(consObdobi, pravySloupecX, Y_SPODNI + 3, {maxWidth: 80});
+            
+            // 2. Řádek (Bei der Abnahme... Mängel)
+            if(consOdstranitDo) doc.text(consOdstranitDo, pravySloupecX, Y_SPODNI + 10.5, {maxWidth: 80});
+            
+            // 3. Řádek (Der Auftraggeber macht...)
+            if(consZavady) doc.text(consZavady, pravySloupecX, Y_SPODNI + 18, {maxWidth: 80});
+
+            // Křížek Checkboxu
             if(consNabidnutoChk) {
                 doc.setLineWidth(0.4);
-                // Vykreslení křížku
-                doc.line(17.5 + OFFSET_X, Y_SPODNI + 18, 21.5 + OFFSET_X, Y_SPODNI + 22);
-                doc.line(21.5 + OFFSET_X, Y_SPODNI + 18, 17.5 + OFFSET_X, Y_SPODNI + 22);
+                let chkX = 18.2 + OFFSET_X;
+                let chkY = Y_SPODNI + 23.8; 
+                let chkS = 3.5;
+                doc.line(chkX, chkY, chkX + chkS, chkY + chkS);
+                doc.line(chkX + chkS, chkY, chkX, chkY + chkS);
             }
-            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, 94 + OFFSET_X, Y_SPODNI + 20.5);
+            
+            // Datum do tečkované čáry (am ............. zur Abnahme)
+            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, 91 + OFFSET_X, Y_SPODNI + 26.5);
 
-            // Místo podpisu nyní tahá z Města výkonu stavby
+            // Místo podpisu nyní tahá z Města výkonu stavby - ZAROVNÁNO DOLEVA
             let datumDnes = new Date().toLocaleDateString('de-DE');
-            doc.text(`${mestoStavby}, ${datumDnes}`, 42 + OFFSET_X, Y_PATA, { align: 'center', maxWidth: 70 });
+            doc.text(`${mestoStavby}, ${datumDnes}`, 16 + OFFSET_X, Y_PATA - 1.5, { align: 'left', maxWidth: 70 });
 
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 78 + OFFSET_X, Y_PATA - 8, 35, 12); 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 150 + OFFSET_X, Y_PATA - 8, 35, 12); 
+            // Podpisy nad linkami - upraveny souřadnice X pro Auftragnehmer a Auftraggeber
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 82 + OFFSET_X, Y_PATA - 13, 35, 12); 
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 152 + OFFSET_X, Y_PATA - 13, 35, 12); 
         }
 
         function exportConsiliumPDF(returnBlob = false) {
