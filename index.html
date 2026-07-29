@@ -2231,12 +2231,13 @@ function executePDFExport() {
                     prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value
                 };
 
-                let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+           let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
                 if (ok) {
                     alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu! Můžeš si ji stáhnout v záložce Faktury.' : 'Rechnung im Archiv gespeichert!');
                     closeExportCard();
                 }
-            }
+            } // Tato závorka ukončuje blok "else if (currentExportType === 'faktura')"
+        } // TUTO ZÁVORKU JSI ZAPOMNĚL - UKONČUJE CELOU FUNKCI executePDFExport()
  
 </script>
 </body>
