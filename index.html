@@ -258,7 +258,7 @@
                         <input type="number" id="inp-sazba" value="30.00" step="0.5">
                     </div>
 
-                    <button type="button" class="btn-main" onclick="ulozZaznam()" id="btn-speichern" data-cs="Uložit Záznam" data-de="Eintrag speichern">Uložit Záznam</button>
+                    <button class="btn-main" onclick="ulozZaznam()" id="btn-speichern" data-cs="Uložit Záznam" data-de="Eintrag speichern">Uložit Záznam</button>
                 </div>
             </div>
 
@@ -651,11 +651,7 @@
         }
 
         function nastavCisloNoveFaktury() {
-            let archiv = [];
-            try {
-                archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            } catch(e) {}
-            
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             let cisloInput = document.getElementById('fak-cislo');
             let dnes = new Date();
             let rok = dnes.getFullYear();
@@ -830,31 +826,28 @@
         function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
         function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
 
-function kalkulujCisteHodiny(zaznam) {
-    if (!zaznam || !zaznam.zacatek || !zaznam.konec) return 0;
-    
-    let [h1, m1] = zaznam.zacatek.split(':').map(Number);
-    let [h2, m2] = zaznam.konec.split(':').map(Number);
-    
-    let start = (h1 || 0) * 60 + (m1 || 0);
-    let konec = (h2 || 0) * 60 + (m2 || 0);
-    if (konec < start) konec += 24 * 60;
+        function kalkulujCisteHodiny(zaznam) {
+            let [h1, m1] = zaznam.zacatek.split(':').map(Number);
+            let [h2, m2] = zaznam.konec.split(':').map(Number);
+            let start = h1 * 60 + m1;
+            let konec = h2 * 60 + m2;
+            if (konec < start) konec += 24 * 60;
 
-    let pauseMinut = 0;
-    if (zaznam.prestavkaOd && zaznam.prestavkaDo) {
-        let [ph1, pm1] = zaznam.prestavkaOd.split(':').map(Number);
-        let [ph2, pm2] = zaznam.prestavkaDo.split(':').map(Number);
-        let pStart = (ph1 || 0) * 60 + (pm1 || 0);
-        let pKonec = (ph2 || 0) * 60 + (pm2 || 0);
-        if (pKonec < pStart) pKonec += 24 * 60;
-        pauseMinut = pKonec - pStart;
-    } else if (zaznam.prestavka) {
-        pauseMinut = Number(zaznam.prestavka);
-    }
+            let pauseMinut = 0;
+            if (zaznam.prestavkaOd && zaznam.prestavkaDo) {
+                let [ph1, pm1] = zaznam.prestavkaOd.split(':').map(Number);
+                let [ph2, pm2] = zaznam.prestavkaDo.split(':').map(Number);
+                let pStart = ph1 * 60 + pm1; let pKonec = ph2 * 60 + pm2;
+                if (pKonec < pStart) pKonec += 24 * 60;
+                pauseMinut = pKonec - pStart;
+            } else if (zaznam.prestavka) {
+                pauseMinut = Number(zaznam.prestavka);
+            }
 
-    let cisty = (konec - start - pauseMinut) / 60;
-    return cisty > 0 ? cisty : 0;
-}
+            let cisty = (konec - start - pauseMinut) / 60;
+            return cisty > 0 ? cisty : 0;
+        }
+
         function updateLiveHours() {
             let z = document.getElementById('inp-zacatek').value;
             let k = document.getElementById('inp-konec').value;
@@ -880,11 +873,7 @@ function kalkulujCisteHodiny(zaznam) {
 
         function updateLivePreview() {
             let vybrane = zaznamy.filter(z => z.selected);
-            vybrane.sort((a,b) => {
-                let da = new Date(a.datum).getTime() || 0;
-                let db = new Date(b.datum).getTime() || 0;
-                return da - db;
-            });
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             
             let jmeno = document.getElementById('cfg-jmeno').value; let firma = document.getElementById('cfg-firma').value;
             let adresa = document.getElementById('cfg-adresa').value; let mesto = document.getElementById('cfg-mesto').value;
@@ -1096,10 +1085,7 @@ function kalkulujCisteHodiny(zaznam) {
         }
 
         function ulozitFakturuDoArchivu(cislo, odberatel, suma, vybraneZaznamy, fakturaData) {
-            let archiv = [];
-            try {
-                archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            } catch (e) {}
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             
             let existuje = archiv.find(f => f.cislo === cislo);
             if (existuje) {
@@ -1187,7 +1173,7 @@ function kalkulujCisteHodiny(zaznam) {
                     let dFmt = new Date(rec.datum).toLocaleDateString('de-DE'); let h = kalkulujCisteHodiny(rec); totalWeekHours += h;
                     let start = rec.zacatek; let end = rec.konec; 
                     let pauseTxt = (rec.prestavkaOd && rec.prestavkaDo) ? `${rec.prestavkaOd}-${rec.prestavkaDo}` : (rec.prestavka ? rec.prestavka.toString() : '0');
-                    let [h1, m1] = (start || "00:00").split(':').map(Number); let [h2, m2] = (end || "00:00").split(':').map(Number);
+                    let [h1, m1] = start.split(':').map(Number); let [h2, m2] = end.split(':').map(Number);
                     let startM = h1*60+m1; let endM = h2*60+m2; if(endM < startM) endM += 24*60;
                     let totalH = (endM - startM) / 60; 
                     doc.text(dFmt, cols[1]+12, y, {align:'center'}); doc.text(start, cols[2]+8, y, {align:'center'}); doc.text(end, cols[3]+8, y, {align:'center'});
@@ -1414,11 +1400,7 @@ function kalkulujCisteHodiny(zaznam) {
             doc.setFont("courier", "normal");
             
             let vybrane = zaznamy.filter(z => z.selected); 
-            vybrane.sort((a,b) => {
-                let da = new Date(a.datum).getTime() || 0;
-                let db = new Date(b.datum).getTime() || 0;
-                return da - db;
-            });
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             
             drawConsiliumReportToDoc(doc, vybrane);
             
@@ -1429,11 +1411,7 @@ function kalkulujCisteHodiny(zaznam) {
 
         function renderArchivFaktur() {
             let container = document.getElementById('archiv-faktur-container'); 
-            let archiv = [];
-            try {
-                archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            } catch(e) {}
-            
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             container.innerHTML = '';
             
             if (archiv.length === 0) { 
@@ -1517,9 +1495,7 @@ function kalkulujCisteHodiny(zaznam) {
         }
         
         function pridatZalohu(id) {
-            let archiv = [];
-            try { archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; } catch(e) {}
-            
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             let idx = archiv.findIndex(x => x.id === id);
             if (idx === -1) return;
             
@@ -1548,9 +1524,7 @@ function kalkulujCisteHodiny(zaznam) {
         }
 
         function toggleZaplaceno(id) {
-            let archiv = [];
-            try { archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; } catch(e){}
-            
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             let idx = archiv.findIndex(x => x.id === id);
             if (idx === -1) return;
             
@@ -1566,9 +1540,7 @@ function kalkulujCisteHodiny(zaznam) {
         }
 
         function poslatUpominku(id) {
-            let archiv = [];
-            try { archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; } catch(e){}
-            
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
             let f = archiv.find(x => x.id === id);
             if (!f) return;
             
@@ -1584,9 +1556,7 @@ function kalkulujCisteHodiny(zaznam) {
         }
 
         function stahnoutFakturuZArchivu(id) {
-            let archiv = [];
-            try { archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; } catch(e){}
-            
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
             let f = archiv.find(x => x.id === id);
             if(f && f.vybraneZaznamy) { 
                 let doc = buildFakturaDoc(f); 
@@ -1668,23 +1638,20 @@ function kalkulujCisteHodiny(zaznam) {
             
             let totalH = 0; 
             vybrane.forEach(z => {
-                let h1, m1, h2, m2;
-                if (z.zacatek && z.konec) {
-                    [h1, m1] = z.zacatek.split(':').map(Number);
-                    [h2, m2] = z.konec.split(':').map(Number);
-                    let start = (h1||0) * 60 + (m1||0); let konec = (h2||0) * 60 + (m2||0);
-                    if (konec < start) konec += 24 * 60;
-                    let pauseMinut = 0;
-                    if (z.prestavkaOd && z.prestavkaDo) {
-                        let [ph1, pm1] = z.prestavkaOd.split(':').map(Number);
-                        let [ph2, pm2] = z.prestavkaDo.split(':').map(Number);
-                        let pStart = (ph1||0) * 60 + (pm1||0); let pKonec = (ph2||0) * 60 + (pm2||0);
-                        if (pKonec < pStart) pKonec += 24 * 60;
-                        pauseMinut = pKonec - pStart;
-                    } else if (z.prestavka) { pauseMinut = Number(z.prestavka); }
-                    let cisty = (konec - start - pauseMinut) / 60;
-                    totalH += (cisty > 0 ? cisty : 0);
-                }
+                let [h1, m1] = z.zacatek.split(':').map(Number);
+                let [h2, m2] = z.konec.split(':').map(Number);
+                let start = h1 * 60 + m1; let konec = h2 * 60 + m2;
+                if (konec < start) konec += 24 * 60;
+                let pauseMinut = 0;
+                if (z.prestavkaOd && z.prestavkaDo) {
+                    let [ph1, pm1] = z.prestavkaOd.split(':').map(Number);
+                    let [ph2, pm2] = z.prestavkaDo.split(':').map(Number);
+                    let pStart = ph1 * 60 + pm1; let pKonec = ph2 * 60 + pm2;
+                    if (pKonec < pStart) pKonec += 24 * 60;
+                    pauseMinut = pKonec - pStart;
+                } else if (z.prestavka) { pauseMinut = Number(z.prestavka); }
+                let cisty = (konec - start - pauseMinut) / 60;
+                totalH += (cisty > 0 ? cisty : 0);
             });
             let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
             
@@ -1726,8 +1693,7 @@ function kalkulujCisteHodiny(zaznam) {
 
         function smazatFakturuZArchivu(id, force = false) {
             if(force || confirm("Opravdu smazat z archivu?")) {
-                let archiv = [];
-                try { archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; } catch(e){}
+                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 archiv = archiv.filter(f => f.id !== id); 
                 localStorage.setItem('archiv_faktur', JSON.stringify(archiv)); 
                 renderArchivFaktur();
@@ -1736,8 +1702,7 @@ function kalkulujCisteHodiny(zaznam) {
 
         function opravitFakturu(id) {
             if(confirm("Pro opravu se tato faktura z archivu smaže. Následně vás přesměruji do Záznamů. Chcete pokračovat?")) {
-                let archiv = [];
-                try { archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; } catch(e){}
+                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
                 let f = archiv.find(x => x.id === id);
                 if(f) {
                     document.getElementById('fak-cislo').value = f.cislo;
@@ -1748,19 +1713,8 @@ function kalkulujCisteHodiny(zaznam) {
         }
 
         let editRecordId = null; 
-        let zaznamy = [];
-        try { 
-            zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || []; 
-            if(!Array.isArray(zaznamy)) zaznamy = []; 
-        } catch(e) { 
-            zaznamy = []; 
-        }
-
-        let adresarKlientu = [];
-        try {
-            adresarKlientu = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
-        } catch(e) {}
-
+        let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
+        let adresarKlientu = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
         let currentLang = localStorage.getItem('app_lang') || 'cs';
         let filterMode = 'week'; let maskEarnings = false;
         document.getElementById('inp-datum').valueAsDate = new Date();
@@ -1827,8 +1781,8 @@ function kalkulujCisteHodiny(zaznam) {
             editRecordId = id;
 
             document.getElementById('inp-datum').value = z.datum;
-            document.getElementById('inp-zacatek').value = z.zacatek || "00:00";
-            document.getElementById('inp-konec').value = z.konec || "00:00";
+            document.getElementById('inp-zacatek').value = z.zacatek;
+            document.getElementById('inp-konec').value = z.konec;
             document.getElementById('inp-zakazka').value = z.cisloZakazky || '';
             document.getElementById('inp-sazba').value = z.sazba;
             
@@ -1858,72 +1812,88 @@ function kalkulujCisteHodiny(zaznam) {
             document.getElementById('btn-speichern').style.background = '#e67e22'; 
         }
 
- function ulozZaznam() {
-    let popisText = ''; 
-    if (currentInputMode === 'text') { popisText = document.getElementById('inp-popis').value; }
+        function ulozZaznam() {
+            let popisText = ''; if (currentInputMode === 'text') { popisText = document.getElementById('inp-popis').value; }
 
-    let datum = document.getElementById('inp-datum').value;
-    let zacatek = document.getElementById('inp-zacatek').value;
-    let konec = document.getElementById('inp-konec').value;
+            if (editRecordId) {
+                let idx = zaznamy.findIndex(x => x.id === editRecordId);
+                if(idx > -1) {
+                    zaznamy[idx].datum = document.getElementById('inp-datum').value;
+                    zaznamy[idx].zacatek = document.getElementById('inp-zacatek').value;
+                    zaznamy[idx].konec = document.getElementById('inp-konec').value;
+                    zaznamy[idx].prestavkaOd = document.getElementById('inp-prestavka-od').value;
+                    zaznamy[idx].prestavkaDo = document.getElementById('inp-prestavka-do').value;
+                    zaznamy[idx].prestavka = null;
+                    zaznamy[idx].cisloZakazky = document.getElementById('inp-zakazka').value;
+                    zaznamy[idx].popisPrace = popisText;
+                    zaznamy[idx].popisPraceImg = actPopisImgData;
+                    zaznamy[idx].sazba = parseFloat(document.getElementById('inp-sazba').value) || 0;
+                    
+                    zaznamy[idx].pdfStandard = false;
+                    zaznamy[idx].pdfAbnahme = false;
+                    zaznamy[idx].pdfFaktura = false;
+                }
+                editRecordId = null;
+                document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
+                document.getElementById('btn-speichern').style.background = 'var(--primary)';
+            } else {
+                let novy = {
+                    id: Date.now(), datum: document.getElementById('inp-datum').value, 
+                    zacatek: document.getElementById('inp-zacatek').value,
+                    konec: document.getElementById('inp-konec').value, 
+                    prestavkaOd: document.getElementById('inp-prestavka-od').value, 
+                    prestavkaDo: document.getElementById('inp-prestavka-do').value,
+                    prestavka: null, cisloZakazky: document.getElementById('inp-zakazka').value,
+                    popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
+                    projekt: document.getElementById('cfg-firma').value, selected: false,
+                    pdfStandard: false, pdfAbnahme: false, pdfFaktura: false
+                };
+                zaznamy.push(novy);
+            }
 
-    // Záchrana: Pokud chybí datum nebo čas, nedovolíme záznam uložit (jinak spadne celá aplikace)
-    if (!datum || !zacatek || !konec) {
-        alert(currentLang === 'cs' ? 'Doplňte prosím datum a čas (Začátek a Konec)!' : 'Bitte Datum und Uhrzeit ausfüllen!');
-        return;
-    }
-
-    if (editRecordId) {
-        let idx = zaznamy.findIndex(x => x.id === editRecordId);
-        if(idx > -1) {
-            zaznamy[idx].datum = datum;
-            zaznamy[idx].zacatek = zacatek;
-            zaznamy[idx].konec = konec;
-            zaznamy[idx].prestavkaOd = document.getElementById('inp-prestavka-od').value;
-            zaznamy[idx].prestavkaDo = document.getElementById('inp-prestavka-do').value;
-            zaznamy[idx].prestavka = null;
-            zaznamy[idx].cisloZakazky = document.getElementById('inp-zakazka').value;
-            zaznamy[idx].popisPrace = popisText;
-            zaznamy[idx].popisPraceImg = actPopisImgData;
-            zaznamy[idx].sazba = parseFloat(document.getElementById('inp-sazba').value) || 0;
+            localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
             
-            zaznamy[idx].pdfStandard = false;
-            zaznamy[idx].pdfAbnahme = false;
-            zaznamy[idx].pdfFaktura = false;
+            document.getElementById('inp-popis').value = ''; 
+            actPopisImgData = null; 
+            document.getElementById('preview-drawn-image').style.display = 'none'; 
+            document.getElementById('drawn-preview-img').src = '';
+            
+            alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
+            updateStatistiky();
         }
-        editRecordId = null;
-        document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
-        document.getElementById('btn-speichern').style.background = 'var(--primary)';
-    } else {
-        let novy = {
-            id: Date.now(), datum: datum, 
-            zacatek: zacatek,
-            konec: konec, 
-            prestavkaOd: document.getElementById('inp-prestavka-od').value, 
-            prestavkaDo: document.getElementById('inp-prestavka-do').value,
-            prestavka: null, cisloZakazky: document.getElementById('inp-zakazka').value,
-            popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
-            projekt: document.getElementById('cfg-firma').value, selected: false,
-            pdfStandard: false, pdfAbnahme: false, pdfFaktura: false
-        };
-        zaznamy.push(novy);
-    }
 
-    // Ochrana před pádem při přeplněném LocalStorage úložišti
-    try {
-        localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+        function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
+        function setFilterMode(mode) { filterMode = mode; updateStatistiky(); }
+        function toggleEarningsMask() { maskEarnings = !maskEarnings; updateStatistiky(); }
         
-        document.getElementById('inp-popis').value = ''; 
-        actPopisImgData = null; 
-        document.getElementById('preview-drawn-image').style.display = 'none'; 
-        document.getElementById('drawn-preview-img').src = '';
-        
-        alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
-        updateStatistiky();
-    } catch (e) {
-        alert(currentLang === 'cs' ? 'Chyba: Paměť prohlížeče je plná! Smažte staré záznamy.' : 'Fehler: Speicher voll! Bitte alte Einträge löschen.');
-        if (!editRecordId) zaznamy.pop();
-    }
-}
+        function updateStatistiky() {
+            let dnes = new Date(); let celkemPenez = 0;
+            zaznamy.forEach(z => {
+                let zDatum = new Date(z.datum);
+                if (filterMode === 'week' && getWeekNumber(dnes) === getWeekNumber(zDatum)) celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
+                if (filterMode === 'month' && dnes.getMonth() === zDatum.getMonth() && dnes.getFullYear() === zDatum.getFullYear()) celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
+            });
+            document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
+        }
+
+        function renderZaznamy() {
+            let container = document.getElementById('seznam-container'); 
+            container.innerHTML = '';
+
+            let dnes = new Date();
+            let aktualniMesic = dnes.getMonth();
+            let aktualniRok = dnes.getFullYear();
+            let mesicniHodiny = 0;
+            let mesicniPeneze = 0;
+
+            zaznamy.forEach(z => {
+                let zd = new Date(z.datum);
+                if (zd.getMonth() === aktualniMesic && zd.getFullYear() === aktualniRok) {
+                    let h = kalkulujCisteHodiny(z);
+                    mesicniHodiny += h;
+                    mesicniPeneze += h * z.sazba;
+                }
+            });
 
             const nazvyMesicuCS = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
             document.getElementById('mesicni-souhrn-label').innerText = `${nazvyMesicuCS[aktualniMesic]} ${aktualniRok}`;
@@ -1935,12 +1905,7 @@ function kalkulujCisteHodiny(zaznam) {
                 return; 
             }
 
-            // BEZPEČNÉ TŘÍDĚNÍ - Předejde pádu, pokud je záznam poškozený (nemá datum)
-            let sortedZaznamy = [...zaznamy].sort((a,b) => {
-                let da = new Date(a.datum).getTime() || 0;
-                let db = new Date(b.datum).getTime() || 0;
-                return db - da;
-            });
+            let sortedZaznamy = [...zaznamy].sort((a,b) => new Date(b.datum) - new Date(a.datum));
             let currentWeekStr = "";
 
             sortedZaznamy.forEach((z) => {
@@ -1971,8 +1936,8 @@ function kalkulujCisteHodiny(zaznam) {
                 item.innerHTML = `<div class="checkbox-container"><input type="checkbox" id="chk-${z.id}" ${z.selected ? 'checked' : ''} onchange="toggleZaznamSelection(${z.id})">
                     <label for="chk-${z.id}" style="cursor:pointer; display:flex; flex-direction:column; font-weight:normal;"><div><strong style="color:var(--text);">${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>${descPreview}</label></div>
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn-sec" style="background:#f39c12; color:white; padding:10px;" onclick="editZaznam(${z.id})">✏️</button>
-                        <button type="button" class="btn-sec" style="background:#ff7675; color:white; padding:10px;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy(); updateStatistiky();">🗑️</button>
+                        <button class="btn-sec" style="background:#f39c12; color:white; padding:10px;" onclick="editZaznam(${z.id})">✏️</button>
+                        <button class="btn-sec" style="background:#ff7675; color:white; padding:10px;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy(); updateStatistiky();">🗑️</button>
                     </div>`;
                 container.appendChild(item);
             });
@@ -2026,4 +1991,377 @@ function kalkulujCisteHodiny(zaznam) {
             if(localStorage.getItem('cfg_mesto_stavby')) document.getElementById('cfg-mesto-stavby').value = localStorage.getItem('cfg_mesto_stavby');
 
             if(localStorage.getItem('cfg_dod_adresa')) document.getElementById('cfg-dod-adresa').value = localStorage.getItem('cfg_dod_adresa');
-            if(localStorage.getItem('cfg_dod_ico')) document.getElementByIdJsem jenom jazykový model a s tímhle vám nemůžu pomoct.
+            if(localStorage.getItem('cfg_dod_ico')) document.getElementById('cfg-dod-ico').value = localStorage.getItem('cfg_dod_ico');
+            if(localStorage.getItem('cfg_dod_banka')) document.getElementById('cfg-dod-banka').value = localStorage.getItem('cfg_dod_banka');
+            if(localStorage.getItem('cfg_dod_kontakt')) document.getElementById('cfg-dod-kontakt').value = localStorage.getItem('cfg_dod_kontakt');
+            
+            if(localStorage.getItem('cfg_splatnost')) document.getElementById('cfg-splatnost').value = localStorage.getItem('cfg_splatnost');
+
+            if(localStorage.getItem('cfg_logo')) { document.getElementById('preview-logo').src = localStorage.getItem('cfg_logo'); document.getElementById('preview-logo').style.display = 'block'; }
+            if(localStorage.getItem('cfg_razitko')) { document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko'); document.getElementById('preview-razitko').style.display = 'block'; }
+            if(localStorage.getItem('cfg_tpl_consilium')) { document.getElementById('preview-tpl-consilium').src = localStorage.getItem('cfg_tpl_consilium'); document.getElementById('preview-tpl-consilium').style.display = 'block'; }
+            
+            if(localStorage.getItem('cfg_cons_hlavicka')) document.getElementById('cfg-cons-hlavicka').value = localStorage.getItem('cfg_cons_hlavicka');
+            if(localStorage.getItem('cfg_cons_tabulka')) document.getElementById('cfg-cons-tabulka').value = localStorage.getItem('cfg_cons_tabulka');
+            if(localStorage.getItem('cfg_cons_radkovani')) document.getElementById('cfg-cons-radkovani').value = localStorage.getItem('cfg_cons_radkovani');
+            if(localStorage.getItem('cfg_cons_soucet')) document.getElementById('cfg-cons-soucet').value = localStorage.getItem('cfg_cons_soucet');
+            if(localStorage.getItem('cfg_cons_pata')) document.getElementById('cfg-cons-pata').value = localStorage.getItem('cfg_cons_pata');
+            if(localStorage.getItem('cfg_cons_offset_x')) document.getElementById('cfg-cons-offset-x').value = localStorage.getItem('cfg_cons_offset_x');
+            if(localStorage.getItem('cfg_cons_spodni')) document.getElementById('cfg-cons-spodni').value = localStorage.getItem('cfg_cons_spodni');
+        }
+
+        function saveConsiliumOffsets() {
+            localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
+            localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
+            localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
+            localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
+            localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
+            localStorage.setItem('cfg_cons_offset_x', document.getElementById('cfg-cons-offset-x').value);
+            localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
+            alert(currentLang === 'cs' ? 'Kalibrace uložena! Můžeš zkusit export.' : 'Kalibrierung gespeichert!');
+        }
+
+        function exportCSV() {
+            let csv = "Datum;Beginn;Ende;PauseVon;PauseBis;Stunden\n";
+            zaznamy.filter(z => z.selected).forEach(z => { 
+                let pOd = z.prestavkaOd || ""; let pDo = z.prestavkaDo || "";
+                if(!pOd && z.prestavka) pOd = z.prestavka + "m";
+                csv += `${z.datum};${z.zacatek};${z.konec};${pOd};${pDo};${kalkulujCisteHodiny(z).toFixed(2)}\n`; 
+            });
+            let blob = new Blob([csv], { type: 'text/csv;' }); let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "Export_Arbeitsstunden.csv"); link.click();
+        }
+
+        async function generateSignaturePhoneLink(target) {
+            document.getElementById('qr-code-img').style.display = 'none';
+            document.getElementById('qr-session-id-display').innerText = 'Vytvářím bezpečné spojení s telefonem...';
+            document.getElementById('qr-modal').classList.remove('hidden');
+
+            if (API_BASE_URL) {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/signature-session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ target, pcId: navigator.userAgent.slice(0, 80) })
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    const { sessionId, signUrl } = data;
+
+                    const absoluteSignUrl = (signUrl && signUrl.startsWith('http'))
+                        ? signUrl
+                        : `${API_BASE_URL}${signUrl}`;
+
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(absoluteSignUrl)}`;
+                    document.getElementById('qr-code-img').src = qrUrl;
+                    document.getElementById('qr-code-img').style.display = 'block';
+                    document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
+                    document.getElementById('qr-session-id-display').innerText = 'Spojeno! Naskenujte kód pro podpis.';
+
+                    startPollingSignatureApi(sessionId, target);
+
+                    if (signatureTimeout) clearTimeout(signatureTimeout);
+                    signatureTimeout = setTimeout(() => {
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                            const display = document.getElementById('qr-session-id-display');
+                            if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                        }
+                    }, SESSION_EXPIRY_MS);
+                } catch(e) {
+                    document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+                }
+            } else {
+                try {
+                    let res = await fetch('https://jsonblob.com/api/jsonBlob', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ status: 'waiting', signature: null })
+                    });
+                    let blobId = res.headers.get('Location').split('/').pop();
+                    const baseUrl = window.location.href.split('?')[0]; 
+                    const phoneUrl = `${baseUrl}?remoteSig=${target}&blobId=${blobId}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(phoneUrl)}`;
+                    
+                    document.getElementById('qr-code-img').src = qrUrl; 
+                    document.getElementById('qr-code-img').style.display = 'block';
+                    document.getElementById('qr-session-id-display').style.color = '#7f8c8d';
+                    document.getElementById('qr-session-id-display').innerText = `Spojeno! Naskenujte kód pro podpis.`; 
+                    
+                    startPollingSignature(blobId, target);
+
+                    if (signatureTimeout) clearTimeout(signatureTimeout);
+                    signatureTimeout = setTimeout(() => {
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                            const display = document.getElementById('qr-session-id-display');
+                            if (display) display.innerText = '⏱️ Relace vypršela. Zavřete a zkuste znovu.';
+                        }
+                    }, SESSION_EXPIRY_MS);
+                } catch(e) {
+                    document.getElementById('qr-session-id-display').innerText = 'Chyba připojení k serveru.';
+                }
+            }
+        }
+
+        function startPollingSignatureApi(sessionId, target) {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/signature/${encodeURIComponent(sessionId)}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data && data.status === 'completed' && data.signature) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        closeQrModal();
+                        if (target === 'kunde') {
+                            dataPodpisuKunde = data.signature;
+                            document.getElementById('box-kunde').innerHTML = `<img src="${data.signature}" class="signature-display-img">`;
+                        } else {
+                            dataPodpisuIch = data.signature;
+                            document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`;
+                        }
+                        updateLivePreview();
+                        setTimeout(() => {
+                            alert("Podpis úspěšně přenesen do PC!");
+                        }, 100);
+                    }
+                } catch(e) { console.error('Chyba při získávání podpisu:', e); }
+            }, 2000);
+        }
+
+        function startPollingSignature(blobId, target) {
+            if(pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                try {
+                    let res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`);
+                    let data = await res.json();
+                    if (data && data.status === 'done' && data.signature) {
+                        clearInterval(pollingInterval); 
+                        pollingInterval = null;
+                        closeQrModal();
+                        
+                        if (target === 'kunde') { 
+                            dataPodpisuKunde = data.signature; 
+                            document.getElementById('box-kunde').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; 
+                        } else { 
+                            dataPodpisuIch = data.signature; 
+                            document.getElementById('box-ich').innerHTML = `<img src="${data.signature}" class="signature-display-img">`; 
+                        }
+                        updateLivePreview(); 
+                        
+                        setTimeout(() => {
+                            alert("Podpis úspěšně přenesen do PC!");
+                        }, 100);
+                    }
+                } catch(e) {}
+            }, 2000); 
+        }
+
+        async function processFullSyncMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('fullsync')) {
+                const blobId = urlParams.get('fullsync');
+                document.getElementById('main-app').classList.add('hidden'); 
+                document.getElementById('welcome-screen').style.display = 'none';
+                document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; font-family:sans-serif;'>Stahuji data z PC do telefonu... ⏳</h2>";
+                
+                try {
+                    let res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`);
+                    let data = await res.json();
+                    
+                    if (data && data.payload) {
+                        let parsed = JSON.parse(data.payload);
+                        for (let key in parsed) { localStorage.setItem(key, parsed[key]); }
+                        
+                        document.body.innerHTML = `
+                            <div style="text-align:center; margin-top:50px; font-family:sans-serif; padding:20px;">
+                                <h1 style="color:#2ecc71;">Data úspěšně stažena! ✔️</h1>
+                                <p style="color:#2c3e50;">Aplikace v telefonu má teď všechna tvoje data z počítače.</p>
+                                <button onclick="window.location.href=window.location.href.split('?')[0]" style="padding:15px; font-size:18px; font-weight:bold; background:#3498db; color:white; border:none; border-radius:8px; width:100%; margin-top:20px;">Otevřít aplikaci</button>
+                            </div>
+                        `;
+                    }
+                } catch(e) {
+                    document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; font-family:sans-serif; color:#e74c3c;'>Chyba při stahování dat.</h2>";
+                }
+            }
+            
+            if (urlParams.has('remoteSig')) {
+                const target = urlParams.get('remoteSig'); 
+                const blobId = urlParams.get('blobId'); 
+                document.getElementById('main-app').classList.add('hidden'); document.getElementById('welcome-screen').style.display = 'none';
+                targetSignature = target; 
+                let textTitle = target === 'kunde' ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (currentLang === 'cs' ? 'Podpis: Váš' : 'Unterschrift: Ihre');
+                document.getElementById('modal-sig-title').innerText = textTitle;
+                const modalBtns = document.querySelector('.modal-content .row');
+                modalBtns.innerHTML = `<button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button><button id="btn-send-sig" class="btn-main" style="background:#8e44ad; color:white;" onclick="sendSignatureToPC('${blobId}', '${target}')">Odeslat do PC</button>`;
+                document.getElementById('signature-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; 
+                setTimeout(() => { canvas.width = canvas.offsetWidth; canvas.height = 200; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6'; }, 100);
+            }
+        }
+
+        async function sendSignatureToPC(blobId, target) {
+            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+            if (canvas.toDataURL() === blank.toDataURL()) { alert(currentLang === 'cs' ? 'Nejdříve se podepište!' : 'Bitte unterschreiben Sie zuerst!'); return; }
+            
+            const dataUrl = canvas.toDataURL('image/png');
+            const btn = document.getElementById('btn-send-sig');
+            if(btn) { btn.innerText = "Odesílám..."; btn.disabled = true; }
+            
+            try {
+                await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ status: 'done', signature: dataUrl })
+                });
+                
+                document.getElementById('signature-modal').classList.add('hidden');
+                
+                document.body.innerHTML = `
+                    <div style="text-align:center; margin-top:50px; font-family:sans-serif; padding:20px;">
+                        <h1 style="color:#2ecc71;">Podpis úspěšně odeslán do PC! ✔️</h1>
+                        <p style="color:#2c3e50;">Aplikace v počítači váš podpis právě přijala.</p>
+                        <button onclick="window.location.href=window.location.href.split('?')[0]" style="padding:15px; font-size:18px; font-weight:bold; background:#3498db; color:white; border:none; border-radius:8px; width:100%; margin-top:20px;">Zpět do aplikace</button>
+                    </div>
+                `;
+            } catch(e) {
+                alert("Chyba při odesílání do PC.");
+                if(btn) { btn.innerText = "Odeslat do PC"; btn.disabled = false; }
+            }
+        }
+
+        function closeQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+            if(pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+            if(signatureTimeout) { clearTimeout(signatureTimeout); signatureTimeout = null; }
+        }
+
+        (function migrateLocalStorage() {
+            const stareZaznamy = localStorage.getItem('zaznamy');
+            if (stareZaznamy && !localStorage.getItem('pracovni_zaznamy')) {
+                localStorage.setItem('pracovni_zaznamy', stareZaznamy);
+                localStorage.removeItem('zaznamy');
+            }
+
+            const stareNastaveni = localStorage.getItem('app_settings');
+            if (stareNastaveni && !localStorage.getItem('cfg_jmeno')) {
+                try {
+                    const s = JSON.parse(stareNastaveni);
+                    if (s.jmeno)      localStorage.setItem('cfg_jmeno', s.jmeno);
+                    if (s.firma)      localStorage.setItem('cfg_firma', s.firma);
+                    if (s.adresa)     localStorage.setItem('cfg_adresa', s.adresa);
+                    if (s.mesto)      localStorage.setItem('cfg_mesto', s.mesto);
+                    if (s.ico)        localStorage.setItem('cfg_ico_odberatel', s.ico);
+                    if (s.dod_adresa) localStorage.setItem('cfg_dod_adresa', s.dod_adresa);
+                    if (s.dod_ico)    localStorage.setItem('cfg_dod_ico', s.dod_ico);
+                    if (s.dod_banka)  localStorage.setItem('cfg_dod_banka', s.dod_banka);
+                    if (s.dod_kontakt)localStorage.setItem('cfg_dod_kontakt', s.dod_kontakt);
+                    localStorage.removeItem('app_settings');
+                } catch(e) {}
+            }
+        })();
+
+        processFullSyncMode();
+        loadSettings(); loadTheme(); setLanguage(currentLang); renderAdresar();
+
+function exportDataToFile() {
+    let allData = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        allData[key] = localStorage.getItem(key);
+    }
+    
+    let dataStr = JSON.stringify(allData);
+    let blob = new Blob([dataStr], { type: "application/json" });
+    let url = URL.createObjectURL(blob);
+    
+    let a = document.createElement("a");
+    a.href = url;
+    
+    let d = new Date();
+    let dateString = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    a.download = `Kralovstvi_Hodin_Zaloha_${dateString}.json`;
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importDataFromFile(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let importedData = JSON.parse(e.target.result);
+            let msg = currentLang === 'cs' ? 
+                "Pozor: Chystáš se přepsat všechna aktuální data v této aplikaci těmi ze záložního souboru. Chceš pokračovat?" : 
+                "Achtung: Sie sind dabei, alle aktuellen Daten mit dem Backup zu überschreiben. Fortfahren?";
+                
+            if (confirm(msg)) {
+                localStorage.clear();
+                for (let key in importedData) {
+                    localStorage.setItem(key, importedData[key]);
+                }
+                
+                let successMsg = currentLang === 'cs' ? "Data byla úspěšně nahrána! Aplikace se nyní obnoví." : "Daten erfolgreich geladen! App wird neu gestartet.";
+                alert(successMsg);
+                window.location.reload();
+            }
+        } catch (error) {
+            let errorMsg = currentLang === 'cs' ? "Chyba při čtení souboru. Ujisti se, že jde o platný záložní .json soubor." : "Fehler beim Lesen der Datei.";
+            alert(errorMsg);
+        }
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+}
+function executePDFExport() {
+            if (currentExportType === 'consilium') {
+                exportConsiliumPDF();
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            
+            let vybrane = zaznamy.filter(z => z.selected);
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+
+            if (currentExportType === 'standard') {
+                drawStandardReportToDoc(doc, vybrane);
+                doc.save(`Taetigkeitsnachweis_${new Date().getTime()}.pdf`);
+                closeExportCard();
+            } else if (currentExportType === 'abnahme') {
+                drawAbnahmeReportToDoc(doc, vybrane);
+                doc.save(`Abnahmeprotokoll_${new Date().getTime()}.pdf`);
+                closeExportCard();
+            } else if (currentExportType === 'faktura') {
+                let cisloFaktury = document.getElementById('fak-cislo').value;
+                let odberatel = document.getElementById('cfg-firma').value;
+                let suma = 0;
+                
+                vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+                let fakturaData = {
+                    vystaveni: document.getElementById('fak-vystaveni').value,
+                    splatnost: document.getElementById('fak-splatnost').value,
+                    prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value
+                };
+
+           let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+                if (ok) {
+                    alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu! Můžeš si ji stáhnout v záložce Faktury.' : 'Rechnung im Archiv gespeichert!');
+                    closeExportCard();
+                }
+            } 
+        } 
+ 
+</script>
+</body>
+</html>
