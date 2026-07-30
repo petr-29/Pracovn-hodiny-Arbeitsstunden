@@ -1858,104 +1858,72 @@ function kalkulujCisteHodiny(zaznam) {
             document.getElementById('btn-speichern').style.background = '#e67e22'; 
         }
 
-        function ulozZaznam() {
-            let popisText = ''; 
-            if (currentInputMode === 'text') { popisText = document.getElementById('inp-popis').value; }
+ function ulozZaznam() {
+    let popisText = ''; 
+    if (currentInputMode === 'text') { popisText = document.getElementById('inp-popis').value; }
 
-            // VALIDACE DATUMU A CASU - Zabrání vytvoření neúplného záznamu
-            if (!document.getElementById('inp-datum').value || !document.getElementById('inp-zacatek').value || !document.getElementById('inp-konec').value) {
-                alert(currentLang === 'cs' ? 'Doplňte prosím datum a čas práce.' : 'Bitte füllen Sie Datum und Uhrzeit aus.');
-                return;
-            }
+    let datum = document.getElementById('inp-datum').value;
+    let zacatek = document.getElementById('inp-zacatek').value;
+    let konec = document.getElementById('inp-konec').value;
 
-            if (editRecordId) {
-                let idx = zaznamy.findIndex(x => x.id === editRecordId);
-                if(idx > -1) {
-                    zaznamy[idx].datum = document.getElementById('inp-datum').value;
-                    zaznamy[idx].zacatek = document.getElementById('inp-zacatek').value;
-                    zaznamy[idx].konec = document.getElementById('inp-konec').value;
-                    zaznamy[idx].prestavkaOd = document.getElementById('inp-prestavka-od').value;
-                    zaznamy[idx].prestavkaDo = document.getElementById('inp-prestavka-do').value;
-                    zaznamy[idx].prestavka = null;
-                    zaznamy[idx].cisloZakazky = document.getElementById('inp-zakazka').value;
-                    zaznamy[idx].popisPrace = popisText;
-                    zaznamy[idx].popisPraceImg = actPopisImgData;
-                    zaznamy[idx].sazba = parseFloat(document.getElementById('inp-sazba').value) || 0;
-                    
-                    zaznamy[idx].pdfStandard = false;
-                    zaznamy[idx].pdfAbnahme = false;
-                    zaznamy[idx].pdfFaktura = false;
-                }
-                editRecordId = null;
-                document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
-                document.getElementById('btn-speichern').style.background = 'var(--primary)';
-            } else {
-                let novy = {
-                    id: Date.now(), datum: document.getElementById('inp-datum').value, 
-                    zacatek: document.getElementById('inp-zacatek').value,
-                    konec: document.getElementById('inp-konec').value, 
-                    prestavkaOd: document.getElementById('inp-prestavka-od').value, 
-                    prestavkaDo: document.getElementById('inp-prestavka-do').value,
-                    prestavka: null, cisloZakazky: document.getElementById('inp-zakazka').value,
-                    popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
-                    projekt: document.getElementById('cfg-firma').value, selected: false,
-                    pdfStandard: false, pdfAbnahme: false, pdfFaktura: false
-                };
-                zaznamy.push(novy);
-            }
+    // Záchrana: Pokud chybí datum nebo čas, nedovolíme záznam uložit (jinak spadne celá aplikace)
+    if (!datum || !zacatek || !konec) {
+        alert(currentLang === 'cs' ? 'Doplňte prosím datum a čas (Začátek a Konec)!' : 'Bitte Datum und Uhrzeit ausfüllen!');
+        return;
+    }
 
-            // OCHRANA PROTI PÁDU PŘI PLNÉ PAMĚTI (QuotaExceededError)
-            try {
-                localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-                
-                document.getElementById('inp-popis').value = ''; 
-                actPopisImgData = null; 
-                document.getElementById('preview-drawn-image').style.display = 'none'; 
-                document.getElementById('drawn-preview-img').src = '';
-                
-                alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
-                updateStatistiky();
-                renderZaznamy(); // Skrytá obnova dat na pozadí 
-            } catch (e) {
-                alert(currentLang === 'cs' ? 'Chyba: Paměť telefonu je plná! Smažte staré záznamy, případně umazat nákresy.' : 'Fehler: Speicher voll! Bitte alte Einträge löschen.');
-                if (!editRecordId) {
-                    zaznamy.pop(); // Vrátíme array zpět
-                }
-            }
+    if (editRecordId) {
+        let idx = zaznamy.findIndex(x => x.id === editRecordId);
+        if(idx > -1) {
+            zaznamy[idx].datum = datum;
+            zaznamy[idx].zacatek = zacatek;
+            zaznamy[idx].konec = konec;
+            zaznamy[idx].prestavkaOd = document.getElementById('inp-prestavka-od').value;
+            zaznamy[idx].prestavkaDo = document.getElementById('inp-prestavka-do').value;
+            zaznamy[idx].prestavka = null;
+            zaznamy[idx].cisloZakazky = document.getElementById('inp-zakazka').value;
+            zaznamy[idx].popisPrace = popisText;
+            zaznamy[idx].popisPraceImg = actPopisImgData;
+            zaznamy[idx].sazba = parseFloat(document.getElementById('inp-sazba').value) || 0;
+            
+            zaznamy[idx].pdfStandard = false;
+            zaznamy[idx].pdfAbnahme = false;
+            zaznamy[idx].pdfFaktura = false;
         }
+        editRecordId = null;
+        document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
+        document.getElementById('btn-speichern').style.background = 'var(--primary)';
+    } else {
+        let novy = {
+            id: Date.now(), datum: datum, 
+            zacatek: zacatek,
+            konec: konec, 
+            prestavkaOd: document.getElementById('inp-prestavka-od').value, 
+            prestavkaDo: document.getElementById('inp-prestavka-do').value,
+            prestavka: null, cisloZakazky: document.getElementById('inp-zakazka').value,
+            popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
+            projekt: document.getElementById('cfg-firma').value, selected: false,
+            pdfStandard: false, pdfAbnahme: false, pdfFaktura: false
+        };
+        zaznamy.push(novy);
+    }
 
-        function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
-        function setFilterMode(mode) { filterMode = mode; updateStatistiky(); }
-        function toggleEarningsMask() { maskEarnings = !maskEarnings; updateStatistiky(); }
+    // Ochrana před pádem při přeplněném LocalStorage úložišti
+    try {
+        localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
         
-        function updateStatistiky() {
-            let dnes = new Date(); let celkemPenez = 0;
-            zaznamy.forEach(z => {
-                let zDatum = new Date(z.datum);
-                if (filterMode === 'week' && getWeekNumber(dnes) === getWeekNumber(zDatum)) celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
-                if (filterMode === 'month' && dnes.getMonth() === zDatum.getMonth() && dnes.getFullYear() === zDatum.getFullYear()) celkemPenez += kalkulujCisteHodiny(z) * z.sazba;
-            });
-            document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
-        }
-
-        function renderZaznamy() {
-            let container = document.getElementById('seznam-container'); 
-            container.innerHTML = '';
-
-            let dnes = new Date();
-            let aktualniMesic = dnes.getMonth();
-            let aktualniRok = dnes.getFullYear();
-            let mesicniHodiny = 0;
-            let mesicniPeneze = 0;
-
-            zaznamy.forEach(z => {
-                let zd = new Date(z.datum);
-                if (zd.getMonth() === aktualniMesic && zd.getFullYear() === aktualniRok) {
-                    let h = kalkulujCisteHodiny(z);
-                    mesicniHodiny += h;
-                    mesicniPeneze += h * z.sazba;
-                }
-            });
+        document.getElementById('inp-popis').value = ''; 
+        actPopisImgData = null; 
+        document.getElementById('preview-drawn-image').style.display = 'none'; 
+        document.getElementById('drawn-preview-img').src = '';
+        
+        alert(currentLang === 'cs' ? 'Uloženo!' : 'Gespeichert!'); 
+        updateStatistiky();
+    } catch (e) {
+        alert(currentLang === 'cs' ? 'Chyba: Paměť prohlížeče je plná! Smažte staré záznamy.' : 'Fehler: Speicher voll! Bitte alte Einträge löschen.');
+        if (!editRecordId) zaznamy.pop();
+    }
+}
 
             const nazvyMesicuCS = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
             document.getElementById('mesicni-souhrn-label').innerText = `${nazvyMesicuCS[aktualniMesic]} ${aktualniRok}`;
