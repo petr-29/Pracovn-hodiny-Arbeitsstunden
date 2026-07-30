@@ -830,31 +830,31 @@
         function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
         function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
 
-        function kalkulujCisteHodiny(zaznam) {
-            if (!zaznam || !zaznam.zacatek || !zaznam.konec) return 0;
-            let [h1, m1] = (zaznam.zacatek || "00:00").split(':').map(Number);
-            let [h2, m2] = (zaznam.konec || "00:00").split(':').map(Number);
-            
-            let start = (h1 || 0) * 60 + (m1 || 0);
-            let konec = (h2 || 0) * 60 + (m2 || 0);
-            if (konec < start) konec += 24 * 60;
+function kalkulujCisteHodiny(zaznam) {
+    if (!zaznam || !zaznam.zacatek || !zaznam.konec) return 0;
+    
+    let [h1, m1] = zaznam.zacatek.split(':').map(Number);
+    let [h2, m2] = zaznam.konec.split(':').map(Number);
+    
+    let start = (h1 || 0) * 60 + (m1 || 0);
+    let konec = (h2 || 0) * 60 + (m2 || 0);
+    if (konec < start) konec += 24 * 60;
 
-            let pauseMinut = 0;
-            if (zaznam.prestavkaOd && zaznam.prestavkaDo) {
-                let [ph1, pm1] = zaznam.prestavkaOd.split(':').map(Number);
-                let [ph2, pm2] = zaznam.prestavkaDo.split(':').map(Number);
-                let pStart = (ph1 || 0) * 60 + (pm1 || 0);
-                let pKonec = (ph2 || 0) * 60 + (pm2 || 0);
-                if (pKonec < pStart) pKonec += 24 * 60;
-                pauseMinut = pKonec - pStart;
-            } else if (zaznam.prestavka) {
-                pauseMinut = Number(zaznam.prestavka);
-            }
+    let pauseMinut = 0;
+    if (zaznam.prestavkaOd && zaznam.prestavkaDo) {
+        let [ph1, pm1] = zaznam.prestavkaOd.split(':').map(Number);
+        let [ph2, pm2] = zaznam.prestavkaDo.split(':').map(Number);
+        let pStart = (ph1 || 0) * 60 + (pm1 || 0);
+        let pKonec = (ph2 || 0) * 60 + (pm2 || 0);
+        if (pKonec < pStart) pKonec += 24 * 60;
+        pauseMinut = pKonec - pStart;
+    } else if (zaznam.prestavka) {
+        pauseMinut = Number(zaznam.prestavka);
+    }
 
-            let cisty = (konec - start - pauseMinut) / 60;
-            return cisty > 0 ? cisty : 0;
-        }
-
+    let cisty = (konec - start - pauseMinut) / 60;
+    return cisty > 0 ? cisty : 0;
+}
         function updateLiveHours() {
             let z = document.getElementById('inp-zacatek').value;
             let k = document.getElementById('inp-konec').value;
