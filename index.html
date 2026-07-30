@@ -513,20 +513,44 @@
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
+            <!-- NOVÁ VYLEPŠENÁ KALIBRACE (OSY X a Y) -->
                     <div class="card-title" style="color: #8e44ad;" data-cs="Kalibrace Consilium PDF (v milimetrech)" data-de="Consilium PDF Kalibrierung (in mm)">Kalibrace Consilium PDF (v milimetrech)</div>
-                    <p style="font-size: 11px; margin-bottom: 10px; color:#555;" data-cs="Pokud texty v PDF létají mimo kolonky, uprav tyto pozice osy Y (směrem dolů/nahoru). Změna se projeví u dalšího exportu." data-de="Wenn Texte nicht passen, passen Sie die Y-Achse hier an.">Pokud texty v PDF létají mimo kolonky, uprav tyto pozice (osy X a Y). Změna se projeví u dalšího exportu.</p>
-                    <div class="row">
-                        <div class="form-group"><label>Hlavička (Y)</label><input type="number" id="cfg-cons-hlavicka" value="32" step="0.5"></div>
-                        <div class="form-group"><label>1. Řádek (Y)</label><input type="number" id="cfg-cons-tabulka" value="57" step="0.5"></div>
-                        <div class="form-group" style="background:#e8f4f8; padding:5px; border-radius:4px; border: 1px solid #3498db;"><label style="color:#2980b9;">Posun doleva (X)</label><input type="number" id="cfg-cons-offset-x" value="-8" step="0.5" title="Záporné číslo posune text doleva, kladné doprava"></div>
+                    <p style="font-size: 11px; margin-bottom: 15px; color:#555;">Nastav si přesný střed (osu X) pro každý sloupeček zvlášť. Můžeš hýbat texty zleva doprava.</p>
+                    
+                    <!-- Sloupečky X (Nové podle obrázku) -->
+                    <div style="background:#e8f4f8; padding:10px; border-radius:8px; border: 1px solid #3498db; margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #2980b9; margin-bottom: 10px; font-size: 13px;">Osa X (Pozice sloupců zleva doprava)</div>
+                        <div class="row">
+                            <div class="form-group"><label>Datum (X)</label><input type="number" id="cfg-cons-x-datum" value="20" step="0.5"></div>
+                            <div class="form-group"><label>Začátek (X)</label><input type="number" id="cfg-cons-x-zacatek" value="40.5" step="0.5"></div>
+                            <div class="form-group"><label>Od (X)</label><input type="number" id="cfg-cons-x-od" value="53" step="0.5"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Do (X)</label><input type="number" id="cfg-cons-x-do" value="65" step="0.5"></div>
+                            <div class="form-group"><label>Konec (X)</label><input type="number" id="cfg-cons-x-konec" value="77" step="0.5"></div>
+                            <div class="form-group"><label>Hodiny (X)</label><input type="number" id="cfg-cons-x-hodiny" value="93" step="0.5"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Popis práce (X)</label><input type="number" id="cfg-cons-x-popis" value="102" step="0.5"></div>
+                            <div class="form-group"><label>Zakázka (X)</label><input type="number" id="cfg-cons-x-zakazka" value="184" step="0.5"></div>
+                        </div>
                     </div>
-                    <div class="row">
-                        <div class="form-group"><label>Mezera řádků</label><input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1"></div>
-                        <div class="form-group"><label>Součet (Y)</label><input type="number" id="cfg-cons-soucet" value="107" step="0.5"></div>
-                        <div class="form-group"><label>Pata (Y)</label><input type="number" id="cfg-cons-pata" value="144" step="0.5"></div>
-                        <div class="form-group"><label style="color:#8e44ad;">Spodní texty (Y)</label><input type="number" id="cfg-cons-spodni" value="111" step="0.5"></div>
+
+                    <!-- Řádky Y (Původní) -->
+                    <div style="background:#f9f9f9; padding:10px; border-radius:8px; border: 1px solid #ccc; margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 10px; font-size: 13px;">Osa Y (Pozice řádků shora dolů)</div>
+                        <div class="row">
+                            <div class="form-group"><label>Hlavička (Y)</label><input type="number" id="cfg-cons-hlavicka" value="32" step="0.5"></div>
+                            <div class="form-group"><label>1. Řádek (Y)</label><input type="number" id="cfg-cons-tabulka" value="57" step="0.5"></div>
+                            <div class="form-group"><label>Mezera řádků</label><input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Součet (Y)</label><input type="number" id="cfg-cons-soucet" value="107" step="0.5"></div>
+                            <div class="form-group"><label>Spodní texty (Y)</label><input type="number" id="cfg-cons-spodni" value="111" step="0.5"></div>
+                            <div class="form-group"><label>Pata (Y)</label><input type="number" id="cfg-cons-pata" value="144" step="0.5"></div>
+                        </div>
                     </div>
-                    <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;" data-cs="Kalibrovat šablonu" data-de="Vorlage kalibrieren">Kalibrovat šablonu</button>
+                    <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;" data-cs="Kalibrovat šablonu" data-de="Vorlage kalibrieren">Uložit kalibraci pro Consilium</button>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
                     <div class="card-title" data-cs="Firemní identita" data-de="Firmenidentität">Firemní identita (Logo a Razítko)</div>
