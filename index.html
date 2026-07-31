@@ -1421,8 +1421,10 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             doc.text(totalWeekHours.toFixed(2), X_SOUCET, Y_SOUCET, { align: 'center' });
 
             // 4. SPODNÍ ČÁST (Závislá na X_SPODNI)
+         // 4. SPODNÍ ČÁST (Zcela nezávislé pozice)
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
+            
             let consObdobi = bezDiakritiky(document.getElementById('cons-obdobi') ? document.getElementById('cons-obdobi').value : '');
             let consZavady = bezDiakritiky(document.getElementById('cons-zavady') ? document.getElementById('cons-zavady').value : '');
             let consOdstranitDo = bezDiakritiky(document.getElementById('cons-odstranit-do') ? document.getElementById('cons-odstranit-do').value : '');
@@ -1434,28 +1436,56 @@ function drawConsiliumReportToDoc(doc, vybrane) {
                 consDatumNabidnuti = `${d}.${m}.${y}`;
             }
 
-            if(consObdobi) doc.text(consObdobi, X_SPODNI, Y_SPODNI + 3, {maxWidth: 80});
-            if(consOdstranitDo) doc.text(consOdstranitDo, X_SPODNI, Y_SPODNI + 10.5, {maxWidth: 80});
-            if(consZavady) doc.text(consZavady, X_SPODNI, Y_SPODNI + 18, {maxWidth: 80});
+            // Načtení volných souřadnic
+            let xObdobi = parseFloat(localStorage.getItem('cfg_cons_x_obdobi')) || 122;
+            let yObdobi = parseFloat(localStorage.getItem('cfg_cons_y_obdobi')) || 114;
 
+            let xOdstranit = parseFloat(localStorage.getItem('cfg_cons_x_odstranit_do')) || 122;
+            let yOdstranit = parseFloat(localStorage.getItem('cfg_cons_y_odstranit_do')) || 121.5;
+
+            let xZavady = parseFloat(localStorage.getItem('cfg_cons_x_zavady')) || 122;
+            let yZavady = parseFloat(localStorage.getItem('cfg_cons_y_zavady')) || 129;
+
+            let xChk = parseFloat(localStorage.getItem('cfg_cons_x_chk')) || 18.2;
+            let yChk = parseFloat(localStorage.getItem('cfg_cons_y_chk')) || 134.8;
+
+            let xDatumNab = parseFloat(localStorage.getItem('cfg_cons_x_datum_nab')) || 91;
+            let yDatumNab = parseFloat(localStorage.getItem('cfg_cons_y_datum_nab')) || 137.5;
+
+            // 5. PATA S PODPISY (Také nezávislé)
+            let xMesto = parseFloat(localStorage.getItem('cfg_cons_x_mesto_datum')) || 16;
+            let yMesto = parseFloat(localStorage.getItem('cfg_cons_y_mesto_datum')) || 142.5;
+
+            let xPodpisDodavatel = parseFloat(localStorage.getItem('cfg_cons_x_podpis_dodavatel')) || 82;
+            let yPodpisDodavatel = parseFloat(localStorage.getItem('cfg_cons_y_podpis_dodavatel')) || 131;
+
+            let xPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_x_podpis_klient')) || 152;
+            let yPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_y_podpis_klient')) || 131;
+
+            // Vykreslení textů na přesné X a Y
+            if(consObdobi) doc.text(consObdobi, xObdobi, yObdobi, {maxWidth: 80});
+            if(consOdstranitDo) doc.text(consOdstranitDo, xOdstranit, yOdstranit, {maxWidth: 80});
+            if(consZavady) doc.text(consZavady, xZavady, yZavady, {maxWidth: 80});
+
+            // Vykreslení Křížku
             if(consNabidnutoChk) {
                 doc.setLineWidth(0.4);
-                let chkX = X_SPODNI - 104;
-                let chkY = Y_SPODNI + 23.8; 
                 let chkS = 3.5;
-                doc.line(chkX, chkY, chkX + chkS, chkY + chkS);
-                doc.line(chkX + chkS, chkY, chkX, chkY + chkS);
+                doc.line(xChk, yChk, xChk + chkS, yChk + chkS);
+                doc.line(xChk + chkS, yChk, xChk, yChk + chkS);
             }
-            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, X_SPODNI - 31, Y_SPODNI + 26.5);
+            
+            // Datum k převzetí
+            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, xDatumNab, yDatumNab);
 
-            // 5. PATA S PODPISY (Závislá na X_PATA)
+            // Místo, Datum (např. Helmbrechts)
             let datumDnes = new Date().toLocaleDateString('de-DE');
-            doc.text(`${mestoStavby}, ${datumDnes}`, X_PATA, Y_PATA - 1.5, { align: 'left', maxWidth: 70 });
+            doc.text(`${mestoStavby}, ${datumDnes}`, xMesto, yMesto, { align: 'left', maxWidth: 70 });
 
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', X_PATA + 66, Y_PATA - 13, 35, 12); 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', X_PATA + 136, Y_PATA - 13, 35, 12); 
+            // Podpisy
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', xPodpisDodavatel, yPodpisDodavatel, 35, 12); 
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', xPodpisKlient, yPodpisKlient, 35, 12); 
         }
-
         function exportConsiliumPDF(returnBlob = false) {
             const { jsPDF } = window.jspdf; 
             const doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'landscape' }); 
