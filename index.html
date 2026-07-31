@@ -1319,25 +1319,12 @@
             doc.text(jmeno, 125, y + 4); doc.text("Unterschrift Auftragnehmer", 125, y + 8);
         }
 
-        function drawConsiliumReportToDoc(doc, vybrane) {
+function drawConsiliumReportToDoc(doc, vybrane) {
             let tplData = localStorage.getItem('cfg_tpl_consilium');
             if (!tplData) {
                 alert(currentLang === 'cs' ? "Nejprve prosím nahraj A5 šablonu formuláře v Nastavení!" : "Bitte A5-Vorlage in den Einstellungen hochladen!");
                 return;
             }
-
-            let savedOffsetX = localStorage.getItem('cfg_cons_offset_x');
-            const X_DATUM = parseFloat(localStorage.getItem('cfg_cons_x_datum')) || 20;
-            const X_ZACATEK = parseFloat(localStorage.getItem('cfg_cons_x_zacatek')) || 40.5;
-            const OFFSET_X = savedOffsetX !== null ? parseFloat(savedOffsetX) : -8;          
-            const Y_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_hlavicka')) || 32;
-            const Y_TABULKA_START = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 57;
-            const RADKOVANI = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
-            const Y_SOUCET = parseFloat(localStorage.getItem('cfg_cons_soucet')) || 107;
-            
-            // Nové upravené výchozí hodnoty
-            const Y_PATA = parseFloat(localStorage.getItem('cfg_cons_pata')) || 144; 
-            const Y_SPODNI = parseFloat(localStorage.getItem('cfg_cons_spodni')) || 111; 
 
             let imgType = tplData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
             doc.addImage(tplData, imgType, 0, 0, 210, 148, '', 'FAST');
@@ -1349,23 +1336,46 @@
             let adresaMesto = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData.replace(/\n/g, ", ") : (document.getElementById('cfg-adresa').value + ", " + document.getElementById('cfg-mesto').value));
             
             let mestoStavby = bezDiakritiky(document.getElementById('cfg-mesto-stavby').value || document.getElementById('cfg-mesto').value);
-            
             let startD = bezDiakritiky(startDatum(vybrane)); 
             let endD = bezDiakritiky(endDatum(vybrane));
             let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
-            
+
+            // --- NAČTENÍ VŠECH TVÝCH SOUŘADNIC Z VIZUÁLNÍHO EDITORU ---
+            const X_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_x_hlavicka')) || 27;
+            const X_SOUCET   = parseFloat(localStorage.getItem('cfg_cons_x_soucet')) || 93;
+            const X_SPODNI   = parseFloat(localStorage.getItem('cfg_cons_x_spodni')) || 114;
+            const X_PATA     = parseFloat(localStorage.getItem('cfg_cons_x_pata')) || 8;
+
+            const Y_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_hlavicka')) || 32;
+            const Y_TABULKA  = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 57;
+            const Y_ZAKAZKA  = parseFloat(localStorage.getItem('cfg_cons_y_zakazka')) || Y_TABULKA;
+            const RADKOVANI  = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
+            const Y_SOUCET   = parseFloat(localStorage.getItem('cfg_cons_soucet')) || 107;
+            const Y_PATA     = parseFloat(localStorage.getItem('cfg_cons_pata')) || 144;
+            const Y_SPODNI   = parseFloat(localStorage.getItem('cfg_cons_spodni')) || 111;
+
+            const X_DATUM   = parseFloat(localStorage.getItem('cfg_cons_x_datum')) || 20;
+            const X_ZACATEK = parseFloat(localStorage.getItem('cfg_cons_x_zacatek')) || 40.5;
+            const X_OD      = parseFloat(localStorage.getItem('cfg_cons_x_od')) || 53;
+            const X_DO      = parseFloat(localStorage.getItem('cfg_cons_x_do')) || 65;
+            const X_KONEC   = parseFloat(localStorage.getItem('cfg_cons_x_konec')) || 77;
+            const X_HODINY  = parseFloat(localStorage.getItem('cfg_cons_x_hodiny')) || 93;
+            const X_POPIS   = parseFloat(localStorage.getItem('cfg_cons_x_popis')) || 102;
+            const X_ZAKAZKA = parseFloat(localStorage.getItem('cfg_cons_x_zakazka')) || 184;
+
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
             doc.setTextColor(0, 0, 0);
 
-            doc.text(firma, 35 + OFFSET_X, Y_HLAVICKA, { align: 'center', maxWidth: 65 }); 
-            doc.text(jmeno, 93 + OFFSET_X, Y_HLAVICKA, { align: 'center', maxWidth: 50 }); 
-            doc.text(adresaMesto, 148 + OFFSET_X, Y_HLAVICKA, { align: 'center', maxWidth: 55 }); 
-            doc.text(`${startD} - ${endD}`, 192 + OFFSET_X, Y_HLAVICKA, { align: 'center', maxWidth: 30 }); 
+            // 1. HLAVIČKA (Závislá na X_HLAVICKA)
+            doc.text(firma, X_HLAVICKA, Y_HLAVICKA, { align: 'center', maxWidth: 65 }); 
+            doc.text(jmeno, X_HLAVICKA + 58, Y_HLAVICKA, { align: 'center', maxWidth: 50 }); 
+            doc.text(adresaMesto, X_HLAVICKA + 113, Y_HLAVICKA, { align: 'center', maxWidth: 55 }); 
+            doc.text(`${startD} - ${endD}`, X_HLAVICKA + 157, Y_HLAVICKA, { align: 'center', maxWidth: 30 }); 
 
+            // 2. TABULKA
             let dayRecords = new Array(7).fill(null);
             let totalWeekHours = 0;
-            
             vybrane.forEach(z => { 
                 let d = new Date(z.datum + "T12:00:00").getDay(); 
                 let idx = d === 0 ? 6 : d - 1; 
@@ -1374,43 +1384,45 @@
 
             for(let i=0; i<7; i++) {
                 let rec = dayRecords[i];
-                let rowY = Y_TABULKA_START + (i * RADKOVANI);
+                let rowY = Y_TABULKA + (i * RADKOVANI);
+                let zakazkaY = Y_ZAKAZKA + (i * RADKOVANI); // Zakázka má svou vlastní osu Y!
+
                 if(rec) {
                     let h = kalkulujCisteHodiny(rec); 
                     totalWeekHours += h;
                     
-                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), 28 + OFFSET_X, rowY, { align: 'center' }); 
-                    doc.text(rec.zacatek, 48.5 + OFFSET_X, rowY, { align: 'center' }); 
+                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), X_DATUM, rowY, { align: 'center' }); 
+                    doc.text(rec.zacatek, X_ZACATEK, rowY, { align: 'center' }); 
                     
                     if (rec.prestavkaOd && rec.prestavkaDo) {
-                        doc.text(rec.prestavkaOd, 61 + OFFSET_X, rowY, { align: 'center' }); 
-                        doc.text(rec.prestavkaDo, 73 + OFFSET_X, rowY, { align: 'center' }); 
+                        doc.text(rec.prestavkaOd, X_OD, rowY, { align: 'center' }); 
+                        doc.text(rec.prestavkaDo, X_DO, rowY, { align: 'center' }); 
                     } else if (rec.prestavka && rec.prestavka > 0) {
-                        doc.text(`${rec.prestavka}m`, 67.5 + OFFSET_X, rowY, { align: 'center' }); 
+                        doc.text(`${rec.prestavka}m`, X_OD + 6, rowY, { align: 'center' }); 
                     } else {
-                        doc.text(`-`, 67.5 + OFFSET_X, rowY, { align: 'center' });
+                        doc.text(`-`, X_OD + 6, rowY, { align: 'center' });
                     }
 
-                    doc.text(rec.konec, 85 + OFFSET_X, rowY, { align: 'center' }); 
-                    doc.text(h.toFixed(2), 101 + OFFSET_X, rowY, { align: 'center' }); 
+                    doc.text(rec.konec, X_KONEC, rowY, { align: 'center' }); 
+                    doc.text(h.toFixed(2), X_HODINY, rowY, { align: 'center' }); 
                     
                     if (rec.popisPrace) {
                         doc.setFontSize(7.5);
-                        doc.text(bezDiakritiky(rec.popisPrace), 110 + OFFSET_X, rowY - 2.5, { maxWidth: 78, lineHeightFactor: 1.15 }); 
+                        doc.text(bezDiakritiky(rec.popisPrace), X_POPIS, rowY - 2.5, { maxWidth: 78, lineHeightFactor: 1.15 }); 
                         doc.setFontSize(9);
                     }
                     let zakazka = rec.cisloZakazky || cisloZ;
-                    doc.text(zakazka, 192 + OFFSET_X, rowY, { align: 'center', maxWidth: 30 }); 
+                    doc.text(zakazka, X_ZAKAZKA, zakazkaY, { align: 'center', maxWidth: 30 }); 
                 }
             }
 
+            // 3. SOUČET
             doc.setFont("helvetica", "bold");
-            doc.text(totalWeekHours.toFixed(2), 101 + OFFSET_X, Y_SOUCET, { align: 'center' });
+            doc.text(totalWeekHours.toFixed(2), X_SOUCET, Y_SOUCET, { align: 'center' });
 
+            // 4. SPODNÍ ČÁST (Závislá na X_SPODNI)
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
-            
-            // --- OPRAVA: VYPLNĚNÍ SPODNÍ ČÁSTI CONSILIUM VÝKAZU ---
             let consObdobi = bezDiakritiky(document.getElementById('cons-obdobi') ? document.getElementById('cons-obdobi').value : '');
             let consZavady = bezDiakritiky(document.getElementById('cons-zavady') ? document.getElementById('cons-zavady').value : '');
             let consOdstranitDo = bezDiakritiky(document.getElementById('cons-odstranit-do') ? document.getElementById('cons-odstranit-do').value : '');
@@ -1422,38 +1434,26 @@
                 consDatumNabidnuti = `${d}.${m}.${y}`;
             }
 
-            // Pozice pravého sloupce pro texty (Období, Termín odstranění, Závady)
-            let pravySloupecX = 122 + OFFSET_X; 
+            if(consObdobi) doc.text(consObdobi, X_SPODNI, Y_SPODNI + 3, {maxWidth: 80});
+            if(consOdstranitDo) doc.text(consOdstranitDo, X_SPODNI, Y_SPODNI + 10.5, {maxWidth: 80});
+            if(consZavady) doc.text(consZavady, X_SPODNI, Y_SPODNI + 18, {maxWidth: 80});
 
-            // 1. Řádek (Am heutigen Tage)
-            if(consObdobi) doc.text(consObdobi, pravySloupecX, Y_SPODNI + 3, {maxWidth: 80});
-            
-            // 2. Řádek (Bei der Abnahme... Mängel)
-            if(consOdstranitDo) doc.text(consOdstranitDo, pravySloupecX, Y_SPODNI + 10.5, {maxWidth: 80});
-            
-            // 3. Řádek (Der Auftraggeber macht...)
-            if(consZavady) doc.text(consZavady, pravySloupecX, Y_SPODNI + 18, {maxWidth: 80});
-
-            // Křížek Checkboxu
             if(consNabidnutoChk) {
                 doc.setLineWidth(0.4);
-                let chkX = 18.2 + OFFSET_X;
+                let chkX = X_SPODNI - 104;
                 let chkY = Y_SPODNI + 23.8; 
                 let chkS = 3.5;
                 doc.line(chkX, chkY, chkX + chkS, chkY + chkS);
                 doc.line(chkX + chkS, chkY, chkX, chkY + chkS);
             }
-            
-            // Datum do tečkované čáry (am ............. zur Abnahme)
-            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, 91 + OFFSET_X, Y_SPODNI + 26.5);
+            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, X_SPODNI - 31, Y_SPODNI + 26.5);
 
-            // Místo podpisu nyní tahá z Města výkonu stavby - ZAROVNÁNO DOLEVA
+            // 5. PATA S PODPISY (Závislá na X_PATA)
             let datumDnes = new Date().toLocaleDateString('de-DE');
-            doc.text(`${mestoStavby}, ${datumDnes}`, 16 + OFFSET_X, Y_PATA - 1.5, { align: 'left', maxWidth: 70 });
+            doc.text(`${mestoStavby}, ${datumDnes}`, X_PATA, Y_PATA - 1.5, { align: 'left', maxWidth: 70 });
 
-            // Podpisy nad linkami - upraveny souřadnice X pro Auftragnehmer a Auftraggeber
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 82 + OFFSET_X, Y_PATA - 13, 35, 12); 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 152 + OFFSET_X, Y_PATA - 13, 35, 12); 
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', X_PATA + 66, Y_PATA - 13, 35, 12); 
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', X_PATA + 136, Y_PATA - 13, 35, 12); 
         }
 
         function exportConsiliumPDF(returnBlob = false) {
