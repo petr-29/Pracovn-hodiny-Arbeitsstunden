@@ -2470,7 +2470,88 @@ function executePDFExport() {
                 }
             } 
         } 
+async function sharePDFExport() {
+    let fileBlob = null;
+    let fileName = "";
+    let savedToArchive = false; // Příznak, zda se faktura úspěšně uložila do archivu
 
+    const { jsPDF } = window.jspdf;
+    
+    let vybrane = zaznamy.filter(z => z.selected);
+    vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+
+    if (currentExportType === 'consilium') {
+        fileBlob = exportConsiliumPDF(true);
+        fileName = `Consilium_Protokol_${new Date().getTime()}.pdf`;
+    } else if (currentExportType === 'standard') {
+        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        drawStandardReportToDoc(doc, vybrane);
+        fileBlob = doc.output('blob');
+        fileName = `Taetigkeitsnachweis_${new Date().getTime()}.pdf`;
+    } else if (currentExportType === 'abnahme') {
+        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        drawAbnahmeReportToDoc(doc, vybrane);
+        fileBlob = doc.output('blob');
+        fileName = `Abnahmeprotokoll_${new Date().getTime()}.pdf`;
+    } else if (currentExportType === 'faktura') {
+        // Logika pro fakturu - nejprve ji uložíme do paměti aplikace
+        let cisloFaktury = document.getElementById('fak-cislo').value;
+        let odberatel = document.getElementById('cfg-firma').value;
+        let suma = 0;
+        vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+        let fakturaData = {
+            vystaveni: document.getElementById('fak-vystaveni').value,
+            splatnost: document.getElementById('fak-splatnost').value,
+            prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value
+        };
+
+        let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+        if (!ok) return; // Ukončí se, pokud se nezdařilo uložit (např. duplicita čísla)
+        
+        savedToArchive = true;
+        
+        let fakeFaktura = {
+            cislo: cisloFaktury, odberatel: odberatel, suma: suma,
+            datum: new Date().toISOString(), vybraneZaznamy: vybrane, fakturaData: fakturaData
+        };
+        const doc = buildFakturaDoc(fakeFaktura);
+        fileBlob = doc.output('blob');
+        fileName = `Faktura_${cisloFaktury.replace('/','-')}.pdf`;
+    }
+
+    // Otevření nativního okna pro sdílení
+    if (fileBlob) {
+        let file = new File([fileBlob], fileName, { type: 'application/pdf' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: fileName,
+                    text: currentLang === 'cs' ? 'Zasílám vygenerované PDF.' : 'Hier ist das generierte PDF.'
+                });
+                if(savedToArchive) alert(currentLang === 'cs' ? 'Odesláno a faktura uložena do archivu!' : 'Gesendet und Rechnung archiviert!');
+                closeExportCard();
+            } catch (err) {
+                console.log("Sdílení zrušeno", err);
+            }
+        } else {
+            // Bezpečnostní záloha, pokud starší telefon sdílení nepodporuje
+            alert(currentLang === 'cs' ? 'Zařízení nepodporuje přímé sdílení. PDF se místo toho stáhne.' : 'Teilen nicht unterstützt. PDF wird heruntergeladen.');
+            const url = URL.createObjectURL(fileBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            if(savedToArchive) alert(currentLang === 'cs' ? 'Faktura uložena do archivu!' : 'Rechnung archiviert!');
+            closeExportCard();
+        }
+    }
+}
     
     // ==========================================
     // VIZUÁLNÍ DRAG & DROP KALIBRACE CONSILIUM
