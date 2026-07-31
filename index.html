@@ -174,6 +174,22 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: background 0.1s;
         }
         .calib-item:active { cursor: grabbing; background: rgba(231, 76, 60, 1); z-index: 10; transform: translate(-50%, -50%) scale(1.1); }
+        /* --- ROZBALOVACÍ TLAČÍTKA (ZÁZNAMY) --- */
+        .month-accordion {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white; padding: 12px 15px; font-weight: bold; border-radius: 8px;
+            margin: 15px 0 5px 0; display: flex; justify-content: space-between; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 14px; text-transform: uppercase;
+        }
+        .week-accordion {
+            background: #e8f4f8; color: #2980b9; padding: 10px 15px; font-weight: bold; border-radius: 6px;
+            margin: 10px 0 5px 0; display: flex; justify-content: space-between; cursor: pointer;
+            border: 1px solid #3498db; font-size: 13px;
+        }
+        .month-accordion:active, .week-accordion:active { transform: scale(0.98); }
+        .acc-content { display: none; padding-left: 5px; padding-right: 5px; }
+        .acc-content.show { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -1677,7 +1693,7 @@
     }
 }
 
-        function buildFakturaDoc(f) {
+      function buildFakturaDoc(f) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
             
@@ -1694,123 +1710,156 @@
             let adresa = localStorage.getItem('cfg_adresa') || '';
             let mesto = localStorage.getItem('cfg_mesto') || '';
             let icoOdberatel = localStorage.getItem('cfg_ico_odberatel') || '';
-            
+
+            // 1. ČERVENÁ HLAVIČKA
             doc.setFillColor(179, 57, 57);
-            doc.rect(0, 0, 210, 30, 'F');
+            doc.rect(0, 0, 210, 35, 'F');
+            
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(20);
+            doc.setFontSize(22);
             let title = (localStorage.getItem('app_lang') === 'de') ? "Rechnung Nr." : "Faktura c.";
-            doc.text(`${title} ${f.cislo}`, 190, 15, {align: 'right'});
-            doc.setFontSize(10);
+            doc.text(`${title} ${f.cislo}`, 190, 18, {align: 'right'});
+            
+            doc.setFontSize(11);
             doc.setFont("helvetica", "normal");
             let neplatce = (localStorage.getItem('app_lang') === 'de') ? "Kleinunternehmer (Kein USt-Ausweis)" : "Neplatce DPH";
-            doc.text(neplatce, 190, 22, {align: 'right'});
+            doc.text(neplatce, 190, 26, {align: 'right'});
             
+            // LOGO (Pokus se načíst, pokud je nastavené)
+            let lData = localStorage.getItem('cfg_logo');
+            if (lData) {
+                doc.addImage(lData, 'PNG', 20, 5, 40, 15, '', 'FAST');
+            }
+
+            // 2. DVA SLOUPCE (DODAVATEL / ODBĚRATEL)
             doc.setTextColor(41, 128, 185);
-            doc.setFontSize(12);
+            doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
-            doc.text((localStorage.getItem('app_lang') === 'de') ? "Auftragnehmer" : "Dodavatel", 20, 45);
-            doc.text((localStorage.getItem('app_lang') === 'de') ? "Auftraggeber" : "Odberatel", 110, 45);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "Auftragnehmer" : "Dodavatel", 20, 50);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "Auftraggeber" : "Odberatel", 110, 50);
             
             doc.setTextColor(0, 0, 0);
-            doc.text(bezDiakritiky(jmeno), 20, 52);
-            doc.text(bezDiakritiky(firma), 110, 52);
+            doc.setFontSize(11);
+            doc.text(bezDiakritiky(jmeno), 20, 57);
+            doc.text(bezDiakritiky(firma), 110, 57);
             
             doc.setFont("helvetica", "normal");
             doc.setFontSize(10);
-            let dodAdresaLines = doc.splitTextToSize(bezDiakritiky(dodAdresa.replace(/<br>/g, '\n')), 80);
-            doc.text(dodAdresaLines, 20, 58);
-            doc.text(`ICO: ${dodIco}`, 20, 58 + (dodAdresaLines.length * 5) + 2);
             
-            let odbAdresaLines = doc.splitTextToSize(bezDiakritiky(adresa) + "\n" + bezDiakritiky(mesto), 80);
-            doc.text(odbAdresaLines, 110, 58);
-            doc.text(bezDiakritiky(icoOdberatel), 110, 58 + (odbAdresaLines.length * 5) + 2);
+            let dodAdrLines = doc.splitTextToSize(bezDiakritiky(dodAdresa.replace(/<br>/g, '\n')), 80);
+            doc.text(dodAdrLines, 20, 63);
+            let currentY = 63 + (dodAdrLines.length * 5);
+            doc.text(`ICO: ${dodIco}`, 20, currentY);
+            doc.text(bezDiakritiky(dodBanka), 20, currentY + 10);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? `Ausgestellt von: ${bezDiakritiky(jmeno)}` : `Vystavil: ${bezDiakritiky(jmeno)}`, 20, currentY + 20);
+            doc.text(bezDiakritiky(dodKontakt), 20, currentY + 25);
             
-            doc.setDrawColor(200, 200, 200);
-            doc.line(20, 95, 190, 95);
+            let odbAdrLines = doc.splitTextToSize(bezDiakritiky(adresa) + "\n" + bezDiakritiky(mesto), 80);
+            doc.text(odbAdrLines, 110, 63);
+            doc.text(bezDiakritiky(icoOdberatel), 110, 63 + (odbAdrLines.length * 5) + 2);
+
+            // 3. ŠEDÝ PRUH PLATBY
+            doc.setFillColor(242, 242, 242);
+            doc.rect(0, 105, 210, 12, 'F');
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            let platba = (localStorage.getItem('app_lang') === 'de') ? "Zahlungsart: Bankueberweisung" : "Zpusob platby: Bankovni prevod";
+            doc.text(platba, 20, 113);
             
+            // 4. DATUMY
+            doc.setTextColor(41, 128, 185);
             let vystaveniStr = f.fakturaData && f.fakturaData.vystaveni ? new Date(f.fakturaData.vystaveni).toLocaleDateString('de-DE') : new Date(f.datum).toLocaleDateString('de-DE');
             let splatnostStr = f.fakturaData && f.fakturaData.splatnost ? new Date(f.fakturaData.splatnost).toLocaleDateString('de-DE') : '';
-            doc.text(`Datum vystaveni: ${vystaveniStr}`, 20, 105);
-            doc.text(`Datum splatnosti: ${splatnostStr}`, 20, 112);
+            doc.setFontSize(10);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "RECHNUNGSDATUM" : "DATUM VYSTAVENI", 20, 128);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "FAELLIGKEITSDATUM" : "DATUM SPLATNOSTI", 70, 128);
             
+            doc.setTextColor(0, 0, 0);
+            doc.text(vystaveniStr, 20, 134);
+            doc.text(splatnostStr, 70, 134);
+
+            // 5. TABULKA (Červená hlavička)
             doc.setFillColor(179, 57, 57);
-            doc.rect(20, 120, 170, 10, 'F');
+            doc.rect(20, 142, 170, 10, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
-            doc.text("Popis", 22, 127);
-            doc.text("Mnozstvi", 110, 127);
-            doc.text("Cena/mj.", 140, 127);
-            doc.text("Celkem", 188, 127, {align: 'right'});
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "Beschreibung" : "Popis", 22, 149);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "Menge" : "Mnozstvi", 110, 149);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "Einzelpreis" : "Cena/mj.", 140, 149);
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "Gesamt" : "Celkem", 188, 149, {align: 'right'});
             
             doc.setTextColor(0, 0, 0);
             doc.setFont("helvetica", "normal");
             
+            // Kalkulace pro tabulku
             let totalH = 0; 
-            vybrane.forEach(z => {
-                let [h1, m1] = z.zacatek.split(':').map(Number);
-                let [h2, m2] = z.konec.split(':').map(Number);
-                let start = h1 * 60 + m1; let konec = h2 * 60 + m2;
-                if (konec < start) konec += 24 * 60;
-                let pauseMinut = 0;
-                if (z.prestavkaOd && z.prestavkaDo) {
-                    let [ph1, pm1] = z.prestavkaOd.split(':').map(Number);
-                    let [ph2, pm2] = z.prestavkaDo.split(':').map(Number);
-                    let pStart = ph1 * 60 + pm1; let pKonec = ph2 * 60 + pm2;
-                    if (pKonec < pStart) pKonec += 24 * 60;
-                    pauseMinut = pKonec - pStart;
-                } else if (z.prestavka) { pauseMinut = Number(z.prestavka); }
-                let cisty = (konec - start - pauseMinut) / 60;
-                totalH += (cisty > 0 ? cisty : 0);
-            });
+            vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
             let typSazby = vybrane.length > 0 ? vybrane[0].sazba : 0;
             
-            doc.text("Pracovni hodiny dle vykazu", 22, 140);
-            doc.text(`${totalH.toFixed(2)} h`, 110, 140);
-            doc.text(`${typSazby} EUR`, 140, 140);
-            doc.text(`${sumEUR.toFixed(2)} EUR`, 188, 140, {align: 'right'});
-            doc.line(20, 145, 190, 145);
+            let startD = startDatum(vybrane); let endD = endDatum(vybrane);
+            let popisH = (localStorage.getItem('app_lang') === 'de') ? `Arbeitsstunden laut Nachweis\n(${startD} - ${endD})` : `Pracovni hodiny dle vykazu\n(${startD} - ${endD})`;
+
+            doc.text(popisH, 22, 160);
+            doc.text(`${totalH.toFixed(2)} h`, 110, 160);
+            doc.text(`${typSazby} EUR`, 140, 160);
+            doc.text(`${sumEUR.toFixed(2)} EUR`, 188, 160, {align: 'right'});
             
+            doc.setDrawColor(238, 238, 238);
+            doc.line(20, 175, 190, 175);
+            
+            // 6. TOTAL SOUČET
             doc.setFontSize(16);
             doc.setFont("helvetica", "bold");
-            doc.text(`Celkem k uhrade: ${sumEUR.toFixed(2)} EUR`, 190, 155, {align: 'right'});
+            let txtCelkem = (localStorage.getItem('app_lang') === 'de') ? "Gesamtbetrag:" : "Celkem k uhrade:";
+            doc.text(`${txtCelkem} ${sumEUR.toFixed(2)} EUR`, 190, 190, {align: 'right'});
+
+            // 7. QR KÓD (Podle IBANu z hlavičky)
+            let ibanMatch = dodBanka.match(/IBAN:\s*([A-Z0-9]+)/i);
+            let iban = ibanMatch ? ibanMatch[1] : dodBanka.replace(/[^A-Z0-9]/gi, ''); 
+            if (iban && iban.length > 10) {
+                try {
+                    let qrBase64 = getQrBase64(iban, sumEUR, f.cislo);
+                    if (qrBase64) {
+                        doc.addImage(qrBase64, 'PNG', 20, 180, 35, 35);
+                        doc.setFontSize(8);
+                        doc.text("QR Platba", 37.5, 218, {align: 'center'});
+                    }
+                } catch (e) { console.log("QR error", e); }
+            }
             
+            // 8. PODPIS A RAZÍTKO
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text("Zpusob platby: Bankovni prevod", 20, 170);
-            doc.text(bezDiakritiky(dodBanka), 20, 175);
             
-            doc.text("Vystavil: " + bezDiakritiky(jmeno), 20, 260);
-            doc.text(bezDiakritiky(dodKontakt), 20, 265);
-            
-       
             let rData = localStorage.getItem('cfg_razitko');
-
-            if (rData) {
- 
-                doc.addImage(rData, 'PNG', 140, 230, 40, 15);
-
-            }
-            // Přidáno vykreslení tvého podpisu z globální proměnné
+            if (rData) { doc.addImage(rData, 'PNG', 140, 230, 40, 15, '', 'FAST'); }
+            
             if (dataPodpisuIch) {
-                doc.addImage(dataPodpisuIch, 'PNG', 145, 238, 30, 15);
-
+                doc.addImage(dataPodpisuIch, 'PNG', 145, 238, 30, 15, '', 'FAST');
+            } else if (f.fakturaData && f.fakturaData.podpisIch) {
+                doc.addImage(f.fakturaData.podpisIch, 'PNG', 145, 238, 30, 15, '', 'FAST');
             }
+
+            doc.setDrawColor(0, 0, 0);
             doc.line(130, 255, 190, 255);
-            doc.text("Podpis", 160, 260, {align: 'center'});
+            doc.text((localStorage.getItem('app_lang') === 'de') ? "Unterschrift" : "Podpis", 160, 260, {align: 'center'});
+            
+            // 9. PATIČKA
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            let footerTxt = (localStorage.getItem('app_lang') === 'de') ? "Der Unternehmer ist im Gewerberegister eingetragen." : "Podnikatel je zapsan v zivnostenskem rejstriku.";
+            doc.text(footerTxt, 20, 280);
+
+            // 10. PŘÍLOHY NA DALŠÍ STRANU
             if (f.fakturaData && f.fakturaData.prilohaTyp === 'standard') {
-                doc.addPage('a4', 'portrait');
-                drawStandardReportToDoc(doc, vybrane); 
+                doc.addPage('a4', 'portrait'); drawStandardReportToDoc(doc, vybrane); 
             } 
             else if (f.fakturaData && f.fakturaData.prilohaTyp === 'abnahme') {
-                doc.addPage('a4', 'portrait');
-                drawAbnahmeReportToDoc(doc, vybrane); 
+                doc.addPage('a4', 'portrait'); drawAbnahmeReportToDoc(doc, vybrane); 
             }
             else if (f.fakturaData && f.fakturaData.prilohaTyp === 'consilium') {
-                doc.addPage('a5', 'landscape'); // Extra trik: přepneme rozměr druhé strany na A5 naležato!
-                drawConsiliumReportToDoc(doc, vybrane);
-
+                doc.addPage('a5', 'landscape'); drawConsiliumReportToDoc(doc, vybrane);
             }
         
             return doc;
@@ -2002,7 +2051,7 @@
             document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
         }
 
-        function renderZaznamy() {
+      function renderZaznamy() {
             let container = document.getElementById('seznam-container'); 
             container.innerHTML = '';
 
@@ -2012,6 +2061,7 @@
             let mesicniHodiny = 0;
             let mesicniPeneze = 0;
 
+            // Získání dat pro hlavní panel nahoře
             zaznamy.forEach(z => {
                 let zd = new Date(z.datum);
                 if (zd.getMonth() === aktualniMesic && zd.getFullYear() === aktualniRok) {
@@ -2022,7 +2072,9 @@
             });
 
             const nazvyMesicuCS = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
-            document.getElementById('mesicni-souhrn-label').innerText = `${nazvyMesicuCS[aktualniMesic]} ${aktualniRok}`;
+            const nazvyMesicuDE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+            document.getElementById('mesicni-souhrn-label').innerText = `${currentLang === 'cs' ? nazvyMesicuCS[aktualniMesic] : nazvyMesicuDE[aktualniMesic]} ${aktualniRok}`;
             document.getElementById('mesicni-souhrn-penize').innerText = formatMena(mesicniPeneze);
             document.getElementById('mesicni-souhrn-hodiny').innerText = `${mesicniHodiny.toFixed(2)} h`;
 
@@ -2031,42 +2083,101 @@
                 return; 
             }
 
-            let sortedZaznamy = [...zaznamy].sort((a,b) => new Date(b.datum) - new Date(a.datum));
-            let currentWeekStr = "";
-
-            sortedZaznamy.forEach((z) => {
+            // 1. Vytvoření stromové struktury (Měsíc -> Týden -> Záznamy)
+            let tree = {};
+            zaznamy.forEach(z => {
                 let d = new Date(z.datum);
+                let y = d.getFullYear();
+                let m = d.getMonth();
                 let wk = getWeekNumber(d);
-                let yr = d.getFullYear();
-                let weekKey = `${wk}-${yr}`;
-
-                if (currentWeekStr !== weekKey) {
-                    currentWeekStr = weekKey;
-                    let weekHeader = document.createElement('div');
-                    weekHeader.style = "background: #34495e; color: #fff; padding: 8px 15px; font-weight: bold; border-radius: 6px; margin: 20px 0 10px 0; font-size: 14px; text-align: center; text-transform: uppercase;";
-                    weekHeader.innerText = currentLang === 'cs' ? `Týden ${wk} / Rok ${yr}` : `Woche ${wk} / Jahr ${yr}`;
-                    container.appendChild(weekHeader);
-                }
-
-                let h = kalkulujCisteHodiny(z); 
-                let item = document.createElement('div'); 
-                item.className = 'zaznam-item';
                 
-                let badges = '';
-                if(z.pdfFaktura) badges += `<span style="background:#e74c3c; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">FA</span>`;
-                if(z.pdfStandard) badges += `<span style="background:#f39c12; color:black; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">STD</span>`;
-                if(z.pdfAbnahme) badges += `<span style="background:#3498db; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">ABN</span>`;
-                if(z.pdfConsilium) badges += `<span style="background:#8e44ad; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">CON</span>`;
-               
-                let descPreview = badges + (z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`);
+                let mKey = `${y}-${String(m).padStart(2, '0')}`; // Formát YYYY-MM pro přesné třídění
+                let wKey = `${y}-${String(wk).padStart(2, '0')}`; // Formát YYYY-WW
                 
-                item.innerHTML = `<div class="checkbox-container"><input type="checkbox" id="chk-${z.id}" ${z.selected ? 'checked' : ''} onchange="toggleZaznamSelection(${z.id})">
-                    <label for="chk-${z.id}" style="cursor:pointer; display:flex; flex-direction:column; font-weight:normal;"><div><strong style="color:var(--text);">${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>${descPreview}</label></div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn-sec" style="background:#f39c12; color:white; padding:10px;" onclick="editZaznam(${z.id})">✏️</button>
-                        <button class="btn-sec" style="background:#ff7675; color:white; padding:10px;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy(); updateStatistiky();">🗑️</button>
-                    </div>`;
-                container.appendChild(item);
+                if(!tree[mKey]) tree[mKey] = { rok: y, mesic: m, sumH: 0, sumEUR: 0, tyzdny: {} };
+                if(!tree[mKey].tyzdny[wKey]) tree[mKey].tyzdny[wKey] = { tyden: wk, sumH: 0, sumEUR: 0, records: [] };
+                
+                let h = kalkulujCisteHodiny(z);
+                let eur = h * z.sazba;
+                
+                tree[mKey].sumH += h;
+                tree[mKey].sumEUR += eur;
+                tree[mKey].tyzdny[wKey].sumH += h;
+                tree[mKey].tyzdny[wKey].sumEUR += eur;
+                tree[mKey].tyzdny[wKey].records.push(z);
+            });
+
+            // 2. Vykreslování (od nejnovějších)
+            let sortedMonths = Object.keys(tree).sort((a,b) => b.localeCompare(a));
+            
+            sortedMonths.forEach((mKey, mIndex) => {
+                let mData = tree[mKey];
+                let nazvy = currentLang === 'cs' ? nazvyMesicuCS : nazvyMesicuDE;
+                let mName = `${nazvy[mData.mesic]} ${mData.rok}`;
+                
+                // Měsíční tlačítko
+                let mHeader = document.createElement('div');
+                mHeader.className = 'month-accordion';
+                mHeader.innerHTML = `<span>📅 ${mName}</span> <span>${mData.sumH.toFixed(2)} h | ${formatMena(mData.sumEUR)}</span>`;
+                mHeader.onclick = () => {
+                    document.getElementById(`month-content-${mKey}`).classList.toggle('show');
+                };
+                
+                let mContent = document.createElement('div');
+                mContent.id = `month-content-${mKey}`;
+                mContent.className = 'acc-content';
+                // Nejnovější měsíc se automaticky otevře, staré zůstanou zavřené
+                if (mIndex === 0) mContent.classList.add('show');
+                
+                let sortedWeeks = Object.keys(mData.tyzdny).sort((a,b) => b.localeCompare(a));
+                
+                sortedWeeks.forEach((wKey, wIndex) => {
+                    let wData = mData.tyzdny[wKey];
+                    let wName = currentLang === 'cs' ? `Týden ${wData.tyden}` : `Woche ${wData.tyden}`;
+                    
+                    // Týdenní tlačítko
+                    let wHeader = document.createElement('div');
+                    wHeader.className = 'week-accordion';
+                    wHeader.innerHTML = `<span>🗓️ ${wName}</span> <span>${wData.sumH.toFixed(2)} h | ${formatMena(wData.sumEUR)}</span>`;
+                    wHeader.onclick = () => {
+                        document.getElementById(`week-content-${wKey}`).classList.toggle('show');
+                    };
+                    
+                    let wContent = document.createElement('div');
+                    wContent.id = `week-content-${wKey}`;
+                    wContent.className = 'acc-content';
+                    // Nejnovější týden se automaticky otevře
+                    if (mIndex === 0 && wIndex === 0) wContent.classList.add('show');
+                    
+                    // Samotné záznamy v daném týdnu
+                    wData.records.sort((a,b) => new Date(b.datum) - new Date(a.datum)).forEach(z => {
+                        let h = kalkulujCisteHodiny(z); 
+                        let item = document.createElement('div'); 
+                        item.className = 'zaznam-item';
+                        
+                        let badges = '';
+                        if(z.pdfFaktura) badges += `<span style="background:#e74c3c; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">FA</span>`;
+                        if(z.pdfStandard) badges += `<span style="background:#f39c12; color:black; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">STD</span>`;
+                        if(z.pdfAbnahme) badges += `<span style="background:#3498db; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">ABN</span>`;
+                        if(z.pdfConsilium) badges += `<span style="background:#8e44ad; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">CON</span>`;
+
+                        let descPreview = badges + (z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`);
+                        
+                        item.innerHTML = `<div class="checkbox-container"><input type="checkbox" id="chk-${z.id}" ${z.selected ? 'checked' : ''} onchange="toggleZaznamSelection(${z.id})">
+                            <label for="chk-${z.id}" style="cursor:pointer; display:flex; flex-direction:column; font-weight:normal;"><div><strong style="color:var(--text);">${new Date(z.datum).toLocaleDateString()}</strong> | ${h.toFixed(2)} h</div>${descPreview}</label></div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn-sec" style="background:#f39c12; color:white; padding:10px;" onclick="editZaznam(${z.id})">✏️</button>
+                                <button class="btn-sec" style="background:#ff7675; color:white; padding:10px;" onclick="zaznamy=zaznamy.filter(x=>x.id!=${z.id}); localStorage.setItem('pracovni_zaznamy',JSON.stringify(zaznamy)); renderZaznamy(); updateStatistiky();">🗑️</button>
+                            </div>`;
+                        wContent.appendChild(item);
+                    });
+                    
+                    mContent.appendChild(wHeader);
+                    mContent.appendChild(wContent);
+                });
+                
+                container.appendChild(mHeader);
+                container.appendChild(mContent);
             });
         }
 
