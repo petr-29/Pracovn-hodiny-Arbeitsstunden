@@ -1290,8 +1290,9 @@
             }
 
             let savedOffsetX = localStorage.getItem('cfg_cons_offset_x');
-            const OFFSET_X = savedOffsetX !== null ? parseFloat(savedOffsetX) : -8;
-            
+            const X_DATUM = parseFloat(localStorage.getItem('cfg_cons_x_datum')) || 20;
+            const X_ZACATEK = parseFloat(localStorage.getItem('cfg_cons_x_zacatek')) || 40.5;
+            const OFFSET_X = savedOffsetX !== null ? parseFloat(savedOffsetX) : -8;          
             const Y_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_hlavicka')) || 32;
             const Y_TABULKA_START = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 57;
             const RADKOVANI = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
