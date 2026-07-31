@@ -1256,8 +1256,8 @@
             sigY += 15; doc.line(15, sigY, 80, sigY); doc.line(130, sigY, 195, sigY);
             doc.text("Unterschrift und Stempel des Kunden", 15, sigY+4); doc.text("Datum / Unterschrift des Mitarbeiters", 130, sigY+4);
 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 20, sigY-15, 50, 14);
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 135, sigY-15, 50, 14);
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 20, sigY-15, 50, 14);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 135, sigY-15, 50, 14);
             doc.text(new Date().toLocaleDateString('de-DE'), 130, sigY-2);
         }
 
@@ -1319,8 +1319,8 @@
             y += 15; doc.text(`Tag der Abnahme: ${new Date().toLocaleDateString('de-DE')} v ${mestoStavby}`, 15, y);
             y += 30;
 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', 15, y - 18, 40, 16);
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', 125, y - 18, 40, 16);
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 15, y - 18, 40, 16);
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 125, y - 18, 40, 16);
 
             doc.line(15, y, 85, y); doc.line(125, y, 195, y);
             doc.setFontSize(9); doc.text(podpisKundeText, 15, y + 4); doc.text("*Unterschrift Auftraggeber", 15, y + 8);
@@ -1487,8 +1487,8 @@
             let datumDnes = new Date().toLocaleDateString('de-DE');
             doc.text(`${mestoStavby}, ${datumDnes}`, xMesto, yMesto, { align: 'left', maxWidth: 70 });
 
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', xPodpisDodavatel, yPodpisDodavatel, 35, 12); 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', xPodpisKlient, yPodpisKlient, 35, 12); 
+            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', xPodpisDodavatel, yPodpisDodavatel, 35, 12); 
+            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', xPodpisKlient, yPodpisKlient, 35, 12);
         }
 
         function exportConsiliumPDF(returnBlob = false) {
@@ -1652,16 +1652,29 @@
             window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         }
 
-        function stahnoutFakturuZArchivu(id) {
-            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
-            let f = archiv.find(x => x.id === id);
-            if(f && f.vybraneZaznamy) { 
-                let doc = buildFakturaDoc(f); 
-                doc.save(`Faktura_${f.cislo.replace('/','-')}.pdf`);
-            } else { 
-                alert("Data pro vygenerování faktury chybí."); 
-            }
+     function stahnoutFakturuZArchivu(id) {
+    let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
+    let f = archiv.find(x => x.id === id);
+    if(f && f.vybraneZaznamy) { 
+        // Záloha aktuálního stavu a dočasné načtení podpisů z archivu
+        let zalohaPodpisuIch = dataPodpisuIch;
+        let zalohaPodpisuKunde = dataPodpisuKunde;
+        
+        if (f.fakturaData) {
+            dataPodpisuIch = f.fakturaData.podpisIch || null;
+            dataPodpisuKunde = f.fakturaData.podpisKunde || null;
         }
+        
+        let doc = buildFakturaDoc(f); 
+        doc.save(`Faktura_${f.cislo.replace('/','-')}.pdf`);
+        
+        // Vrácení do původního stavu
+        dataPodpisuIch = zalohaPodpisuIch;
+        dataPodpisuKunde = zalohaPodpisuKunde;
+    } else { 
+        alert("Data pro vygenerování faktury chybí."); 
+    }
+}
 
         function buildFakturaDoc(f) {
             const { jsPDF } = window.jspdf;
@@ -1770,9 +1783,18 @@
             doc.text("Vystavil: " + bezDiakritiky(jmeno), 20, 260);
             doc.text(bezDiakritiky(dodKontakt), 20, 265);
             
+       
             let rData = localStorage.getItem('cfg_razitko');
+
             if (rData) {
+ 
                 doc.addImage(rData, 'PNG', 140, 230, 40, 15);
+
+            }
+            // Přidáno vykreslení tvého podpisu z globální proměnné
+            if (dataPodpisuIch) {
+                doc.addImage(dataPodpisuIch, 'PNG', 145, 238, 30, 15);
+
             }
             doc.line(130, 255, 190, 255);
             doc.text("Podpis", 160, 260, {align: 'center'});
@@ -2468,10 +2490,16 @@ function executePDFExport() {
                 
                 vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
 
+              JavaScript
+
                 let fakturaData = {
+
                     vystaveni: document.getElementById('fak-vystaveni').value,
                     splatnost: document.getElementById('fak-splatnost').value,
-                    prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value
+                    prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value,
+                    podpisIch: dataPodpisuIch,
+                    podpisKunde: dataPodpisuKunde
+
                 };
 
                 let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
