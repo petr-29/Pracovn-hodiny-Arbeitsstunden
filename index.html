@@ -1503,6 +1503,7 @@
             
             if(returnBlob) return doc.output('blob');
             doc.save("Consilium_Abnahmeprotokoll_A5_Landscape.pdf");
+            oznacExportovaneZaznamy('consilium'); // <--- PŘIDÁNO
             closeExportCard();
         }
 
@@ -1956,6 +1957,7 @@
                     zaznamy[idx].pdfStandard = false;
                     zaznamy[idx].pdfAbnahme = false;
                     zaznamy[idx].pdfFaktura = false;
+                    zaznamy[idx].pdfConsilium = false;
                 }
                 editRecordId = null;
                 document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
@@ -1970,7 +1972,7 @@
                     prestavka: null, cisloZakazky: document.getElementById('inp-zakazka').value,
                     popisPrace: popisText, popisPraceImg: actPopisImgData, sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
                     projekt: document.getElementById('cfg-firma').value, selected: false,
-                    pdfStandard: false, pdfAbnahme: false, pdfFaktura: false
+                    pdfStandard: false, pdfAbnahme: false, pdfFaktura: false, pdfConsilium: false
                 };
                 zaznamy.push(novy);
             }
@@ -2054,7 +2056,8 @@
                 if(z.pdfFaktura) badges += `<span style="background:#e74c3c; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">FA</span>`;
                 if(z.pdfStandard) badges += `<span style="background:#f39c12; color:black; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">STD</span>`;
                 if(z.pdfAbnahme) badges += `<span style="background:#3498db; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">ABN</span>`;
-
+                if(z.pdfConsilium) badges += `<span style="background:#8e44ad; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">CON</span>`;
+               
                 let descPreview = badges + (z.popisPraceImg ? `<span style="font-size:12px; opacity:0.7;">✏️ (Nákres)</span>` : `<span style="font-size:12px; opacity:0.7;">${z.popisPrace || ''}</span>`);
                 
                 item.innerHTML = `<div class="checkbox-container"><input type="checkbox" id="chk-${z.id}" ${z.selected ? 'checked' : ''} onchange="toggleZaznamSelection(${z.id})">
@@ -2464,51 +2467,77 @@ function importDataFromFile(event) {
 }
 
 function executePDFExport() {
-            if (currentExportType === 'consilium') {
-                exportConsiliumPDF();
-                return;
-            }
+    if (currentExportType === 'consilium') {
+        exportConsiliumPDF();
+        return;
+    }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    
+    let vybrane = zaznamy.filter(z => z.selected);
+    vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+    if (vybrane.length === 0) return;
+
+    if (currentExportType === 'standard') {
+        drawStandardReportToDoc(doc, vybrane);
+        doc.save(`Taetigkeitsnachweis_${new Date().getTime()}.pdf`);
+        oznacExportovaneZaznamy('standard');
+        closeExportCard();
+    } else if (currentExportType === 'abnahme') {
+        drawAbnahmeReportToDoc(doc, vybrane);
+        doc.save(`Abnahmeprotokoll_${new Date().getTime()}.pdf`);
+        oznacExportovaneZaznamy('abnahme');
+        closeExportCard();
+    } else if (currentExportType === 'faktura') {
+        let cisloFaktury = document.getElementById('fak-cislo').value;
+        let odberatel = document.getElementById('cfg-firma').value;
+        let suma = 0;
+        
+        vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+        let fakturaData = {
+            vystaveni: document.getElementById('fak-vystaveni').value,
+            splatnost: document.getElementById('fak-splatnost').value,
+            prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value,
+            podpisIch: dataPodpisuIch,
+            podpisKunde: dataPodpisuKunde
+        };
+
+        let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+        if (ok) {
+            // Sestavení a fyzické stažení PDF faktury
+            let fakeFaktura = {
+                cislo: cisloFaktury, odberatel: odberatel, suma: suma,
+                datum: new Date().toISOString(), vybraneZaznamy: vybrane, fakturaData: fakturaData
+            };
+            const fDoc = buildFakturaDoc(fakeFaktura);
+            fDoc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
             
-            let vybrane = zaznamy.filter(z => z.selected);
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            oznacExportovaneZaznamy('faktura');
+            alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu a stažena!' : 'Rechnung im Archiv gespeichert!');
+            closeExportCard();
+        }
+    } 
+}
 
-            if (currentExportType === 'standard') {
-                drawStandardReportToDoc(doc, vybrane);
-                doc.save(`Taetigkeitsnachweis_${new Date().getTime()}.pdf`);
-                closeExportCard();
-            } else if (currentExportType === 'abnahme') {
-                drawAbnahmeReportToDoc(doc, vybrane);
-                doc.save(`Abnahmeprotokoll_${new Date().getTime()}.pdf`);
-                closeExportCard();
-            } else if (currentExportType === 'faktura') {
-                let cisloFaktury = document.getElementById('fak-cislo').value;
-                let odberatel = document.getElementById('cfg-firma').value;
-                let suma = 0;
-                
-                vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
-
-              JavaScript
-
-                let fakturaData = {
-
-                    vystaveni: document.getElementById('fak-vystaveni').value,
-                    splatnost: document.getElementById('fak-splatnost').value,
-                    prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value,
-                    podpisIch: dataPodpisuIch,
-                    podpisKunde: dataPodpisuKunde
-
-                };
-
-                let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
-                if (ok) {
-                    alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu! Můžeš si ji stáhnout v záložce Faktury.' : 'Rechnung im Archiv gespeichert!');
-                    closeExportCard();
-                }
-            } 
-        } 
+// NOVÁ FUNKCE PRO AUTOMATICKÉ ROZSVÍCENÍ VLAJEČEK
+function oznacExportovaneZaznamy(typ) {
+    let zmena = false;
+    zaznamy.forEach(z => {
+        if (z.selected) {
+            if (typ === 'faktura') z.pdfFaktura = true;
+            if (typ === 'standard') z.pdfStandard = true;
+            if (typ === 'abnahme') z.pdfAbnahme = true;
+            if (typ === 'consilium') z.pdfConsilium = true;
+            zmena = true;
+        }
+    });
+    if (zmena) {
+        localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+        renderZaznamy(); // Ihned překreslí seznam, abys viděl vlaječku
+    }
+}
 async function sharePDFExport() {
     let fileBlob = null;
     let fileName = "";
@@ -2560,8 +2589,9 @@ async function sharePDFExport() {
     }
 
     // Otevření nativního okna pro sdílení
-    if (fileBlob) {
-        let file = new File([fileBlob], fileName, { type: 'application/pdf' });
+   if (fileBlob) {
+    oznacExportovaneZaznamy(currentExportType); // <--- TENTO ŘÁDEK PŘIDEJ (Rozsvítí vlaječky před odesláním)
+    let file = new File([fileBlob], fileName, { type: 'application/pdf' });
         
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
