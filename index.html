@@ -2034,16 +2034,27 @@
             if(localStorage.getItem('cfg_cons_spodni')) document.getElementById('cfg-cons-spodni').value = localStorage.getItem('cfg_cons_spodni');
         }
 
-        function saveConsiliumOffsets() {
-            localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
-            localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
-            localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
-            localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
-            localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
-            localStorage.setItem('cfg_cons_offset_x', document.getElementById('cfg-cons-offset-x').value);
-            localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
-            alert(currentLang === 'cs' ? 'Kalibrace uložena! Můžeš zkusit export.' : 'Kalibrierung gespeichert!');
-        }
+function saveConsiliumOffsets() {
+    // Uložení os Y
+    localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
+    localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
+    localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
+    localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
+    localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
+    localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
+    
+    // Uložení nových os X
+    localStorage.setItem('cfg_cons_x_datum', document.getElementById('cfg-cons-x-datum').value);
+    localStorage.setItem('cfg_cons_x_zacatek', document.getElementById('cfg-cons-x-zacatek').value);
+    localStorage.setItem('cfg_cons_x_od', document.getElementById('cfg-cons-x-od').value);
+    localStorage.setItem('cfg_cons_x_do', document.getElementById('cfg-cons-x-do').value);
+    localStorage.setItem('cfg_cons_x_konec', document.getElementById('cfg-cons-x-konec').value);
+    localStorage.setItem('cfg_cons_x_hodiny', document.getElementById('cfg-cons-x-hodiny').value);
+    localStorage.setItem('cfg_cons_x_popis', document.getElementById('cfg-cons-x-popis').value);
+    localStorage.setItem('cfg_cons_x_zakazka', document.getElementById('cfg-cons-x-zakazka').value);
+
+    alert(currentLang === 'cs' ? 'Kalibrace uložena! Můžeš zkusit export.' : 'Kalibrierung gespeichert!');
+}
 
         function exportCSV() {
             let csv = "Datum;Beginn;Ende;PauseVon;PauseBis;Stunden\n";
