@@ -1776,13 +1776,18 @@
             }
             doc.line(130, 255, 190, 255);
             doc.text("Podpis", 160, 260, {align: 'center'});
-        
             if (f.fakturaData && f.fakturaData.prilohaTyp === 'standard') {
-                doc.addPage();
+                doc.addPage('a4', 'portrait');
                 drawStandardReportToDoc(doc, vybrane); 
-            } else if (f.fakturaData && f.fakturaData.prilohaTyp === 'abnahme') {
-                doc.addPage();
+            } 
+            else if (f.fakturaData && f.fakturaData.prilohaTyp === 'abnahme') {
+                doc.addPage('a4', 'portrait');
                 drawAbnahmeReportToDoc(doc, vybrane); 
+            }
+            else if (f.fakturaData && f.fakturaData.prilohaTyp === 'consilium') {
+                doc.addPage('a5', 'landscape'); // Extra trik: přepneme rozměr druhé strany na A5 naležato!
+                drawConsiliumReportToDoc(doc, vybrane);
+
             }
         
             return doc;
