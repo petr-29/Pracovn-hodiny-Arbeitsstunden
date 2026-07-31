@@ -152,7 +152,8 @@
         .faktura-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .faktura-table th { background-color: #b33939; color: white; padding: 8px; text-align: left; }
         .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
-/* --- VIZUÁLNÍ KALIBRACE CONSILIUM --- */
+
+        /* --- VIZUÁLNÍ KALIBRACE CONSILIUM --- */
         #visual-calib-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9); z-index: 5000;
@@ -534,7 +535,7 @@
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
-            <!-- NOVÁ VYLEPŠENÁ KALIBRACE (OSY X a Y) -->
+                    <!-- NOVÁ VYLEPŠENÁ KALIBRACE (OSY X a Y) -->
                     <div class="card-title" style="color: #8e44ad;" data-cs="Kalibrace Consilium PDF (v milimetrech)" data-de="Consilium PDF Kalibrierung (in mm)">Kalibrace Consilium PDF (v milimetrech)</div>
                     <p style="font-size: 11px; margin-bottom: 15px; color:#555;">Nastav si přesný střed (osu X) pro každý sloupeček zvlášť. Můžeš hýbat texty zleva doprava.</p>
                     
@@ -655,7 +656,8 @@
         <div id="calib-workspace">
             <!-- Štítky se sem vygenerují automaticky přes JavaScript -->
         </div>
-  </div>
+    </div>
+
 <script>
         window.addEventListener('load', () => {
             if(window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) return; 
@@ -1319,7 +1321,7 @@
             doc.text(jmeno, 125, y + 4); doc.text("Unterschrift Auftragnehmer", 125, y + 8);
         }
 
-function drawConsiliumReportToDoc(doc, vybrane) {
+        function drawConsiliumReportToDoc(doc, vybrane) {
             let tplData = localStorage.getItem('cfg_tpl_consilium');
             if (!tplData) {
                 alert(currentLang === 'cs' ? "Nejprve prosím nahraj A5 šablonu formuláře v Nastavení!" : "Bitte A5-Vorlage in den Einstellungen hochladen!");
@@ -1340,11 +1342,9 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             let endD = bezDiakritiky(endDatum(vybrane));
             let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
 
-            // --- NAČTENÍ VŠECH TVÝCH SOUŘADNIC Z VIZUÁLNÍHO EDITORU ---
+            // --- NAČTENÍ SOUŘADNIC Z VIZUÁLNÍHO EDITORU ---
             const X_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_x_hlavicka')) || 27;
             const X_SOUCET   = parseFloat(localStorage.getItem('cfg_cons_x_soucet')) || 93;
-            const X_SPODNI   = parseFloat(localStorage.getItem('cfg_cons_x_spodni')) || 114;
-            const X_PATA     = parseFloat(localStorage.getItem('cfg_cons_x_pata')) || 8;
 
             const Y_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_hlavicka')) || 32;
             const Y_TABULKA  = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 57;
@@ -1352,8 +1352,6 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             const Y_POPIS    = parseFloat(localStorage.getItem('cfg_cons_y_popis')) || Y_TABULKA;
             const RADKOVANI  = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
             const Y_SOUCET   = parseFloat(localStorage.getItem('cfg_cons_soucet')) || 107;
-            const Y_PATA     = parseFloat(localStorage.getItem('cfg_cons_pata')) || 144;
-            const Y_SPODNI   = parseFloat(localStorage.getItem('cfg_cons_spodni')) || 111;
 
             const X_DATUM   = parseFloat(localStorage.getItem('cfg_cons_x_datum')) || 20;
             const X_ZACATEK = parseFloat(localStorage.getItem('cfg_cons_x_zacatek')) || 40.5;
@@ -1368,7 +1366,7 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             doc.setFontSize(9);
             doc.setTextColor(0, 0, 0);
 
-            // 1. HLAVIČKA (Závislá na X_HLAVICKA)
+            // 1. HLAVIČKA
             doc.text(firma, X_HLAVICKA, Y_HLAVICKA, { align: 'center', maxWidth: 65 }); 
             doc.text(jmeno, X_HLAVICKA + 58, Y_HLAVICKA, { align: 'center', maxWidth: 50 }); 
             doc.text(adresaMesto, X_HLAVICKA + 113, Y_HLAVICKA, { align: 'center', maxWidth: 55 }); 
@@ -1386,7 +1384,7 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             for(let i=0; i<7; i++) {
                 let rec = dayRecords[i];
                 let rowY = Y_TABULKA + (i * RADKOVANI);
-                let zakazkaY = Y_ZAKAZKA + (i * RADKOVANI); // Zakázka má svou vlastní osu Y!
+                let zakazkaY = Y_ZAKAZKA + (i * RADKOVANI);
 
                 if(rec) {
                     let h = kalkulujCisteHodiny(rec); 
@@ -1407,41 +1405,28 @@ function drawConsiliumReportToDoc(doc, vybrane) {
                     doc.text(rec.konec, X_KONEC, rowY, { align: 'center' }); 
                     doc.text(h.toFixed(2), X_HODINY, rowY, { align: 'center' }); 
                     
-                   if (rec.popisPrace) {
+                    if (rec.popisPrace) {
                         doc.setFontSize(7.5);
-                        
-                        // 1. Odstraníme "Entery" a nahradíme je mezerou, aby text zůstal na jednom řádku
                         let cistyPopis = bezDiakritiky(rec.popisPrace).replace(/[\r\n]+/g, " "); 
-                        
-                        // 2. Ořízneme text na 60 znaků (zbytek se nahradí tečkami)
                         let maxZnaku = 60;
                         if (cistyPopis.length > maxZnaku) {
                             cistyPopis = cistyPopis.substring(0, maxZnaku) + "...";
                         }
-                        
-                  // 3. Vykreslíme text pomocí VLASTNÍ nezávislé osy Y (popisY) a smažeme maxWidth
-                            let popisY = Y_POPIS + (i * RADKOVANI);
-                            doc.text(cistyPopis, X_POPIS, popisY); 
-                            
-                            doc.setFontSize(9);
-                        }
+                        let popisY = Y_POPIS + (i * RADKOVANI);
+                        doc.text(cistyPopis, X_POPIS, popisY); 
+                        doc.setFontSize(9);
+                    }
 
-                       
-                        let zakazka = rec.cisloZakazky || cisloZ;
-                        doc.text(zakazka, X_ZAKAZKA, zakazkaY, { align: 'center', maxWidth: 30 }); 
-                    } 
-                }
+                    let zakazka = rec.cisloZakazky || cisloZ;
+                    doc.text(zakazka, X_ZAKAZKA, zakazkaY, { align: 'center', maxWidth: 30 }); 
+                } 
+            }
 
-            // 3. SOUČET
-            doc.setFont("helvetica", "bold");
-            // 3. SOUČET
-            doc.setFont("helvetica", "bold");
             // 3. SOUČET
             doc.setFont("helvetica", "bold");
             doc.text(totalWeekHours.toFixed(2), X_SOUCET, Y_SOUCET, { align: 'center' });
 
-            // 4. SPODNÍ ČÁST (Závislá na X_SPODNI)
-         // 4. SPODNÍ ČÁST (Zcela nezávislé pozice)
+            // 4. SPODNÍ ČÁST (Zcela nezávislé pozice)
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8);
             
@@ -1456,7 +1441,6 @@ function drawConsiliumReportToDoc(doc, vybrane) {
                 consDatumNabidnuti = `${d}.${m}.${y}`;
             }
 
-            // Načtení volných souřadnic
             let xObdobi = parseFloat(localStorage.getItem('cfg_cons_x_obdobi')) || 122;
             let yObdobi = parseFloat(localStorage.getItem('cfg_cons_y_obdobi')) || 114;
 
@@ -1472,7 +1456,6 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             let xDatumNab = parseFloat(localStorage.getItem('cfg_cons_x_datum_nab')) || 91;
             let yDatumNab = parseFloat(localStorage.getItem('cfg_cons_y_datum_nab')) || 137.5;
 
-            // 5. PATA S PODPISY (Také nezávislé)
             let xMesto = parseFloat(localStorage.getItem('cfg_cons_x_mesto_datum')) || 16;
             let yMesto = parseFloat(localStorage.getItem('cfg_cons_y_mesto_datum')) || 142.5;
 
@@ -1482,12 +1465,10 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             let xPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_x_podpis_klient')) || 152;
             let yPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_y_podpis_klient')) || 131;
 
-            // Vykreslení textů na přesné X a Y
             if(consObdobi) doc.text(consObdobi, xObdobi, yObdobi, {maxWidth: 80});
             if(consOdstranitDo) doc.text(consOdstranitDo, xOdstranit, yOdstranit, {maxWidth: 80});
             if(consZavady) doc.text(consZavady, xZavady, yZavady, {maxWidth: 80});
 
-            // Vykreslení Křížku
             if(consNabidnutoChk) {
                 doc.setLineWidth(0.4);
                 let chkS = 3.5;
@@ -1495,17 +1476,15 @@ function drawConsiliumReportToDoc(doc, vybrane) {
                 doc.line(xChk + chkS, yChk, xChk, yChk + chkS);
             }
             
-            // Datum k převzetí
             if(consDatumNabidnuti) doc.text(consDatumNabidnuti, xDatumNab, yDatumNab);
 
-            // Místo, Datum (např. Helmbrechts)
             let datumDnes = new Date().toLocaleDateString('de-DE');
             doc.text(`${mestoStavby}, ${datumDnes}`, xMesto, yMesto, { align: 'left', maxWidth: 70 });
 
-            // Podpisy
             if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'JPEG', xPodpisDodavatel, yPodpisDodavatel, 35, 12); 
             if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'JPEG', xPodpisKlient, yPodpisKlient, 35, 12); 
         }
+
         function exportConsiliumPDF(returnBlob = false) {
             const { jsPDF } = window.jspdf; 
             const doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'landscape' }); 
@@ -2118,7 +2097,6 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             if(localStorage.getItem('cfg_cons_radkovani')) document.getElementById('cfg-cons-radkovani').value = localStorage.getItem('cfg_cons_radkovani');
             if(localStorage.getItem('cfg_cons_soucet')) document.getElementById('cfg-cons-soucet').value = localStorage.getItem('cfg_cons_soucet');
             if(localStorage.getItem('cfg_cons_pata')) document.getElementById('cfg-cons-pata').value = localStorage.getItem('cfg_cons_pata');
-            if(localStorage.getItem('cfg_cons_offset_x')) document.getElementById('cfg-cons-offset-x').value = localStorage.getItem('cfg_cons_offset_x');
             if(localStorage.getItem('cfg_cons_spodni')) document.getElementById('cfg-cons-spodni').value = localStorage.getItem('cfg_cons_spodni');
     
             if(localStorage.getItem('cfg_cons_x_datum')) document.getElementById('cfg-cons-x-datum').value = localStorage.getItem('cfg_cons_x_datum');
@@ -2129,29 +2107,28 @@ function drawConsiliumReportToDoc(doc, vybrane) {
             if(localStorage.getItem('cfg_cons_x_hodiny')) document.getElementById('cfg-cons-x-hodiny').value = localStorage.getItem('cfg_cons_x_hodiny');
             if(localStorage.getItem('cfg_cons_x_popis')) document.getElementById('cfg-cons-x-popis').value = localStorage.getItem('cfg_cons_x_popis');
             if(localStorage.getItem('cfg_cons_x_zakazka')) document.getElementById('cfg-cons-x-zakazka').value = localStorage.getItem('cfg_cons_x_zakazka');
-}
+        }
 
-function saveConsiliumOffsets() {
-    // Uložení os Y
-    localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
-    localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
-    localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
-    localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
-    localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
-    localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
-    
-    // Uložení nových os X (Opraveno na setItem)
-    localStorage.setItem('cfg_cons_x_datum', document.getElementById('cfg-cons-x-datum').value);
-    localStorage.setItem('cfg_cons_x_zacatek', document.getElementById('cfg-cons-x-zacatek').value);
-    localStorage.setItem('cfg_cons_x_od', document.getElementById('cfg-cons-x-od').value);
-    localStorage.setItem('cfg_cons_x_do', document.getElementById('cfg-cons-x-do').value);
-    localStorage.setItem('cfg_cons_x_konec', document.getElementById('cfg-cons-x-konec').value);
-    localStorage.setItem('cfg_cons_x_hodiny', document.getElementById('cfg-cons-x-hodiny').value);
-    localStorage.setItem('cfg_cons_x_popis', document.getElementById('cfg-cons-x-popis').value);
-    localStorage.setItem('cfg_cons_x_zakazka', document.getElementById('cfg-cons-x-zakazka').value);
+        function saveConsiliumOffsets() {
+            localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
+            localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
+            localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
+            localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
+            localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
+            localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
+            
+            localStorage.setItem('cfg_cons_x_datum', document.getElementById('cfg-cons-x-datum').value);
+            localStorage.setItem('cfg_cons_x_zacatek', document.getElementById('cfg-cons-x-zacatek').value);
+            localStorage.setItem('cfg_cons_x_od', document.getElementById('cfg-cons-x-od').value);
+            localStorage.setItem('cfg_cons_x_do', document.getElementById('cfg-cons-x-do').value);
+            localStorage.setItem('cfg_cons_x_konec', document.getElementById('cfg-cons-x-konec').value);
+            localStorage.setItem('cfg_cons_x_hodiny', document.getElementById('cfg-cons-x-hodiny').value);
+            localStorage.setItem('cfg_cons_x_popis', document.getElementById('cfg-cons-x-popis').value);
+            localStorage.setItem('cfg_cons_x_zakazka', document.getElementById('cfg-cons-x-zakazka').value);
 
-    alert(currentLang === 'cs' ? 'Kalibrace uložena!' : 'Kalibrierung gespeichert!');
-}
+            alert(currentLang === 'cs' ? 'Kalibrace uložena!' : 'Kalibrierung gespeichert!');
+        }
+
         function exportCSV() {
             let csv = "Datum;Beginn;Ende;PauseVon;PauseBis;Stunden\n";
             zaznamy.filter(z => z.selected).forEach(z => { 
@@ -2452,6 +2429,7 @@ function importDataFromFile(event) {
     };
     reader.readAsText(file);
 }
+
 function executePDFExport() {
             if (currentExportType === 'consilium') {
                 exportConsiliumPDF();
@@ -2485,7 +2463,7 @@ function executePDFExport() {
                     prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value
                 };
 
-           let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+                let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
                 if (ok) {
                     alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu! Můžeš si ji stáhnout v záložce Faktury.' : 'Rechnung im Archiv gespeichert!');
                     closeExportCard();
@@ -2499,11 +2477,9 @@ function executePDFExport() {
     // ==========================================
 
 let calibElements = [
-        // Společné řádky
         { id: 'hlavicka', label: 'Hlavička (Firma)', keyx: 'cfg_cons_x_hlavicka', keyy: 'cfg_cons_hlavicka', defX: 27, defY: 32 },
         { id: 'soucet', label: 'Součet', keyx: 'cfg_cons_x_soucet', keyy: 'cfg_cons_soucet', defX: 93, defY: 107 },
         
-        // Tabulka - svázáno osou Y (syncY: 'tabulka')
         { id: 'datum', label: 'Datum', keyx: 'cfg_cons_x_datum', keyy: 'cfg_cons_tabulka', defX: 20, defY: 57, syncY: 'tabulka' },
         { id: 'zacatek', label: 'Začátek', keyx: 'cfg_cons_x_zacatek', keyy: 'cfg_cons_tabulka', defX: 40.5, defY: 57, syncY: 'tabulka' },
         { id: 'od', label: 'Od', keyx: 'cfg_cons_x_od', keyy: 'cfg_cons_tabulka', defX: 53, defY: 57, syncY: 'tabulka' },
@@ -2511,10 +2487,8 @@ let calibElements = [
         { id: 'konec', label: 'Konec', keyx: 'cfg_cons_x_konec', keyy: 'cfg_cons_tabulka', defX: 77, defY: 57, syncY: 'tabulka' },
         { id: 'hodiny', label: 'Hodiny', keyx: 'cfg_cons_x_hodiny', keyy: 'cfg_cons_tabulka', defX: 93, defY: 57, syncY: 'tabulka' },
         { id: 'popis', label: 'Popis', keyx: 'cfg_cons_x_popis', keyy: 'cfg_cons_y_popis', defX: 102, defY: 57 },        
-        // Zakázka - nezávislá
         { id: 'zakazka', label: 'Zakázka', keyx: 'cfg_cons_x_zakazka', keyy: 'cfg_cons_y_zakazka', defX: 184, defY: 57 },
 
-        // --- NOVÉ ZCELA NEZÁVISLÉ PRVKY VE SPODNÍ ČÁSTI ---
         { id: 'obdobi', label: 'Období (28.7.-31.7.)', keyx: 'cfg_cons_x_obdobi', keyy: 'cfg_cons_y_obdobi', defX: 122, defY: 114 },
         { id: 'odstranit_do', label: 'Závady odstranit do', keyx: 'cfg_cons_x_odstranit_do', keyy: 'cfg_cons_y_odstranit_do', defX: 122, defY: 121.5 },
         { id: 'zavady', label: 'Závady / Reklamace', keyx: 'cfg_cons_x_zavady', keyy: 'cfg_cons_y_zavady', defX: 122, defY: 129 },
@@ -2577,7 +2551,6 @@ let calibElements = [
             if (keyX) localStorage.setItem(keyX, mmX.toFixed(1));
             if (keyY) localStorage.setItem(keyY, mmY.toFixed(1));
             
-            // Synchronizace i s viditelnými políčky v nastavení (aby se zrcadlily hodnoty)
             let domIdX = keyX.replace(/_/g, '-');
             let domIdY = keyY.replace(/_/g, '-');
             if (document.getElementById(domIdX)) document.getElementById(domIdX).value = mmX.toFixed(1);
