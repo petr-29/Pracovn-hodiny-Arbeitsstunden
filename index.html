@@ -1419,13 +1419,23 @@ function drawConsiliumReportToDoc(doc, vybrane) {
                             cistyPopis = cistyPopis.substring(0, maxZnaku) + "...";
                         }
                         
-                        // 3. Vykreslíme text pomocí VLASTNÍ nezávislé osy Y (popisY) a smažeme maxWidth
-                        let popisY = Y_POPIS + (i * RADKOVANI);
-                        doc.text(cistyPopis, X_POPIS, popisY); 
-                        
-                        doc.setFontSize(9);
-                    }
+                  // 3. Vykreslíme text pomocí VLASTNÍ nezávislé osy Y (popisY) a smažeme maxWidth
+                            let popisY = Y_POPIS + (i * RADKOVANI);
+                            doc.text(cistyPopis, X_POPIS, popisY); 
+                            
+                            doc.setFontSize(9);
+                        }
 
+                       
+                        let zakazka = rec.cisloZakazky || cisloZ;
+                        doc.text(zakazka, X_ZAKAZKA, zakazkaY, { align: 'center', maxWidth: 30 }); 
+                    } 
+                }
+
+            // 3. SOUČET
+            doc.setFont("helvetica", "bold");
+            // 3. SOUČET
+            doc.setFont("helvetica", "bold");
             // 3. SOUČET
             doc.setFont("helvetica", "bold");
             doc.text(totalWeekHours.toFixed(2), X_SOUCET, Y_SOUCET, { align: 'center' });
