@@ -640,6 +640,21 @@
             <button class="btn-sec" style="width: 100%; padding: 12px; font-weight: bold;" onclick="closeQrModal()" data-cs="Zavřít" data-de="Schließen">Zavřít</button>
         </div>
     </div>
+
+    <div id="visual-calib-modal" class="hidden">
+        <div style="width: 95vw; max-width: 900px; display:flex; flex-direction:column; gap:10px; margin-bottom: 15px;">
+            <div style="color: white; font-weight: bold; font-size: 16px; text-align: center; font-family: sans-serif;">
+                👆 Tažením prstem nebo myší přesuň štítky na správné místo
+            </div>
+            <div style="display:flex; gap: 10px;">
+                <button class="btn-sec" style="background:#e74c3c; color:white; flex:1; padding:12px; font-weight:bold;" onclick="closeVisualCalib()">Zrušit</button>
+                <button class="btn-sec" style="background:#2ecc71; color:white; flex:2; padding:12px; font-weight:bold;" onclick="saveVisualCalib()">Uložit nové pozice</button>
+            </div>
+        </div>
+        <div id="calib-workspace">
+            <!-- Štítky se sem vygenerují automaticky přes JavaScript -->
+        </div>
+  </div>
 <script>
         window.addEventListener('load', () => {
             if(window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) return; 
