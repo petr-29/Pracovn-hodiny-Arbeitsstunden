@@ -2448,12 +2448,10 @@ function executePDFExport() {
     // VIZUÁLNÍ DRAG & DROP KALIBRACE CONSILIUM
     // ==========================================
 
-    let calibElements = [
-        // Společné řádky - nyní se mohou hýbat i doleva/doprava
+let calibElements = [
+        // Společné řádky
         { id: 'hlavicka', label: 'Hlavička (Firma)', keyx: 'cfg_cons_x_hlavicka', keyy: 'cfg_cons_hlavicka', defX: 27, defY: 32 },
         { id: 'soucet', label: 'Součet', keyx: 'cfg_cons_x_soucet', keyy: 'cfg_cons_soucet', defX: 93, defY: 107 },
-        { id: 'spodni', label: 'Spodní (Závady)', keyx: 'cfg_cons_x_spodni', keyy: 'cfg_cons_spodni', defX: 114, defY: 111 },
-        { id: 'pata', label: 'Pata (Město/Podpisy)', keyx: 'cfg_cons_x_pata', keyy: 'cfg_cons_pata', defX: 8, defY: 144 },
         
         // Tabulka - svázáno osou Y (syncY: 'tabulka')
         { id: 'datum', label: 'Datum', keyx: 'cfg_cons_x_datum', keyy: 'cfg_cons_tabulka', defX: 20, defY: 57, syncY: 'tabulka' },
@@ -2464,8 +2462,18 @@ function executePDFExport() {
         { id: 'hodiny', label: 'Hodiny', keyx: 'cfg_cons_x_hodiny', keyy: 'cfg_cons_tabulka', defX: 93, defY: 57, syncY: 'tabulka' },
         { id: 'popis', label: 'Popis', keyx: 'cfg_cons_x_popis', keyy: 'cfg_cons_tabulka', defX: 102, defY: 57, syncY: 'tabulka' },
         
-        // Zakázka - TOTÁLNĚ NEZÁVISLÁ na ose Y
-        { id: 'zakazka', label: 'Zakázka', keyx: 'cfg_cons_x_zakazka', keyy: 'cfg_cons_y_zakazka', defX: 184, defY: 57 }
+        // Zakázka - nezávislá
+        { id: 'zakazka', label: 'Zakázka', keyx: 'cfg_cons_x_zakazka', keyy: 'cfg_cons_y_zakazka', defX: 184, defY: 57 },
+
+        // --- NOVÉ ZCELA NEZÁVISLÉ PRVKY VE SPODNÍ ČÁSTI ---
+        { id: 'obdobi', label: 'Období (28.7.-31.7.)', keyx: 'cfg_cons_x_obdobi', keyy: 'cfg_cons_y_obdobi', defX: 122, defY: 114 },
+        { id: 'odstranit_do', label: 'Závady odstranit do', keyx: 'cfg_cons_x_odstranit_do', keyy: 'cfg_cons_y_odstranit_do', defX: 122, defY: 121.5 },
+        { id: 'zavady', label: 'Závady / Reklamace', keyx: 'cfg_cons_x_zavady', keyy: 'cfg_cons_y_zavady', defX: 122, defY: 129 },
+        { id: 'krizek', label: 'Křížek [X]', keyx: 'cfg_cons_x_chk', keyy: 'cfg_cons_y_chk', defX: 18.2, defY: 134.8 },
+        { id: 'datum_nab', label: 'Datum nabídnutí', keyx: 'cfg_cons_x_datum_nab', keyy: 'cfg_cons_y_datum_nab', defX: 91, defY: 137.5 },
+        { id: 'mesto_datum', label: 'Město a datum dole', keyx: 'cfg_cons_x_mesto_datum', keyy: 'cfg_cons_y_mesto_datum', defX: 16, defY: 142.5 },
+        { id: 'podpis_dodavatel', label: 'Můj Podpis', keyx: 'cfg_cons_x_podpis_dodavatel', keyy: 'cfg_cons_y_podpis_dodavatel', defX: 82, defY: 131 },
+        { id: 'podpis_klient', label: 'Podpis Klienta', keyx: 'cfg_cons_x_podpis_klient', keyy: 'cfg_cons_y_podpis_klient', defX: 152, defY: 131 }
     ];
 
     function openVisualCalib() {
