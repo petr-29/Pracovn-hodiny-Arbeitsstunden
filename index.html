@@ -1027,12 +1027,17 @@
                 html += `  </div>`;
                 html += `  <div style="padding: 20px; font-size: 10px; color: #555; text-align:left;">${t_rejstrik}</div>`;
                 html += `</div>`;
-                
-                let vybranaPriloha = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
+                    
+            let vybranaPriloha = document.querySelector('input[name="fak-priloha-typ"]:checked').value;
                 if(vybranaPriloha !== 'none') {
+                    let nazevPrilohy = '';
+                    if (vybranaPriloha === 'standard') nazevPrilohy = 'Standardní výkaz';    
+                    else if (vybranaPriloha === 'abnahme') nazevPrilohy = 'Abnahme Protokoll';
+                    else if (vybranaPriloha === 'consilium') nazevPrilohy = 'Consilium Protokoll';
                     html += `<div style="margin-top: 10px; padding: 10px; background: #e8f4f8; color: #2980b9; border-radius: 6px; font-family: sans-serif; text-align: center; font-weight: bold;">`;
-                    html += `ℹ️ PDF bude obsahovat druhou stranu: ${vybranaPriloha === 'standard' ? 'Standardní výkaz' : 'Abnahme Protokoll'}.`;
+                    html += `ℹ️ PDF bude obsahovat druhou stranu: ${nazevPrilohy}.`;
                     html += `</div>`;
+
                 }
 
             } else if (currentExportType === 'standard') {
