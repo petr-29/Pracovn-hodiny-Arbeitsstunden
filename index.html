@@ -2430,7 +2430,153 @@ function executePDFExport() {
                 }
             } 
         } 
- 
+
+    
+    // ==========================================
+    // VIZUÁLNÍ DRAG & DROP KALIBRACE CONSILIUM
+    // ==========================================
+
+    let calibElements = [
+    { id: 'hlavicka', label: 'Hlavička (Firma)', inpx: 105, inpy: 'cfg-cons-hlavicka', lockX: true },
+    { id: 'datum', label: 'Datum', inpx: 'cfg-cons-x-datum', inpy: 'cfg-cons-tabulka' },
+    { id: 'zacatek', label: 'Začátek', inpx: 'cfg-cons-x-zacatek', inpy: 'cfg-cons-tabulka' },
+    { id: 'od', label: 'Od', inpx: 'cfg-cons-x-od', inpy: 'cfg-cons-tabulka' },
+    { id: 'do', label: 'Do', inpx: 'cfg-cons-x-do', inpy: 'cfg-cons-tabulka' },
+    { id: 'konec', label: 'Konec', inpx: 'cfg-cons-x-konec', inpy: 'cfg-cons-tabulka' },
+    { id: 'hodiny', label: 'Hodiny', inpx: 'cfg-cons-x-hodiny', inpy: 'cfg-cons-tabulka' },
+    { id: 'popis', label: 'Popis', inpx: 'cfg-cons-x-popis', inpy: 'cfg-cons-tabulka' },
+    { id: 'zakazka', label: 'Zakázka', inpx: 'cfg-cons-x-zakazka', inpy: 'cfg-cons-tabulka' },
+    { id: 'soucet', label: 'Součet', inpx: 101, inpy: 'cfg-cons-soucet', lockX: true },
+    { id: 'spodni', label: 'Spodní (Závady)', inpx: 122, inpy: 'cfg-cons-spodni', lockX: true },
+    { id: 'pata', label: 'Pata (Město/Podpisy)', inpx: 50, inpy: 'cfg-cons-pata', lockX: true }
+
+    ];
+
+
+    function openVisualCalib() {
+    let tplData = localStorage.getItem('cfg_tpl_consilium');
+    if (!tplData) {
+        alert(currentLang === 'cs' ? "Nejprve musíš nahrát Šablonu Consilium (A5 naležato) v Nastavení!" : "Bitte zuerst die Vorlage hochladen!");
+        return;
+    }
+    
+    let ws = document.getElementById('calib-workspace');
+    ws.style.backgroundImage = `url(${tplData})`;
+    ws.innerHTML = '';
+    
+    calibElements.forEach(el => {
+        let div = document.createElement('div');
+        div.className = 'calib-item';
+        div.innerText = el.label;
+        div.dataset.inpx = el.inpx;
+        div.dataset.inpy = el.inpy;
+        div.dataset.lockx = el.lockX ? 'true' : 'false';
+        
+        // Načtení hodnoty: z inputu pokud existuje, jinak z fixního čísla
+        let valX = (typeof el.inpx === 'string' && document.getElementById(el.inpx)) ? parseFloat(document.getElementById(el.inpx).value) || 0 : el.inpx;
+        let valY = (typeof el.inpy === 'string' && document.getElementById(el.inpy)) ? parseFloat(document.getElementById(el.inpy).value) || 0 : el.inpy;
+        
+        // Přepočet z milimetrů do procent (rozměr A5: 210 x 148 mm)
+        div.style.left = (valX / 210 * 100) + '%';
+        div.style.top = (valY / 148 * 100) + '%';
+        
+        // Listenery pro myš i dotyk
+        div.addEventListener('mousedown', startCalibDrag);
+        div.addEventListener('touchstart', startCalibDrag, {passive: false});
+        ws.appendChild(div);
+    });
+    
+    document.getElementById('visual-calib-modal').classList.remove('hidden');
+
+    }
+
+
+    function closeVisualCalib() { document.getElementById('visual-calib-modal').classList.add('hidden'); }
+
+
+    function saveVisualCalib() {
+    let ws = document.getElementById('calib-workspace');
+    let items = ws.querySelectorAll('.calib-item');
+    
+    items.forEach(div => {
+        let percentX = parseFloat(div.style.left);
+        let percentY = parseFloat(div.style.top);
+        
+        // Přepočet zpět z procent na milimetry
+        let mmX = (percentX / 100) * 210;
+        let mmY = (percentY / 100) * 148;
+        
+        let idX = div.dataset.inpx;
+        let idY = div.dataset.inpy;
+        
+        if (idX && document.getElementById(idX)) document.getElementById(idX).value = mmX.toFixed(1);
+        if (idY && document.getElementById(idY)) document.getElementById(idY).value = mmY.toFixed(1);
+    });
+    
+    saveConsiliumOffsets(); // Zavolá tvou vlastní funkci pro fyzické uložení do paměti
+    closeVisualCalib();
+
+    }
+
+
+    let activeCalibItem = null;
+
+
+    function startCalibDrag(e) {
+    activeCalibItem = e.target;
+    if(e.type === "touchstart") {
+        window.addEventListener('touchmove', calibDragging, {passive: false});
+        window.addEventListener('touchend', endCalibDrag);
+    } else {
+        window.addEventListener('mousemove', calibDragging);
+        window.addEventListener('mouseup', endCalibDrag);
+    }
+
+    }
+
+
+    function calibDragging(e) {
+    if (!activeCalibItem) return;
+    e.preventDefault(); // Zabránění scrollování obrazovky na telefonu
+    
+    let clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+    let clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+    
+    let ws = document.getElementById('calib-workspace');
+    let rect = ws.getBoundingClientRect();
+    
+    let x = clientX - rect.left;
+    let y = clientY - rect.top;
+    
+    // Zabrání vytažení štítku mimo obrázek
+    x = Math.max(0, Math.min(x, rect.width));
+    y = Math.max(0, Math.min(y, rect.height));
+    
+    let newTop = (y / rect.height * 100) + '%';
+    
+    if(activeCalibItem.dataset.lockx !== 'true') {
+        activeCalibItem.style.left = (x / rect.width * 100) + '%';
+    }
+    
+    // Trik: Pohyb celého řádku současně
+    let sharedY = activeCalibItem.dataset.inpy;
+    document.querySelectorAll('.calib-item').forEach(item => {
+        if(item.dataset.inpy === sharedY) {
+            item.style.top = newTop;
+        }
+    });
+
+    }
+
+
+    function endCalibDrag(e) {
+    activeCalibItem = null;
+    window.removeEventListener('mousemove', calibDragging);
+    window.removeEventListener('mouseup', endCalibDrag);
+    window.removeEventListener('touchmove', calibDragging);
+    window.removeEventListener('touchend', endCalibDrag);
+
+    }
 </script>
 </body>
 </html>
