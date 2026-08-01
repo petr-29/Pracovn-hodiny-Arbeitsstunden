@@ -1866,18 +1866,7 @@
                     }
                 } catch (e) { console.log("QR error", e); }
             }
-          // --- DAŇOVÁ DOLOŽKA §13b UStG (NĚMECKO) ---      
-          // Vložíme fixně ke spodnímu okraji stránky (cca 4,5 cm od spodu), aby zbylo místo na podpisy      
-          let pageHeight = doc.internal.pageSize.getHeight();       
-          let footerY = pageHeight - 45;       
-          doc.setFont("helvetica", "normal");       
-          doc.setFontSize(8); // Menší písmo pro právní doložku     
-          doc.setTextColor(0, 0, 0); // Černá barva    
-          let danovyText = "Gemäß §13b Absatz 2 Nr.4 UstG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer gemäß § 14a UstG ausgewiesen. Es gilt die Steuerschuldnerschaft des Leistungsempfängers gemäß §13 b UstG.";              
-          // Rozdělí text na šířku max 180 mm, aby se vešel na řádek   
-          let rozdelenyText = doc.splitTextToSize(danovyText, 180);     
-          doc.text(rozdelenyText, 15, footerY); 
-          // ------------------------------------------
+          
             
             // 8. PODPIS A RAZÍTKO
             doc.setFontSize(10);
@@ -1901,6 +1890,19 @@
             doc.setTextColor(100, 100, 100);
             let footerTxt = (localStorage.getItem('app_lang') === 'de') ? "Der Unternehmer ist im Gewerberegister eingetragen." : "Podnikatel je zapsan v zivnostenskem rejstriku.";
             doc.text(footerTxt, 20, 280);
+
+          // --- DAŇOVÁ DOLOŽKA §13b UStG (NĚMECKO) ---      
+          // Vložíme fixně ke spodnímu okraji stránky (cca 4,5 cm od spodu), aby zbylo místo na podpisy      
+          let pageHeight = doc.internal.pageSize.getHeight();       
+          let footerY = pageHeight - 45;       
+          doc.setFont("helvetica", "normal");       
+          doc.setFontSize(8); // Menší písmo pro právní doložku     
+          doc.setTextColor(0, 0, 0); // Černá barva    
+          let danovyText = "Gemäß §13b Absatz 2 Nr.4 UstG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer gemäß § 14a UstG ausgewiesen. Es gilt die Steuerschuldnerschaft des Leistungsempfängers gemäß §13 b UstG.";              
+          // Rozdělí text na šířku max 180 mm, aby se vešel na řádek   
+          let rozdelenyText = doc.splitTextToSize(danovyText, 180);     
+          doc.text(rozdelenyText, 15, footerY); 
+          // ------------------------------------------
 
             // 10. PŘÍLOHY NA DALŠÍ STRANU
             if (f.fakturaData && f.fakturaData.prilohaTyp === 'standard') {
