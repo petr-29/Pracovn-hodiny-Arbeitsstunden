@@ -308,6 +308,7 @@
                     <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
                     <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">Faktura PDF</button>
                     <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Consilium PDF</button>
+                    <button class="btn-sec" style="background:#27ae60; color:white; font-weight:bold;" onclick="openExterniFakturaCard()">📥 Externí Faktura</button>
                 </div>
 
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
@@ -418,6 +419,28 @@
                         <button class="btn-sec" style="flex:1;" onclick="closeExportCard()" data-cs="Zrušit" data-de="Abbrechen">Zrušit</button>
                         <button class="btn-main" id="btn-execute-share" style="flex:1.5; background:#27ae60; color:white;" onclick="sharePDFExport()" data-cs="Sdílet PDF" data-de="PDF Teilen">Sdílet PDF</button>
                         <button class="btn-main" id="btn-execute-export" style="flex:1.5; background:#2c3e50; color:white;" onclick="executePDFExport()" data-cs="Uložit PDF" data-de="PDF speichern">Uložit PDF</button>
+                    </div>
+                </div>
+                <div id="externi-faktura-card" class="card hidden" style="border: 2px solid #27ae60;">
+                    <div class="card-title" style="color: #27ae60;">📥 Vložit externí fakturu (Jiná společnost)</div>
+                    <p style="font-size:12px; margin-bottom:15px; color:#555;">Pokud Vám záznamy fakturovala jiná firma, nahrajte sem jejich doklad. Záznamy se tím "zavřou" a naskočí do archivu.</p>
+                    
+                    <div class="form-group">
+                        <label>Společnost (Kdo to reálně fakturoval?)</label>
+                        <input type="text" id="ext-firma" placeholder="např. Partnerská s.r.o.">
+                    </div>
+                    <div class="form-group">
+                        <label>Číslo faktury (Ruční zápis)</label>
+                        <input type="text" id="ext-cislo" placeholder="např. 2026-EXT-01">
+                    </div>
+                    <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dcdde1;">
+                        <label style="color: #2c3e50; font-weight: bold;">Nahrát soubor (PDF, JPG, PNG)</label>
+                        <input type="file" id="ext-file" accept="application/pdf, image/*" style="margin-top: 10px;">
+                    </div>
+                    <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
+                    <div class="row">
+                        <button class="btn-sec" style="flex:1;" onclick="closeExterniFakturaCard()">Zrušit</button>
+                        <button class="btn-main" style="background:#27ae60; color:white; flex:2;" onclick="saveExterniFaktura()">Uložit do archivu</button>
                     </div>
                 </div>
 
@@ -1578,7 +1601,7 @@
                 item.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex-grow: 1;">
-                            <div style="font-weight:bold; color:#2980b9; font-size: 14px;">Faktura ${f.cislo} ${statusHtml}</div>
+                        <div style="font-weight:bold; color:#2980b9; font-size: 14px;">Faktura ${f.cislo} ${statusHtml} ${f.isExternal ? `<span style="background:#27ae60; color:white; padding:3px 6px; border-radius:4px; font-size:11px; margin-left:5px;">📥 EXTERNÍ</span>` : ''}</div>
                             <div style="font-size:12px; margin-top:4px;">${f.odberatel}</div>
                             <div style="font-size:11px; color:#7f8c8d; margin-top: 2px;">Vystaveno: ${new Date(f.datum).toLocaleDateString()} ${splatnostDatum ? '| Splatnost: ' + splatnostDatum.toLocaleDateString() : ''}</div>
                         </div>
@@ -1670,8 +1693,24 @@
         }
 
      function stahnoutFakturuZArchivu(id) {
-    let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
-    let f = archiv.find(x => x.id === id);
+        let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || []; 
+        let f = archiv.find(x => x.id === id);
+        
+        // --- NOVÝ BLOK PRO EXTERNÍ FAKTURY ---
+        if (f && f.isExternal) {
+            if (f.fileData) {
+                let a = document.createElement('a');
+                a.href = f.fileData;
+                let ext = (f.fileType && f.fileType.includes('pdf')) ? '.pdf' : '.jpg';
+                a.download = `Externi_Faktura_${f.cislo.replace('/','-')}${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                alert("K této externí faktuře nebyl nahrán žádný soubor.");
+            }
+            return;
+        }
     if(f && f.vybraneZaznamy) { 
         // Záloha aktuálního stavu a dočasné načtení podpisů z archivu
         let zalohaPodpisuIch = dataPodpisuIch;
@@ -2174,23 +2213,17 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
             let mesicniHodiny = 0;
             let mesicniPeneze = 0;
 
-            // --- 1. Zjistíme, které záznamy jsou už zaplacené podle archivu faktur ---
+            // --- 1. CHYTRÉ MAPOVÁNÍ ZÁLOH Z FAKTUR ---
             let archivFaktur = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            let recordPaidMap = {};
+            let recordInvoiceMap = {};
             archivFaktur.forEach(f => {
                 if (f.vybraneZaznamy) {
                     f.vybraneZaznamy.forEach(vz => {
-                        // Záznam je plně uhrazen, pouze pokud je celá faktura označena jako zaplacená
-                        if (f.zaplaceno) {
-                            recordPaidMap[vz.id] = true;
-                        } else if (recordPaidMap[vz.id] !== true) {
-                            recordPaidMap[vz.id] = false;
-                        }
+                        recordInvoiceMap[vz.id] = f; // Spáruje každý záznam s jeho fakturou
                     });
                 }
             });
 
-            // Měsíční souhrn nahoře
             zaznamy.forEach(z => {
                 let zd = new Date(z.datum);
                 if (zd.getMonth() === aktualniMesic && zd.getFullYear() === aktualniRok) {
@@ -2212,7 +2245,6 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                 return; 
             }
 
-            // --- 2. Vytvoření stromové struktury s kalkulací uhrazeno / neuhrazeno ---
             let tree = {};
             zaznamy.forEach(z => {
                 let d = new Date(z.datum);
@@ -2229,9 +2261,21 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                 let h = kalkulujCisteHodiny(z);
                 let eur = h * z.sazba;
                 
-                // Rozdělení peněz podle stavu platby
-                let zaplaceno = (recordPaidMap[z.id] === true) ? eur : 0;
-                let nezaplaceno = (recordPaidMap[z.id] === true) ? 0 : eur;
+                // --- VÝPOČET ZÁLOH A UHRÁZENÉ ČÁSTKY ---
+                let zaplaceno = 0;
+                let nezaplaceno = eur;
+                let inv = recordInvoiceMap[z.id];
+
+                if (inv) {
+                    let ratio = 0;
+                    if (inv.suma > 0) {
+                        let zaloha = inv.zalohy || 0;
+                        if (inv.zaplaceno) zaloha = inv.suma;
+                        ratio = zaloha / inv.suma; // Vypočítá, kolik % z faktury už je zaplaceno
+                    }
+                    zaplaceno = eur * ratio;
+                    nezaplaceno = eur - zaplaceno;
+                }
                 
                 tree[mKey].sumH += h;
                 tree[mKey].sumEUR += eur;
@@ -2263,9 +2307,7 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                         <div style="color:#ff7675; display:inline-block;">❌ ${formatMena(mData.sumNezaplaceno)}</div>
                     </div>
                 `;
-                mHeader.onclick = () => {
-                    document.getElementById(`month-content-${mKey}`).classList.toggle('show');
-                };
+                mHeader.onclick = () => { document.getElementById(`month-content-${mKey}`).classList.toggle('show'); };
                 
                 let mContent = document.createElement('div');
                 mContent.id = `month-content-${mKey}`;
@@ -2280,7 +2322,7 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                     
                     let wHeader = document.createElement('div');
                     wHeader.className = 'week-accordion';
-                    wHeader.style.padding = '8px 12px'; // Upravený padding pro elegantnější vzhled
+                    wHeader.style.padding = '8px 12px';
                     wHeader.innerHTML = `
                         <div style="display:flex; align-items:center; flex:1; cursor:pointer;" onclick="document.getElementById('week-content-${wKey}').classList.toggle('show')">
                             <span>🗓️ ${wName}</span>
@@ -2320,7 +2362,7 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                                     <span style="font-size:11px; margin-left:8px; font-weight:500;">Uloženo: ${new Date(rep.datum).toLocaleDateString()} (${rep.vybraneZaznamy.length} záznamů)</span>
                                 </div>
                                 <div style="display:flex; gap:6px;">
-                                    <button class="btn-sec" style="background:#2563eb; color:white; padding:5px 10px; font-size:11px;" onclick="stahnoutUlozenyVykaz(${rep.id})">👁️ Otevřít / Poslat</button>
+                                    <button class="btn-sec" style="background:#2563eb; color:white; padding:5px 10px; font-size:11px;" onclick="stahnoutUlozenyVykaz(${rep.id})">👁️ PDF</button>
                                     <button class="btn-sec" style="background:#e74c3c; color:white; padding:5px 10px; font-size:11px;" onclick="smazatUlozenyVykaz(${rep.id})">🗑️</button>
                                 </div>
                             `;
@@ -2350,11 +2392,9 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                             </div>`;
                         wContent.appendChild(item);
                     });
-                    
                     mContent.appendChild(wHeader);
                     mContent.appendChild(wContent);
                 });
-                
                 container.appendChild(mHeader);
                 container.appendChild(mContent);
             });
@@ -2812,6 +2852,71 @@ function executePDFExport() {
                     closeExportCard();
                 }
             } 
+        }
+    function openExterniFakturaCard() {
+            let vybrane = zaznamy.filter(z => z.selected);
+            if(vybrane.length === 0) { alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro tuto fakturu!' : 'Bitte wählen Sie zuerst die Zeilen aus!'); return; }
+            document.getElementById('export-card').classList.add('hidden');
+            document.getElementById('externi-faktura-card').classList.remove('hidden');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function closeExterniFakturaCard() {
+            document.getElementById('externi-faktura-card').classList.add('hidden');
+            document.getElementById('ext-file').value = "";
+        }
+
+        function saveExterniFaktura() {
+            let vybrane = zaznamy.filter(z => z.selected);
+            let cislo = document.getElementById('ext-cislo').value || 'EXT-' + Math.floor(Math.random() * 1000);
+            let odberatel = document.getElementById('ext-firma').value || 'Externí Společnost';
+            let fileInput = document.getElementById('ext-file');
+            
+            let suma = 0;
+            vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            if (archiv.find(f => f.cislo === cislo)) {
+                alert("Faktura s tímto číslem už existuje! Změňte ho prosím."); return;
+            }
+
+            let ulozObjekt = {
+                id: Date.now(),
+                cislo: cislo,
+                odberatel: odberatel,
+                suma: suma,
+                datum: new Date().toISOString(),
+                vybraneZaznamy: vybrane,
+                zalohy: 0,
+                zaplaceno: false,
+                isExternal: true, // Speciální značka
+                fileData: null,
+                fileType: null
+            };
+
+            // Čtení a uložení souboru, pokud byl přiložen
+            if (fileInput.files && fileInput.files[0]) {
+                let file = fileInput.files[0];
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    ulozObjekt.fileData = e.target.result;
+                    ulozObjekt.fileType = file.type;
+                    dokonciUlozeniExterni(ulozObjekt);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                dokonciUlozeniExterni(ulozObjekt); // Uložení bez souboru
+            }
+        }
+
+        function dokonciUlozeniExterni(obj) {
+            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            archiv.push(obj);
+            localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
+            oznacExportovaneZaznamy('faktura'); // Dá vlaječku FA všem záznamům
+            renderArchivFaktur(); // Překreslí archiv
+            alert("Externí faktura byla úspěšně založena!");
+            closeExterniFakturaCard();
         }
 
         async function sharePDFExport() {
