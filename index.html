@@ -2050,8 +2050,121 @@
             });
             document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
         }
+function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
+            if (!vybrane || vybrane.length === 0) return;
+            
+            // Zjistíme rok a týden z prvního záznamu ve výběru
+            let d = new Date(vybrane[0].datum);
+            let year = d.getFullYear();
+            let weekNum = getWeekNumber(d);
 
-      function renderZaznamy() {
+            let extraData = {};
+            if (typ === 'abnahme') {
+                extraData = {
+                    bezZkousky: document.getElementById('ab-bezZkousky').checked,
+                    seZkouskou: document.getElementById('ab-seZkouskou').checked,
+                    sVadami: document.getElementById('ab-sVadami').checked,
+                    vadyText: document.getElementById('ab-vadyText').value,
+                    odstraneniDo: document.getElementById('ab-odstraneniDo').value
+                };
+            } else if (typ === 'consilium') {
+                extraData = {
+                    obdobi: document.getElementById('cons-obdobi') ? document.getElementById('cons-obdobi').value : '',
+                    odstranitDo: document.getElementById('cons-odstranit-do') ? document.getElementById('cons-odstranit-do').value : '',
+                    zavady: document.getElementById('cons-zavady') ? document.getElementById('cons-zavady').value : '',
+                    nabidnutoChk: document.getElementById('cons-nabidnuto-chk') ? document.getElementById('cons-nabidnuto-chk').checked : false,
+                    datumNabidnuti: document.getElementById('cons-datum-nabidnuti') ? document.getElementById('cons-datum-nabidnuti').value : ''
+                };
+            }
+
+            let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
+            
+            savedReports.push({
+                id: Date.now(),
+                year: year,
+                weekNum: weekNum,
+                typ: typ, // 'standard', 'abnahme', 'consilium'
+                datum: new Date().toISOString(),
+                vybraneZaznamy: vybrane,
+                extraData: extraData,
+                podpisIch: podpisIch,
+                podpisKunde: podpisKunde
+            });
+            
+            localStorage.setItem('saved_week_reports', JSON.stringify(savedReports));
+            renderZaznamy(); // Okamžitě se přepreslí seznam a výkaz se objeví v daném týdnu!
+        }
+
+        async function stahnoutUlozenyVykaz(id) {
+            let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
+            let item = savedReports.find(x => x.id === id);
+            if (!item) { alert("Výkaz nebyl nalezen."); return; }
+
+            // Dočasně dosadíme původní uložené podpisy z tohoto záznamu
+            let oldIch = dataPodpisuIch;
+            let oldKunde = dataPodpisuKunde;
+            dataPodpisuIch = item.podpisIch || null;
+            dataPodpisuKunde = item.podpisKunde || null;
+
+            const { jsPDF } = window.jspdf;
+            let doc, fileName;
+
+            if (item.typ === 'standard') {
+                doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+                drawStandardReportToDoc(doc, item.vybraneZaznamy);
+                fileName = `Taetigkeitsnachweis_Woche_${item.weekNum}_${item.year}.pdf`;
+            } else if (item.typ === 'abnahme') {
+                doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+                if (item.extraData) {
+                    if(document.getElementById('ab-bezZkousky')) document.getElementById('ab-bezZkousky').checked = item.extraData.bezZkousky;
+                    if(document.getElementById('ab-seZkouskou')) document.getElementById('ab-seZkouskou').checked = item.extraData.seZkouskou;
+                    if(document.getElementById('ab-sVadami')) document.getElementById('ab-sVadami').checked = item.extraData.sVadami;
+                    if(document.getElementById('ab-vadyText')) document.getElementById('ab-vadyText').value = item.extraData.vadyText || '';
+                    if(document.getElementById('ab-odstraneniDo')) document.getElementById('ab-odstraneniDo').value = item.extraData.odstraneniDo || '';
+                }
+                drawAbnahmeReportToDoc(doc, item.vybraneZaznamy);
+                fileName = `Abnahmeprotokoll_Woche_${item.weekNum}_${item.year}.pdf`;
+            } else if (item.typ === 'consilium') {
+                doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'landscape' });
+                if (item.extraData) {
+                    if(document.getElementById('cons-obdobi')) document.getElementById('cons-obdobi').value = item.extraData.obdobi || '';
+                    if(document.getElementById('cons-odstranit-do')) document.getElementById('cons-odstranit-do').value = item.extraData.odstranitDo || '';
+                    if(document.getElementById('cons-zavady')) document.getElementById('cons-zavady').value = item.extraData.zavady || '';
+                    if(document.getElementById('cons-nabidnuto-chk')) document.getElementById('cons-nabidnuto-chk').checked = item.extraData.nabidnutoChk || false;
+                    if(document.getElementById('cons-datum-nabidnuti')) document.getElementById('cons-datum-nabidnuti').value = item.extraData.datumNabidnuti || '';
+                }
+                drawConsiliumReportToDoc(doc, item.vybraneZaznamy);
+                fileName = `Consilium_Protokoll_Woche_${item.weekNum}_${item.year}.pdf`;
+            }
+
+            // Vrácení aktuálních podpisů zpět
+            dataPodpisuIch = oldIch;
+            dataPodpisuKunde = oldKunde;
+
+            // Vygenerování PDF a chytré zobrazení (Sdílení přes telefon / uložení v PC)
+            let fileBlob = doc.output('blob');
+            let file = new File([fileBlob], fileName, { type: 'application/pdf' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({ files: [file], title: fileName });
+                } catch (err) { console.log("Sdílení zrušeno", err); }
+            } else {
+                doc.save(fileName);
+            }
+        }
+
+        function smazatUlozenyVykaz(id) {
+            if (confirm("Opravdu smazat tento uložený výkaz z týdne?")) {
+                let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
+                savedReports = savedReports.filter(x => x.id !== id);
+                localStorage.setItem('saved_week_reports', JSON.stringify(savedReports));
+                renderZaznamy();
+            }
+        }
+    
+    
+  
+    function renderZaznamy() {
             let container = document.getElementById('seznam-container'); 
             container.innerHTML = '';
 
@@ -2148,6 +2261,35 @@
                     wContent.className = 'acc-content';
                     // Nejnovější týden se automaticky otevře
                     if (mIndex === 0 && wIndex === 0) wContent.classList.add('show');
+                    
+                    // --- NOVÝ KÓD: ULOŽENÉ VÝKAZY V TÝDNU ---
+                    let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
+                    // Využíváme mData.rok, protože wData (týden) obsahuje jen číslo týdne
+                    let weekReports = savedReports.filter(r => r.year == mData.rok && r.weekNum == wData.tyden);
+                    
+                    if (weekReports.length > 0) {
+                        let reportsBox = document.createElement('div');
+                        reportsBox.style.cssText = "background: rgba(52, 152, 219, 0.1); padding: 10px; border-radius: 6px; margin-bottom: 12px; margin-top: 10px; border: 1px solid #3498db;";
+                        reportsBox.innerHTML = `<div style="font-size: 11px; color: #2980b9; margin-bottom: 6px; font-weight: bold; text-transform: uppercase;">📁 Podepsané výkazy v tomto týdnu:</div>`;
+                        
+                        weekReports.forEach(rep => {
+                            let badgeColor = rep.typ === 'standard' ? '#f39c12' : (rep.typ === 'abnahme' ? '#3498db' : '#8e44ad');
+                            let repItem = document.createElement('div');
+                            repItem.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 8px 10px; border-radius: 4px; margin-top: 5px; border: 1px solid var(--border);";
+                            repItem.innerHTML = `
+                                <div>
+                                    <span style="background:${badgeColor}; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;">${rep.typ.toUpperCase()}</span>
+                                    <span style="font-size:11px; margin-left:8px; font-weight:500;">Uloženo: ${new Date(rep.datum).toLocaleDateString()} (${rep.vybraneZaznamy.length} záznamů)</span>
+                                </div>
+                                <div style="display:flex; gap:6px;">
+                                    <button class="btn-sec" style="background:#2563eb; color:white; padding:5px 10px; font-size:11px;" onclick="stahnoutUlozenyVykaz(${rep.id})">👁️ Otevřít / Poslat</button>
+                                    <button class="btn-sec" style="background:#e74c3c; color:white; padding:5px 10px; font-size:11px;" onclick="smazatUlozenyVykaz(${rep.id})">🗑️</button>
+                                </div>
+                            `;
+                            reportsBox.appendChild(repItem);
+                        });
+                        wContent.appendChild(reportsBox);
+                    }
                     
                     // Samotné záznamy v daném týdnu
                     wData.records.sort((a,b) => new Date(b.datum) - new Date(a.datum)).forEach(z => {
@@ -2578,160 +2720,152 @@ function importDataFromFile(event) {
 }
 
 function executePDFExport() {
-    if (currentExportType === 'consilium') {
-        exportConsiliumPDF();
-        return;
-    }
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    
-    let vybrane = zaznamy.filter(z => z.selected);
-    vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-    if (vybrane.length === 0) return;
-
-    if (currentExportType === 'standard') {
-        drawStandardReportToDoc(doc, vybrane);
-        doc.save(`Taetigkeitsnachweis_${new Date().getTime()}.pdf`);
-        oznacExportovaneZaznamy('standard');
-        closeExportCard();
-    } else if (currentExportType === 'abnahme') {
-        drawAbnahmeReportToDoc(doc, vybrane);
-        doc.save(`Abnahmeprotokoll_${new Date().getTime()}.pdf`);
-        oznacExportovaneZaznamy('abnahme');
-        closeExportCard();
-    } else if (currentExportType === 'faktura') {
-        let cisloFaktury = document.getElementById('fak-cislo').value;
-        let odberatel = document.getElementById('cfg-firma').value;
-        let suma = 0;
-        
-        vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
-
-        let fakturaData = {
-            vystaveni: document.getElementById('fak-vystaveni').value,
-            splatnost: document.getElementById('fak-splatnost').value,
-            prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value,
-            podpisIch: dataPodpisuIch,
-            podpisKunde: dataPodpisuKunde
-        };
-
-        let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
-        if (ok) {
-            // Sestavení a fyzické stažení PDF faktury
-            let fakeFaktura = {
-                cislo: cisloFaktury, odberatel: odberatel, suma: suma,
-                datum: new Date().toISOString(), vybraneZaznamy: vybrane, fakturaData: fakturaData
-            };
-            const fDoc = buildFakturaDoc(fakeFaktura);
-            fDoc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
-            
-            oznacExportovaneZaznamy('faktura');
-            alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu a stažena!' : 'Rechnung im Archiv gespeichert!');
-            closeExportCard();
-        }
-    } 
-}
-
-// NOVÁ FUNKCE PRO AUTOMATICKÉ ROZSVÍCENÍ VLAJEČEK
-function oznacExportovaneZaznamy(typ) {
-    let zmena = false;
-    zaznamy.forEach(z => {
-        if (z.selected) {
-            if (typ === 'faktura') z.pdfFaktura = true;
-            if (typ === 'standard') z.pdfStandard = true;
-            if (typ === 'abnahme') z.pdfAbnahme = true;
-            if (typ === 'consilium') z.pdfConsilium = true;
-            zmena = true;
-        }
-    });
-    if (zmena) {
-        localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
-        renderZaznamy(); // Ihned překreslí seznam, abys viděl vlaječku
-    }
-}
-async function sharePDFExport() {
-    let fileBlob = null;
-    let fileName = "";
-    let savedToArchive = false; // Příznak, zda se faktura úspěšně uložila do archivu
-
-    const { jsPDF } = window.jspdf;
-    
-    let vybrane = zaznamy.filter(z => z.selected);
-    vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-
-    if (currentExportType === 'consilium') {
-        fileBlob = exportConsiliumPDF(true);
-        fileName = `Consilium_Protokol_${new Date().getTime()}.pdf`;
-    } else if (currentExportType === 'standard') {
-        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-        drawStandardReportToDoc(doc, vybrane);
-        fileBlob = doc.output('blob');
-        fileName = `Taetigkeitsnachweis_${new Date().getTime()}.pdf`;
-    } else if (currentExportType === 'abnahme') {
-        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-        drawAbnahmeReportToDoc(doc, vybrane);
-        fileBlob = doc.output('blob');
-        fileName = `Abnahmeprotokoll_${new Date().getTime()}.pdf`;
-    } else if (currentExportType === 'faktura') {
-        // Logika pro fakturu - nejprve ji uložíme do paměti aplikace
-        let cisloFaktury = document.getElementById('fak-cislo').value;
-        let odberatel = document.getElementById('cfg-firma').value;
-        let suma = 0;
-        vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
-
-        let fakturaData = {
-            vystaveni: document.getElementById('fak-vystaveni').value,
-            splatnost: document.getElementById('fak-splatnost').value,
-            prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value
-        };
-
-        let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
-        if (!ok) return; // Ukončí se, pokud se nezdařilo uložit (např. duplicita čísla)
-        
-        savedToArchive = true;
-        
-        let fakeFaktura = {
-            cislo: cisloFaktury, odberatel: odberatel, suma: suma,
-            datum: new Date().toISOString(), vybraneZaznamy: vybrane, fakturaData: fakturaData
-        };
-        const doc = buildFakturaDoc(fakeFaktura);
-        fileBlob = doc.output('blob');
-        fileName = `Faktura_${cisloFaktury.replace('/','-')}.pdf`;
-    }
-
-    // Otevření nativního okna pro sdílení
-   if (fileBlob) {
-    oznacExportovaneZaznamy(currentExportType); // <--- TENTO ŘÁDEK PŘIDEJ (Rozsvítí vlaječky před odesláním)
-    let file = new File([fileBlob], fileName, { type: 'application/pdf' });
-        
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: fileName,
-                    text: currentLang === 'cs' ? 'Zasílám vygenerované PDF.' : 'Hier ist das generierte PDF.'
-                });
-                if(savedToArchive) alert(currentLang === 'cs' ? 'Odesláno a faktura uložena do archivu!' : 'Gesendet und Rechnung archiviert!');
-                closeExportCard();
-            } catch (err) {
-                console.log("Sdílení zrušeno", err);
+            if (currentExportType === 'consilium') {
+                let vybrane = zaznamy.filter(z => z.selected);
+                ulozVykazProTyzden('consilium', vybrane, dataPodpisuIch, dataPodpisuKunde);
+                exportConsiliumPDF(); 
+                return;
             }
-        } else {
-            // Bezpečnostní záloha, pokud starší telefon sdílení nepodporuje
-            alert(currentLang === 'cs' ? 'Zařízení nepodporuje přímé sdílení. PDF se místo toho stáhne.' : 'Teilen nicht unterstützt. PDF wird heruntergeladen.');
-            const url = URL.createObjectURL(fileBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            if(savedToArchive) alert(currentLang === 'cs' ? 'Faktura uložena do archivu!' : 'Rechnung archiviert!');
-            closeExportCard();
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            
+            let vybrane = zaznamy.filter(z => z.selected);
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+            if (vybrane.length === 0) return;
+
+            if (currentExportType === 'standard') {
+                drawStandardReportToDoc(doc, vybrane);
+                doc.save(`Taetigkeitsnachweis_${new Date().getTime()}.pdf`);
+                oznacExportovaneZaznamy('standard');
+                ulozVykazProTyzden('standard', vybrane, dataPodpisuIch, dataPodpisuKunde);
+                closeExportCard();
+            } else if (currentExportType === 'abnahme') {
+                drawAbnahmeReportToDoc(doc, vybrane);
+                doc.save(`Abnahmeprotokoll_${new Date().getTime()}.pdf`);
+                oznacExportovaneZaznamy('abnahme');
+                ulozVykazProTyzden('abnahme', vybrane, dataPodpisuIch, dataPodpisuKunde);
+                closeExportCard();
+            } else if (currentExportType === 'faktura') {
+                let cisloFaktury = document.getElementById('fak-cislo').value;
+                let odberatel = document.getElementById('cfg-firma').value;
+                let suma = 0;
+                
+                vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+                let fakturaData = {
+                    vystaveni: document.getElementById('fak-vystaveni').value,
+                    splatnost: document.getElementById('fak-splatnost').value,
+                    prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value,
+                    podpisIch: dataPodpisuIch,
+                    podpisKunde: dataPodpisuKunde
+                };
+
+                let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+                if (ok) {
+                    let fakeFaktura = {
+                        cislo: cisloFaktury, odberatel: odberatel, suma: suma,
+                        datum: new Date().toISOString(), vybraneZaznamy: vybrane, fakturaData: fakturaData
+                    };
+                    const fDoc = buildFakturaDoc(fakeFaktura);
+                    fDoc.save(`Faktura_${cisloFaktury.replace('/','-')}.pdf`);
+                    
+                    oznacExportovaneZaznamy('faktura');
+                    alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu a stažena!' : 'Rechnung im Archiv gespeichert!');
+                    closeExportCard();
+                }
+            } 
         }
-    }
-}
+
+        async function sharePDFExport() {
+            let fileBlob = null;
+            let fileName = "";
+            let savedToArchive = false; 
+
+            const { jsPDF } = window.jspdf;
+            
+            let vybrane = zaznamy.filter(z => z.selected);
+            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+
+            // Záchrana podpisů před jejich vymazáním ve funkci closeExportCard
+            let cacheIch = dataPodpisuIch;
+            let cacheKunde = dataPodpisuKunde;
+
+            if (currentExportType === 'consilium') {
+                fileBlob = exportConsiliumPDF(true);
+                fileName = `Consilium_Protokol_${new Date().getTime()}.pdf`;
+                ulozVykazProTyzden('consilium', vybrane, cacheIch, cacheKunde);
+            } else if (currentExportType === 'standard') {
+                const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+                drawStandardReportToDoc(doc, vybrane);
+                fileBlob = doc.output('blob');
+                fileName = `Taetigkeitsnachweis_${new Date().getTime()}.pdf`;
+                ulozVykazProTyzden('standard', vybrane, cacheIch, cacheKunde);
+            } else if (currentExportType === 'abnahme') {
+                const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+                drawAbnahmeReportToDoc(doc, vybrane);
+                fileBlob = doc.output('blob');
+                fileName = `Abnahmeprotokoll_${new Date().getTime()}.pdf`;
+                ulozVykazProTyzden('abnahme', vybrane, cacheIch, cacheKunde);
+            } else if (currentExportType === 'faktura') {
+                let cisloFaktury = document.getElementById('fak-cislo').value;
+                let odberatel = document.getElementById('cfg-firma').value;
+                let suma = 0;
+                vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+                let fakturaData = {
+                    vystaveni: document.getElementById('fak-vystaveni').value,
+                    splatnost: document.getElementById('fak-splatnost').value,
+                    prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value,
+                    podpisIch: cacheIch,
+                    podpisKunde: cacheKunde
+                };
+
+                let ok = ulozitFakturuDoArchivu(cisloFaktury, odberatel, suma, vybrane, fakturaData);
+                if (!ok) return; 
+                
+                savedToArchive = true;
+                
+                let fakeFaktura = {
+                    cislo: cisloFaktury, odberatel: odberatel, suma: suma,
+                    datum: new Date().toISOString(), vybraneZaznamy: vybrane, fakturaData: fakturaData
+                };
+                const doc = buildFakturaDoc(fakeFaktura);
+                fileBlob = doc.output('blob');
+                fileName = `Faktura_${cisloFaktury.replace('/','-')}.pdf`;
+            }
+
+            if (fileBlob) {
+                oznacExportovaneZaznamy(currentExportType); 
+                let file = new File([fileBlob], fileName, { type: 'application/pdf' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: fileName,
+                            text: currentLang === 'cs' ? 'Zasílám vygenerované PDF.' : 'Hier ist das generierte PDF.'
+                        });
+                        if(savedToArchive) alert(currentLang === 'cs' ? 'Odesláno a faktura uložena do archivu!' : 'Gesendet und Rechnung archiviert!');
+                        closeExportCard();
+                    } catch (err) {
+                        console.log("Sdílení zrušeno", err);
+                    }
+                } else {
+                    alert(currentLang === 'cs' ? 'Zařízení nepodporuje přímé sdílení. PDF se místo toho stáhne.' : 'Teilen nicht unterstützt. PDF wird heruntergeladen.');
+                    const url = URL.createObjectURL(fileBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    if(savedToArchive) alert(currentLang === 'cs' ? 'Faktura uložena do archivu!' : 'Rechnung archiviert!');
+                    closeExportCard();
+                }
+            }
+        }
     
     // ==========================================
     // VIZUÁLNÍ DRAG & DROP KALIBRACE CONSILIUM
