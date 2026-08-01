@@ -2164,7 +2164,7 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
     
     
   
-    function renderZaznamy() {
+   function renderZaznamy() {
             let container = document.getElementById('seznam-container'); 
             container.innerHTML = '';
 
@@ -2174,7 +2174,23 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
             let mesicniHodiny = 0;
             let mesicniPeneze = 0;
 
-            // Získání dat pro hlavní panel nahoře
+            // --- 1. Zjistíme, které záznamy jsou už zaplacené podle archivu faktur ---
+            let archivFaktur = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+            let recordPaidMap = {};
+            archivFaktur.forEach(f => {
+                if (f.vybraneZaznamy) {
+                    f.vybraneZaznamy.forEach(vz => {
+                        // Záznam je plně uhrazen, pouze pokud je celá faktura označena jako zaplacená
+                        if (f.zaplaceno) {
+                            recordPaidMap[vz.id] = true;
+                        } else if (recordPaidMap[vz.id] !== true) {
+                            recordPaidMap[vz.id] = false;
+                        }
+                    });
+                }
+            });
+
+            // Měsíční souhrn nahoře
             zaznamy.forEach(z => {
                 let zd = new Date(z.datum);
                 if (zd.getMonth() === aktualniMesic && zd.getFullYear() === aktualniRok) {
@@ -2196,7 +2212,7 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                 return; 
             }
 
-            // 1. Vytvoření stromové struktury (Měsíc -> Týden -> Záznamy)
+            // --- 2. Vytvoření stromové struktury s kalkulací uhrazeno / neuhrazeno ---
             let tree = {};
             zaznamy.forEach(z => {
                 let d = new Date(z.datum);
@@ -2204,23 +2220,31 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                 let m = d.getMonth();
                 let wk = getWeekNumber(d);
                 
-                let mKey = `${y}-${String(m).padStart(2, '0')}`; // Formát YYYY-MM pro přesné třídění
-                let wKey = `${y}-${String(wk).padStart(2, '0')}`; // Formát YYYY-WW
+                let mKey = `${y}-${String(m).padStart(2, '0')}`; 
+                let wKey = `${y}-${String(wk).padStart(2, '0')}`;
                 
-                if(!tree[mKey]) tree[mKey] = { rok: y, mesic: m, sumH: 0, sumEUR: 0, tyzdny: {} };
-                if(!tree[mKey].tyzdny[wKey]) tree[mKey].tyzdny[wKey] = { tyden: wk, sumH: 0, sumEUR: 0, records: [] };
+                if(!tree[mKey]) tree[mKey] = { rok: y, mesic: m, sumH: 0, sumEUR: 0, sumZaplaceno: 0, sumNezaplaceno: 0, tyzdny: {} };
+                if(!tree[mKey].tyzdny[wKey]) tree[mKey].tyzdny[wKey] = { rok: y, tyden: wk, sumH: 0, sumEUR: 0, sumZaplaceno: 0, sumNezaplaceno: 0, records: [] };
                 
                 let h = kalkulujCisteHodiny(z);
                 let eur = h * z.sazba;
                 
+                // Rozdělení peněz podle stavu platby
+                let zaplaceno = (recordPaidMap[z.id] === true) ? eur : 0;
+                let nezaplaceno = (recordPaidMap[z.id] === true) ? 0 : eur;
+                
                 tree[mKey].sumH += h;
                 tree[mKey].sumEUR += eur;
+                tree[mKey].sumZaplaceno += zaplaceno;
+                tree[mKey].sumNezaplaceno += nezaplaceno;
+                
                 tree[mKey].tyzdny[wKey].sumH += h;
                 tree[mKey].tyzdny[wKey].sumEUR += eur;
+                tree[mKey].tyzdny[wKey].sumZaplaceno += zaplaceno;
+                tree[mKey].tyzdny[wKey].sumNezaplaceno += nezaplaceno;
                 tree[mKey].tyzdny[wKey].records.push(z);
             });
 
-            // 2. Vykreslování (od nejnovějších)
             let sortedMonths = Object.keys(tree).sort((a,b) => b.localeCompare(a));
             
             sortedMonths.forEach((mKey, mIndex) => {
@@ -2228,10 +2252,17 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                 let nazvy = currentLang === 'cs' ? nazvyMesicuCS : nazvyMesicuDE;
                 let mName = `${nazvy[mData.mesic]} ${mData.rok}`;
                 
-                // Měsíční tlačítko
                 let mHeader = document.createElement('div');
                 mHeader.className = 'month-accordion';
-                mHeader.innerHTML = `<span>📅 ${mName}</span> <span>${mData.sumH.toFixed(2)} h | ${formatMena(mData.sumEUR)}</span>`;
+                mHeader.style.alignItems = 'center';
+                mHeader.innerHTML = `
+                    <div style="flex:1;">📅 ${mName}</div>
+                    <div style="text-align:right; font-size:11px; font-weight:normal; line-height:1.4; text-transform:none;">
+                        <div style="font-size:13px; font-weight:bold; margin-bottom:2px; text-transform:uppercase;">${mData.sumH.toFixed(2)} h | ${formatMena(mData.sumEUR)}</div>
+                        <div style="color:#2ecc71; display:inline-block; margin-right:6px;">✅ ${formatMena(mData.sumZaplaceno)}</div>
+                        <div style="color:#ff7675; display:inline-block;">❌ ${formatMena(mData.sumNezaplaceno)}</div>
+                    </div>
+                `;
                 mHeader.onclick = () => {
                     document.getElementById(`month-content-${mKey}`).classList.toggle('show');
                 };
@@ -2239,7 +2270,6 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                 let mContent = document.createElement('div');
                 mContent.id = `month-content-${mKey}`;
                 mContent.className = 'acc-content';
-                // Nejnovější měsíc se automaticky otevře, staré zůstanou zavřené
                 if (mIndex === 0) mContent.classList.add('show');
                 
                 let sortedWeeks = Object.keys(mData.tyzdny).sort((a,b) => b.localeCompare(a));
@@ -2248,24 +2278,32 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                     let wData = mData.tyzdny[wKey];
                     let wName = currentLang === 'cs' ? `Týden ${wData.tyden}` : `Woche ${wData.tyden}`;
                     
-                    // Týdenní tlačítko
                     let wHeader = document.createElement('div');
                     wHeader.className = 'week-accordion';
-                    wHeader.innerHTML = `<span>🗓️ ${wName}</span> <span>${wData.sumH.toFixed(2)} h | ${formatMena(wData.sumEUR)}</span>`;
-                    wHeader.onclick = () => {
-                        document.getElementById(`week-content-${wKey}`).classList.toggle('show');
-                    };
+                    wHeader.style.padding = '8px 12px'; // Upravený padding pro elegantnější vzhled
+                    wHeader.innerHTML = `
+                        <div style="display:flex; align-items:center; flex:1; cursor:pointer;" onclick="document.getElementById('week-content-${wKey}').classList.toggle('show')">
+                            <span>🗓️ ${wName}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="text-align:right; font-size:10px; line-height:1.3; font-weight:normal;">
+                                <div style="font-size:12px; font-weight:bold; color:#2980b9; margin-bottom:2px;">${wData.sumH.toFixed(2)} h | ${formatMena(wData.sumEUR)}</div>
+                                <div><span style="color:#27ae60;">✅ ${formatMena(wData.sumZaplaceno)}</span> | <span style="color:#e74c3c;">❌ ${formatMena(wData.sumNezaplaceno)}</span></div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <button class="btn-sec" style="padding:3px 6px; font-size:9px; background:#f39c12; color:black; border-radius:4px; font-weight:bold;" onclick="event.stopPropagation(); quickExportWeek(${wData.rok}, ${wData.tyden}, 'standard')" title="Rychlé Standard PDF">STD</button>
+                                <button class="btn-sec" style="padding:3px 6px; font-size:9px; background:#8e44ad; color:white; border-radius:4px; font-weight:bold;" onclick="event.stopPropagation(); quickExportWeek(${wData.rok}, ${wData.tyden}, 'consilium')" title="Rychlé Consilium PDF">CON</button>
+                            </div>
+                        </div>
+                    `;
                     
                     let wContent = document.createElement('div');
                     wContent.id = `week-content-${wKey}`;
                     wContent.className = 'acc-content';
-                    // Nejnovější týden se automaticky otevře
                     if (mIndex === 0 && wIndex === 0) wContent.classList.add('show');
                     
-                    // --- NOVÝ KÓD: ULOŽENÉ VÝKAZY V TÝDNU ---
                     let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
-                    // Využíváme mData.rok, protože wData (týden) obsahuje jen číslo týdne
-                    let weekReports = savedReports.filter(r => r.year == mData.rok && r.weekNum == wData.tyden);
+                    let weekReports = savedReports.filter(r => r.year === wData.rok && r.weekNum === wData.tyden);
                     
                     if (weekReports.length > 0) {
                         let reportsBox = document.createElement('div');
@@ -2290,8 +2328,7 @@ function ulozVykazProTyzden(typ, vybrane, podpisIch, podpisKunde) {
                         });
                         wContent.appendChild(reportsBox);
                     }
-                    
-                    // Samotné záznamy v daném týdnu
+
                     wData.records.sort((a,b) => new Date(b.datum) - new Date(a.datum)).forEach(z => {
                         let h = kalkulujCisteHodiny(z); 
                         let item = document.createElement('div'); 
