@@ -443,6 +443,53 @@
                         <button class="btn-main" style="background:#27ae60; color:white; flex:2;" onclick="saveExterniFaktura()">Uložit do archivu</button>
                     </div>
                 </div>
+                /* --- VIZUÁLNÍ EDITOR EXTERNÍCH PDF --- */
+#template-editor-card {
+    border: 2px solid #8e44ad; /* Fialová pro vizuální odlišení */
+}
+
+#editor-canvas {
+    position: relative;
+    width: 100%;
+    /* Výchozí výška, později ji budeme dynamicky měnit podle poměru stran A4/A5 */
+    height: 600px; 
+    background-color: #f1f2f6;
+    border: 2px dashed #a4b0be;
+    margin-top: 15px;
+    overflow: hidden; /* Aby štítky neutekly ven */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.draggable-field {
+    position: absolute;
+    background-color: #3498db;
+    color: white;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    border: 1px solid #2980b9;
+    z-index: 10;
+    touch-action: none; /* Zabrání scrollování stránky při tahání prstem na iOS */
+}
+
+.draggable-field:active {
+    cursor: grabbing;
+    background-color: #2980b9;
+    transform: scale(1.05); /* Lehký efekt při chycení */
+    z-index: 100; /* Přesune se nad ostatní */
+}
+
+/* Skrýt štítek, pokud ho uživatel zrovna nechce použít na dané faktuře */
+.draggable-field.hidden-field {
+    display: none;
+}
+
 
                 <!-- MĚSÍČNÍ SOUHRN V ZÁZNAMECH -->
                 <div class="card" id="mesicni-souhrn-card" style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
