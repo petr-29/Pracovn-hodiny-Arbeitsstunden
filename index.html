@@ -886,7 +886,7 @@
             }
         }
 
-    // Těchto 20 políček jsi přesně definoval
+// Těchto 27 políček pokrývá klasické protokoly i specifické Zeitnachweisy
 const sablonaPole = [
     { id: 'fld-auftraggeber', label: '1. Auftraggeber' },
     { id: 'fld-auftragnehmer', label: '2. Auftragnehmer' },
@@ -907,7 +907,15 @@ const sablonaPole = [
     { id: 'fld-werkdatum', label: '17. Werk am (Datum předání)' },
     { id: 'fld-ortdatum', label: '18. Ort / Datum dole' },
     { id: 'fld-sign-ich', label: '19. Unterschrift Auftragnehmer' },
-    { id: 'fld-sign-kunde', label: '20. Unterschrift Bauleiter' }
+    { id: 'fld-sign-kunde', label: '20. Unterschrift Bauleiter' },
+    // --- NOVÉ POLOŽKY Z ZEITNACHWEIS.PDF ---
+    { id: 'fld-auftragsnummer', label: '21. Auftragsnummer (Zakázka)' },
+    { id: 'fld-maschinenbez', label: '22. Maschinenbezeichnung (Stroj)' },
+    { id: 'fld-vorarbeiter', label: '23. Vorarbeiter (Mistr)' },
+    { id: 'fld-pausedauer', label: '24. Pause (Celková délka)' },
+    { id: 'fld-anmerkung', label: '25. Anmerkung (Poznámka)' },
+    { id: 'fld-name-monteur', label: '26. Name des Monteurs' },
+    { id: 'fld-name-vorarbeiter', label: '27. Name des Vorarbeiters' }
 ];
 
 function otevriEditorSablony() {
