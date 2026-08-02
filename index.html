@@ -539,7 +539,7 @@
     <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
     <div class="row">
         <button class="btn-sec" style="flex:1; background:#e74c3c; color:white;" onclick="zavriEditorSablony()">Zrušit</button>
-        <button class="btn-main" style="flex:2; background:#2ecc71; color:white;" onclick="ulozPoziceAObsahStitku()">Uložit šablonu</button>
+        <button class="btn-main" style="flex:2; background:#2ecc71; color:white;" onclick="()">Uložit šablonu</button>
     </div>
 </div>
 
@@ -1080,6 +1080,51 @@ function zavriEditorSablony() {
             alert('Šablona (pozice i texty) byla úspěšně uložena!');
             zavriEditorSablony();
         }
+    function nastavTahani(el) {
+    let aktivni = false;
+    
+    function zacniTah(e) {
+        aktivni = true;
+    }
+    
+    function tahni(e) {
+        if (!aktivni) return;
+        e.preventDefault(); // Zabrání scrolování stránky při tahání štítku na mobilu
+        
+        let canvas = document.getElementById('editor-canvas');
+        let rect = canvas.getBoundingClientRect();
+        
+        // Zjištění pozice podle toho, jestli jde o dotyk (mobil) nebo myš (PC)
+        let clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+        
+        // Výpočet pozice vůči plátnu (s lehkým posunem na střed kurzoru)
+        let x = clientX - rect.left - (el.offsetWidth / 2);
+        let y = clientY - rect.top - (el.offsetHeight / 2);
+        
+        // Omezení, aby štítek neutekl mimo plátno
+        x = Math.max(0, Math.min(x, rect.width - el.offsetWidth));
+        y = Math.max(0, Math.min(y, rect.height - el.offsetHeight));
+        
+        // Uložení pozice v procentech (aby rozložení fungovalo responzivně)
+        el.style.left = (x / rect.width * 100) + '%';
+        el.style.top = (y / rect.height * 100) + '%';
+    }
+    
+    function ukonciTah() {
+        aktivni = false;
+    }
+
+    // Navázání událostí pro myš (Počítač)
+    el.addEventListener('mousedown', zacniTah);
+    window.addEventListener('mousemove', tahni);
+    window.addEventListener('mouseup', ukonciTah);
+
+    // Navázání událostí pro dotyk (Mobil/Tablet)
+    el.addEventListener('touchstart', zacniTah, {passive: false});
+    window.addEventListener('touchmove', tahni, {passive: false});
+    window.addEventListener('touchend', ukonciTah);
+}
 
 
         function openFullscreenCanvas() {
