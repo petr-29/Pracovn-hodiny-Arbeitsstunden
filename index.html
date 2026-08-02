@@ -961,111 +961,125 @@ function zavriEditorSablony() {
     document.getElementById('template-editor-card').classList.add('hidden');
 }
 
-function vykresliStitky() {
-    const canvas = document.getElementById('editor-canvas');
-    canvas.innerHTML = ''; // Vyčistíme plátno
-    
-    // Načteme uložené pozice (pokud nějaké už jsou)
-    let ulozenePozice = JSON.parse(localStorage.getItem('vlastni_sablona_pozice')) || {};
+        function vykresliStitky() {
+            const canvas = document.getElementById('editor-canvas');
+            const list = document.getElementById('fields-list');
+            canvas.innerHTML = '';
+            list.innerHTML = '';
+            
+            let ulozenePozice = JSON.parse(localStorage.getItem('vlastni_sablona_pozice')) || {};
+            let ulozenyObsah = JSON.parse(localStorage.getItem('vlastni_sablona_obsah')) || {};
 
-    sablonaPole.forEach((pole, index) => {
-        let div = document.createElement('div');
-        div.className = 'draggable-field';
-        div.id = pole.id;
-        div.innerText = pole.label;
-        
-        // Zkusíme nastavit uloženou pozici, jinak je poskládáme hezky pod sebe
-        if (ulozenePozice[pole.id]) {
-            div.style.left = ulozenePozice[pole.id].x + '%';
-            div.style.top = ulozenePozice[pole.id].y + '%';
-        } else {
-            div.style.left = '10px';
-            div.style.top = (10 + (index * 35)) + 'px'; 
+            sablonaPole.forEach((pole) => {
+                let isChecked = !!ulozenePozice[pole.id]; 
+                
+                // 1. Vytvoření položky v bočním seznamu
+                let listItem = document.createElement('div');
+                listItem.className = 'field-toggle-item';
+                
+                // Kontejner pro Checkbox a Nadpis
+                let chkContainer = document.createElement('div');
+                chkContainer.style.cssText = "display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer;";
+                
+                let chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.id = 'chk-' + pole.id;
+                chk.checked = isChecked;
+                
+                let lbl = document.createElement('label');
+                lbl.htmlFor = 'chk-' + pole.id;
+                lbl.innerText = pole.label;
+                lbl.style.cursor = "pointer";
+                lbl.style.color = "#2c3e50";
+                lbl.style.fontSize = "13px";
+                
+                chkContainer.appendChild(chk);
+                chkContainer.appendChild(lbl);
+                listItem.appendChild(chkContainer);
+                
+                // Kontejner pro textový input (schovaný, pokud není zaškrtnuto)
+                let inputContainer = document.createElement('div');
+                inputContainer.id = 'inp-box-' + pole.id;
+                inputContainer.style.marginTop = "5px";
+                inputContainer.style.display = isChecked ? "block" : "none";
+                
+                let textInput = document.createElement('input');
+                textInput.type = 'text';
+                textInput.id = 'val-' + pole.id;
+                textInput.placeholder = 'Doplň text (nepovinné)...';
+                textInput.value = ulozenyObsah[pole.id] || '';
+                textInput.style.width = "100%";
+                textInput.style.padding = "6px";
+                textInput.style.fontSize = "12px";
+                
+                inputContainer.appendChild(textInput);
+                listItem.appendChild(inputContainer);
+                list.appendChild(listItem);
+
+                // 2. Vytvoření samotného štítku na plátně
+                let div = document.createElement('div');
+                div.className = 'draggable-field';
+                if(!isChecked) div.classList.add('hidden-field');
+                div.id = pole.id;
+                div.innerText = pole.label;
+                
+                if (ulozenePozice[pole.id]) {
+                    div.style.left = ulozenePozice[pole.id].x + '%';
+                    div.style.top = ulozenePozice[pole.id].y + '%';
+                } else {
+                    div.style.left = '40%';
+                    div.style.top = '40%'; 
+                }
+
+                canvas.appendChild(div);
+                nastavTahani(div);
+
+                // 3. Magie propojení: Kliknutí na checkbox ukáže/skryje štítek i input
+                chk.onchange = function() {
+                    if(this.checked) {
+                        div.classList.remove('hidden-field');
+                        inputContainer.style.display = "block";
+                        // Vycentrování při novém zapnutí, aby se štítek neztratil v rohu
+                        if(!ulozenePozice[pole.id]) {
+                            div.style.left = '40%'; div.style.top = '40%';
+                        }
+                    } else {
+                        div.classList.add('hidden-field');
+                        inputContainer.style.display = "none";
+                    }
+                };
+            });
         }
 
-        canvas.appendChild(div);
-        nastavTahani(div); // Aktivujeme drag & drop
-    });
-}
+        // Nová ukládací funkce, která teď ukládá i zadané texty!
+        function ulozPoziceAObsahStitku() {
+            const canvas = document.getElementById('editor-canvas');
+            let canvasWidth = canvas.offsetWidth;
+            let canvasHeight = canvas.offsetHeight;
+            let pozice = {};
+            let obsah = {};
 
-// Funkce pro tahání myší i dotykem
-function nastavTahani(elmnt) {
-    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    
-    elmnt.onmousedown = dragMouseDown;
-    elmnt.ontouchstart = dragMouseDown; // Podpora pro iOS / dotyk
+            sablonaPole.forEach(pole => {
+                let chk = document.getElementById('chk-' + pole.id);
+                if(chk && chk.checked) {
+                    let elmnt = document.getElementById(pole.id);
+                    let textVal = document.getElementById('val-' + pole.id).value;
+                    
+                    if(elmnt) {
+                        let xPercent = (elmnt.offsetLeft / canvasWidth) * 100;
+                        let yPercent = (elmnt.offsetTop / canvasHeight) * 100;
+                        pozice[pole.id] = { x: xPercent, y: yPercent };
+                        obsah[pole.id] = textVal;
+                    }
+                }
+            });
 
-    function dragMouseDown(e) {
-        e = e || window.event;
-        // e.preventDefault(); // Někdy na iOS blokuje klik, proto to řeší css touch-action: none
-        
-        if (e.type === 'touchstart') {
-            pos3 = e.touches[0].clientX;
-            pos4 = e.touches[0].clientY;
-        } else {
-            pos3 = e.clientX;
-            pos4 = e.clientY;
+            localStorage.setItem('vlastni_sablona_pozice', JSON.stringify(pozice));
+            localStorage.setItem('vlastni_sablona_obsah', JSON.stringify(obsah));
+            
+            alert('Šablona (pozice i texty) byla úspěšně uložena!');
+            zavriEditorSablony();
         }
-        
-        document.onmouseup = closeDragElement;
-        document.ontouchend = closeDragElement;
-        document.onmousemove = elementDrag;
-        document.ontouchmove = elementDrag;
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        
-        pos1 = pos3 - clientX;
-        pos2 = pos4 - clientY;
-        pos3 = clientX;
-        pos4 = clientY;
-        
-        let parent = elmnt.parentElement;
-        let newTop = elmnt.offsetTop - pos2;
-        let newLeft = elmnt.offsetLeft - pos1;
-        
-        // Ochrana, aby štítek neutekl z plátna
-        if (newTop < 0) newTop = 0;
-        if (newLeft < 0) newLeft = 0;
-        if (newTop + elmnt.offsetHeight > parent.offsetHeight) newTop = parent.offsetHeight - elmnt.offsetHeight;
-        if (newLeft + elmnt.offsetWidth > parent.offsetWidth) newLeft = parent.offsetWidth - elmnt.offsetWidth;
-
-        elmnt.style.top = newTop + "px";
-        elmnt.style.left = newLeft + "px";
-    }
-
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-        document.ontouchend = null;
-        document.ontouchmove = null;
-    }
-}
-
-// Uložení pozic převedených na procenta, aby to fungovalo responzivně na každém displeji!
-function ulozPoziceStitku() {
-    const canvas = document.getElementById('editor-canvas');
-    let canvasWidth = canvas.offsetWidth;
-    let canvasHeight = canvas.offsetHeight;
-    let pozice = {};
-
-    sablonaPole.forEach(pole => {
-        let elmnt = document.getElementById(pole.id);
-        if(elmnt) {
-            // Uložíme to v %, aby to na PDF odpovídalo přesně poměru stran, ať máš telefon jakkoliv široký
-            let xPercent = (elmnt.offsetLeft / canvasWidth) * 100;
-            let yPercent = (elmnt.offsetTop / canvasHeight) * 100;
-            pozice[pole.id] = { x: xPercent, y: yPercent };
-        }
-    });
-
-    localStorage.setItem('vlastni_sablona_pozice', JSON.stringify(pozice));
-    alert('Pozice štítků byly úspěšně uloženy!');
-    zavriEditorSablony();
-}
 
 
         function openFullscreenCanvas() {
