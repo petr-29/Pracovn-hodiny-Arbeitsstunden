@@ -887,6 +887,147 @@
             }
         }
 
+    // Těchto 20 políček jsi přesně definoval
+const sablonaPole = [
+    { id: 'fld-auftraggeber', label: '1. Auftraggeber' },
+    { id: 'fld-auftragnehmer', label: '2. Auftragnehmer' },
+    { id: 'fld-ort', label: '3. Ort / Adresse' },
+    { id: 'fld-zeitraum', label: '4. Zeitraum' },
+    { id: 'fld-kw', label: '5. KW' },
+    { id: 'fld-tag', label: '6. Tag / Datum' },
+    { id: 'fld-beginn', label: '7. Beginn' },
+    { id: 'fld-pausevon', label: '8. Pause von' },
+    { id: 'fld-pausebis', label: '9. Pause bis' },
+    { id: 'fld-ende', label: '10. Ende' },
+    { id: 'fld-stunden', label: '11. Stunden' },
+    { id: 'fld-gesamt', label: '12. Insgesamt / Celkem' },
+    { id: 'fld-tagebuch', label: '13. Montagetagebuch' },
+    { id: 'fld-mangelrugen', label: '14. Mängelrügen (Reklamace)' },
+    { id: 'fld-mangelbes', label: '15. Mängel bis (Datum odstranění)' },
+    { id: 'fld-mangeltext', label: '16. Die Mängel (Popis závad)' },
+    { id: 'fld-werkdatum', label: '17. Werk am (Datum předání)' },
+    { id: 'fld-ortdatum', label: '18. Ort / Datum dole' },
+    { id: 'fld-sign-ich', label: '19. Unterschrift Auftragnehmer' },
+    { id: 'fld-sign-kunde', label: '20. Unterschrift Bauleiter' }
+];
+
+function otevriEditorSablony() {
+    document.getElementById('template-editor-card').classList.remove('hidden');
+    vykresliStitky();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function zavriEditorSablony() {
+    document.getElementById('template-editor-card').classList.add('hidden');
+}
+
+function vykresliStitky() {
+    const canvas = document.getElementById('editor-canvas');
+    canvas.innerHTML = ''; // Vyčistíme plátno
+    
+    // Načteme uložené pozice (pokud nějaké už jsou)
+    let ulozenePozice = JSON.parse(localStorage.getItem('vlastni_sablona_pozice')) || {};
+
+    sablonaPole.forEach((pole, index) => {
+        let div = document.createElement('div');
+        div.className = 'draggable-field';
+        div.id = pole.id;
+        div.innerText = pole.label;
+        
+        // Zkusíme nastavit uloženou pozici, jinak je poskládáme hezky pod sebe
+        if (ulozenePozice[pole.id]) {
+            div.style.left = ulozenePozice[pole.id].x + '%';
+            div.style.top = ulozenePozice[pole.id].y + '%';
+        } else {
+            div.style.left = '10px';
+            div.style.top = (10 + (index * 35)) + 'px'; 
+        }
+
+        canvas.appendChild(div);
+        nastavTahani(div); // Aktivujeme drag & drop
+    });
+}
+
+// Funkce pro tahání myší i dotykem
+function nastavTahani(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    elmnt.onmousedown = dragMouseDown;
+    elmnt.ontouchstart = dragMouseDown; // Podpora pro iOS / dotyk
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        // e.preventDefault(); // Někdy na iOS blokuje klik, proto to řeší css touch-action: none
+        
+        if (e.type === 'touchstart') {
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+        } else {
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+        }
+        
+        document.onmouseup = closeDragElement;
+        document.ontouchend = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchmove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
+        
+        let parent = elmnt.parentElement;
+        let newTop = elmnt.offsetTop - pos2;
+        let newLeft = elmnt.offsetLeft - pos1;
+        
+        // Ochrana, aby štítek neutekl z plátna
+        if (newTop < 0) newTop = 0;
+        if (newLeft < 0) newLeft = 0;
+        if (newTop + elmnt.offsetHeight > parent.offsetHeight) newTop = parent.offsetHeight - elmnt.offsetHeight;
+        if (newLeft + elmnt.offsetWidth > parent.offsetWidth) newLeft = parent.offsetWidth - elmnt.offsetWidth;
+
+        elmnt.style.top = newTop + "px";
+        elmnt.style.left = newLeft + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
+    }
+}
+
+// Uložení pozic převedených na procenta, aby to fungovalo responzivně na každém displeji!
+function ulozPoziceStitku() {
+    const canvas = document.getElementById('editor-canvas');
+    let canvasWidth = canvas.offsetWidth;
+    let canvasHeight = canvas.offsetHeight;
+    let pozice = {};
+
+    sablonaPole.forEach(pole => {
+        let elmnt = document.getElementById(pole.id);
+        if(elmnt) {
+            // Uložíme to v %, aby to na PDF odpovídalo přesně poměru stran, ať máš telefon jakkoliv široký
+            let xPercent = (elmnt.offsetLeft / canvasWidth) * 100;
+            let yPercent = (elmnt.offsetTop / canvasHeight) * 100;
+            pozice[pole.id] = { x: xPercent, y: yPercent };
+        }
+    });
+
+    localStorage.setItem('vlastni_sablona_pozice', JSON.stringify(pozice));
+    alert('Pozice štítků byly úspěšně uloženy!');
+    zavriEditorSablony();
+}
+
+
         function openFullscreenCanvas() {
             const modal = document.getElementById('fs-draw-modal'); modal.classList.remove('hidden');
             const container = document.getElementById('fs-canvas-container');
