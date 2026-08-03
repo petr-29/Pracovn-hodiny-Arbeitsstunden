@@ -85,15 +85,6 @@
         canvas.fs-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
         .fs-draw-footer { padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; gap: 10px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
 
-        .faktura-box { border: 1px solid #ccc; font-family: 'Courier New', Courier, monospace; }
-        .faktura-red-header { background-color: #b33939; color: white; padding: 20px; text-align: right; }
-        .faktura-modry-text { color: #2980b9; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-        .faktura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; font-size: 12px; }
-        .faktura-gray-bar { background-color: #f2f2f2; padding: 10px 20px; font-size: 12px; border-bottom: 1px solid #e0e0e0; border-top: 1px solid #e0e0e0; display:flex; justify-content: space-between;}
-        .faktura-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .faktura-table th { background-color: #b33939; color: white; padding: 8px; text-align: left; }
-        .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
-
         .month-accordion {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: white; padding: 12px 15px; font-weight: bold; border-radius: 8px;
@@ -238,11 +229,10 @@
                     <button class="btn-sec" style="background:#27ae60; color:white; font-weight:bold;" onclick="openExterniFakturaCard()">📥 Externí Faktura</button>
                 </div>
 
-                <!-- EXPORT CARD (Očištěný náhled) -->
+                <!-- EXPORT CARD -->
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
                     <div class="card-title" style="text-align:center; font-size:16px; color:#2c3e50;" data-cs="KONTROLA DOKUMENTU PŘED PODPISEM" data-de="DOKUMENTPRÜFUNG VOR UNTERSCHRIFT">KONTROLA DOKUMENTU PŘED PODPISEM</div>
                     
-                    <!-- Náhled vygenerovaného dokumentu -->
                     <div id="document-live-preview" class="preview-container-full" style="background:#f8f9fa;"></div>
 
                     <div style="margin-bottom: 12px; margin-top:20px;" id="wrapper-kunde">
@@ -465,21 +455,21 @@
         </nav>
     </div>
 
-    <!-- MODALY (Signature, Fullscreen draw atd.) -->
+    <!-- MODALY -->
     <div id="signature-modal" class="signature-modal hidden">
         <div class="modal-content">
             <h3 id="modal-sig-title">Podpis</h3>
             <canvas id="modal-canvas" class="sig-canvas"></canvas>
             <div class="row">
-                <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()" data-cs="Smazat" data-de="Löschen">Smazat</button>
-                <button class="btn-sec" onclick="closeSignatureModal()" data-cs="Zavřít" data-de="Schließen">Zavřít</button>
-                <button class="btn-main" style="background:#2ecc71; color:white;" onclick="saveModalSignature()" data-cs="Uložit podpis" data-de="Unterschrift speichern">Uložit podpis</button>
+                <button class="btn-sec" style="background:#e74c3c; color:white;" onclick="clearModalCanvas()">Smazat</button>
+                <button class="btn-sec" onclick="closeSignatureModal()">Zavřít</button>
+                <button class="btn-main" style="background:#2ecc71; color:white;" onclick="saveModalSignature()">Uložit podpis</button>
             </div>
         </div>
     </div>
 
     <div id="fs-draw-modal" class="fs-draw-modal hidden">
-        <div class="fs-draw-header" data-cs="Nákres / Poznámka" data-de="Zeichnung / Notiz">Nákres / Poznámka</div>
+        <div class="fs-draw-header">Nákres / Poznámka</div>
         <div class="fs-draw-content" id="fs-canvas-container"><canvas id="fs-canvas" class="fs-canvas"></canvas></div>
         <div class="fs-draw-footer">
             <button class="btn-sec" style="background:#e74c3c; color:white; flex:1;" onclick="clearFsCanvas()">Smazat</button>
@@ -489,7 +479,6 @@
     </div>
 
     <script>
-        // INIT & ZÁKLADNÍ PROMĚNNÉ
         let editRecordId = null; 
         let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
         let adresarKlientu = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
@@ -513,14 +502,12 @@
             updateCanvasFormat();
         });
 
-        // POMOCNÉ FUNKCE
         function bezDiakritiky(text) { if (!text) return ''; return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
         function formatMena(castka) { let parts = castka.toFixed(2).split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " "); return parts.join(',') + ' EUR'; }
         function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
         function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
         function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
 
-        // OBSLUHA OBRÁZKŮ
         function nahratObrazek(input, storageKey, previewId) {
             if (input.files && input.files[0]) {
                 let reader = new FileReader();
@@ -539,7 +526,6 @@
             let inp = document.getElementById(inputId); if(inp) inp.value = '';
         }
 
-        // TABS & UI
         function switchTab(tabId, button) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
@@ -570,7 +556,6 @@
             if (localStorage.getItem('app_theme') === 'dark') { document.body.classList.add('dark-theme'); document.getElementById('btn-toggle-dark').innerText = '☀️ ON'; }
         }
 
-        // VÝPOČET HODIN A ULOŽENÍ ZÁZNAMU
         function kalkulujCisteHodiny(zaznam) {
             let [h1, m1] = zaznam.zacatek.split(':').map(Number);
             let [h2, m2] = zaznam.konec.split(':').map(Number);
@@ -631,7 +616,6 @@
             updateStatistiky();
         }
 
-        // ZÁZNAMY TAB
         function renderZaznamy() {
             let container = document.getElementById('seznam-container'); container.innerHTML = '';
             let dnes = new Date(); let aktualniMesic = dnes.getMonth(); let aktualniRok = dnes.getFullYear();
@@ -684,9 +668,9 @@
                     let wContent = document.createElement('div'); wContent.id = `week-content-${wKey}`; wContent.className = 'acc-content';
                     if (mIndex === 0 && wIndex === 0) wContent.classList.add('show');
                     
-                    // Zobrazení uložených PDF
                     let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
-                    let weekReports = savedReports.filter(r => r.year == wData.rok && r.weekNum == wData.tyden);
+                    let weekReports = savedReports.filter(r => String(r.year) === String(wData.rok) && String(r.weekNum) === String(wData.tyden));
+                    
                     if (weekReports.length > 0) {
                         let repBox = document.createElement('div');
                         repBox.style.cssText = "background: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 6px; margin: 10px 0; border: 1px solid #2ecc71;";
@@ -748,7 +732,6 @@
             document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
         }
 
-        // NASTAVENÍ A ADRESÁŘ
         function renderAdresar() {
             let select = document.getElementById('adresar-select'); select.innerHTML = '<option value="-1">-- Vyber uloženou firmu --</option>';
             adresarKlientu.forEach((k, i) => { let opt = document.createElement('option'); opt.value = i; opt.innerText = k.firma.substring(0, 40); select.appendChild(opt); });
@@ -783,7 +766,6 @@
             if(localStorage.getItem('cfg_razitko')) { document.getElementById('preview-razitko').src = localStorage.getItem('cfg_razitko'); document.getElementById('preview-razitko').style.display = 'block'; }
         }
 
-        // VIZUÁLNÍ KALIBRACE & ŠABLONY
         const sablonaPole = [
             { id: 'fld-auftraggeber', label: '1. Auftraggeber / Zadavatel', typ: 'static', key: 'cfg_firma' },
             { id: 'fld-auftragnehmer', label: '2. Auftragnehmer / Zhotovitel', typ: 'static', key: 'cfg_jmeno' },
@@ -881,7 +863,6 @@
             el.addEventListener('touchstart', zacniTah, {passive: false}); window.addEventListener('touchmove', tahni, {passive: false}); window.addEventListener('touchend', ukonciTah);
         }
 
-        // KRESLENÍ & PODPISY
         const canvas = document.getElementById('modal-canvas'); const ctx = canvas.getContext('2d'); let isDrawing = false;
         function getMousePos(e, targetCanvas) {
             let rect = targetCanvas.getBoundingClientRect();
@@ -910,7 +891,6 @@
             closeSignatureModal(); updateLivePreview();
         }
 
-        // EXPORT & NÁHLEDY (Vyčištěné okno)
         function openExportCard(type) {
             let vybrane = zaznamy.filter(z => z.selected);
             if(vybrane.length === 0) { alert('Vyberte nejdříve řádky pro export!'); return; }
@@ -923,8 +903,6 @@
         function updateLivePreview() {
             let vybrane = zaznamy.filter(z => z.selected); vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
             let html = '';
-            
-            // Jméno, Firma, Adresa - vždy se tahá z Nastavení!
             let jmeno = localStorage.getItem('cfg_jmeno') || '---'; 
             let firma = localStorage.getItem('cfg_firma') || '---';
             let adresa = localStorage.getItem('cfg_adresa') || ''; 
@@ -935,19 +913,16 @@
                             <h2 style="color:#e74c3c;">FAKTURA Č. ${cisloFaktury}</h2>
                             <p><strong>Zhotovitel:</strong> ${jmeno}</p>
                             <p><strong>Klient:</strong> ${firma}, ${adresa}</p>
-                            <p>Data budou natáhnuta z nastavení. Náhled je zjednodušený.</p>
                          </div>`;
             } else if (currentExportType === 'standard' || currentExportType === 'abnahme') {
                 html += `<div style="text-align:center; padding: 20px; font-family: sans-serif;">
                             <h2 style="color:#3498db;">${currentExportType.toUpperCase()} PROTOKOL</h2>
-                            <p>Předvyplní se dle nastavení a vybraných dat z evidence.</p>
                             <p><strong>Klient:</strong> ${firma}</p>
                          </div>`;
             } else if (currentExportType === 'vlozene') {
                 html += `<div style="text-align:center; padding: 20px; font-family: sans-serif;">
                             <h2 style="color:#8e44ad;">VLOŽENÉ PDF (ŠABLONA)</h2>
-                            <p>Vygeneruje se PDF na základě vizuální kalibrace ze záložky Šablony.</p>
-                            <p>Veškerá textová pole budou automaticky doplněna z Nastavení.</p>
+                            <p>Vygeneruje se PDF na základě vizuální kalibrace.</p>
                          </div>`;
             }
             document.getElementById('document-live-preview').innerHTML = html;
@@ -963,10 +938,6 @@
             let vybrane = zaznamy.filter(z => z.selected);
             if(vybrane.length === 0) return;
 
-            // Zde by normálně byla rozsáhlá logika generování do jsPDF,
-            // pro účely ukázky to zjednodušíme, ale data uložíme.
-            
-            // Po generování uložíme záznam do historie týdne (Obrázek 6 - aby se PDF neztratilo)
             if (currentExportType !== 'faktura') {
                 let d = new Date(vybrane[0].datum);
                 let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
@@ -975,26 +946,40 @@
                     datum: new Date().toISOString(), vybraneZaznamy: vybrane, podpisIch: dataPodpisuIch, podpisKunde: dataPodpisuKunde
                 });
                 localStorage.setItem('saved_week_reports', JSON.stringify(savedReports));
-                
                 alert(`Výkaz (${currentExportType}) byl úspěšně vygenerován a uložen k danému týdnu!`);
             } else {
-                // Faktura se uloží do archivu faktur
                 let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-                let cislo = localStorage.getItem('cfg_next_invoice') || '---';
+                let cislo = localStorage.getItem('cfg_next_invoice') || '2026/08-001';
                 let suma = 0; vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
                 archiv.push({ id: Date.now(), cislo: cislo, odberatel: localStorage.getItem('cfg_firma'), suma: suma, datum: new Date().toISOString(), vybraneZaznamy: vybrane, zaplaceno: false });
                 localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
-                
                 alert(`Faktura č. ${cislo} uložena do archivu!`);
             }
 
-            // Odškrtnutí vybraných záznamů
             zaznamy.forEach(z => { if(z.selected) z.selected = false; });
             localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
             closeExportCard(); renderZaznamy(); renderArchivFaktur();
         }
 
-        // ARCHIV FAKTUR (Obrázek 7 - řazení podle vytvoření)
+        function stahnoutUlozenyVykaz(id) {
+            let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
+            let rep = savedReports.find(x => x.id === id);
+            if(!rep) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            doc.text(`Ulozeny vykaz: ${rep.typ.toUpperCase()} (Tyzden ${rep.weekNum}/${rep.year})`, 20, 20);
+            doc.save(`Vykaz_${rep.typ}_W${rep.weekNum}.pdf`);
+        }
+
+        function smazatUlozenyVykaz(id) {
+            if(confirm("Opravdu smazat tento uložený výkaz?")) {
+                let savedReports = JSON.parse(localStorage.getItem('saved_week_reports')) || [];
+                savedReports = savedReports.filter(x => x.id !== id);
+                localStorage.setItem('saved_week_reports', JSON.stringify(savedReports));
+                renderZaznamy();
+            }
+        }
+
         function renderArchivFaktur() {
             let container = document.getElementById('archiv-faktur-container'); 
             let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
@@ -1002,7 +987,6 @@
             
             if (archiv.length === 0) { container.innerHTML = `<p style="text-align:center;padding:20px;">Zatím nemáš uložené žádné faktury.</p>`; return; }
             
-            // Řazení striktně podle data vytvoření (od nejnovějších)
             archiv.sort((a, b) => new Date(b.datum) - new Date(a.datum));
 
             archiv.forEach(f => {
@@ -1030,7 +1014,6 @@
             }
         }
 
-        // EXTERNÍ FAKTURY
         function openExterniFakturaCard() { document.getElementById('externi-faktura-card').classList.remove('hidden'); }
         function closeExterniFakturaCard() { document.getElementById('externi-faktura-card').classList.add('hidden'); }
         function saveExterniFaktura() {
@@ -1048,7 +1031,6 @@
             closeExterniFakturaCard(); renderArchivFaktur(); renderZaznamy();
             alert('Externí faktura zařazena do archivu.');
         }
-
     </script>
 </body>
 </html>
