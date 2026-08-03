@@ -372,7 +372,7 @@
             </div>
 
             <div id="view-zaznamy" class="tab-content hidden">
-                <div class="action-toolbar" id="records-toolbar">
+                <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Consilium PDF</button>
                     <button class="btn-sec" onclick="selectAllZaznamy()" id="btn-all" data-cs="Vše" data-de="Alle">Vše</button>
                     <button class="btn-sec" onclick="exportCSV()" id="btn-csv-exp">CSV</button>
                     <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">Standard PDF</button>
@@ -647,44 +647,18 @@
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
-                    <!-- NOVÁ VYLEPŠENÁ KALIBRACE (OSY X a Y) -->
-                    <div class="card-title" style="color: #8e44ad;" data-cs="Kalibrace Consilium PDF (v milimetrech)" data-de="Consilium PDF Kalibrierung (in mm)">Kalibrace Consilium PDF (v milimetrech)</div>
-                    <p style="font-size: 11px; margin-bottom: 15px; color:#555;">Nastav si přesný střed (osu X) pro každý sloupeček zvlášť. Můžeš hýbat texty zleva doprava.</p>
+              <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
+                    <!-- VIZUÁLNÍ KALIBRACE -->
+                    <div class="card-title" style="color: #8e44ad;">Kalibrace Consilium PDF</div>
+                    <p style="font-size: 11px; margin-bottom: 15px; color:#555;">Nastav si přesný rozestup mezi řádky. Ostatní pozice štítků se nastavují vizuálně tažením.</p>
                     
-                    <!-- Sloupečky X (Nové podle obrázku) -->
-                    <div style="background:#e8f4f8; padding:10px; border-radius:8px; border: 1px solid #3498db; margin-bottom: 15px;">
-                        <div style="font-weight: bold; color: #2980b9; margin-bottom: 10px; font-size: 13px;">Osa X (Pozice sloupců zleva doprava)</div>
-                        <div class="row">
-                            <div class="form-group"><label>Datum (X)</label><input type="number" id="cfg-cons-x-datum" value="20" step="0.5"></div>
-                            <div class="form-group"><label>Začátek (X)</label><input type="number" id="cfg-cons-x-zacatek" value="40.5" step="0.5"></div>
-                            <div class="form-group"><label>Od (X)</label><input type="number" id="cfg-cons-x-od" value="53" step="0.5"></div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group"><label>Do (X)</label><input type="number" id="cfg-cons-x-do" value="65" step="0.5"></div>
-                            <div class="form-group"><label>Konec (X)</label><input type="number" id="cfg-cons-x-konec" value="77" step="0.5"></div>
-                            <div class="form-group"><label>Hodiny (X)</label><input type="number" id="cfg-cons-x-hodiny" value="93" step="0.5"></div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group"><label>Popis práce (X)</label><input type="number" id="cfg-cons-x-popis" value="102" step="0.5"></div>
-                            <div class="form-group"><label>Zakázka (X)</label><input type="number" id="cfg-cons-x-zakazka" value="184" step="0.5"></div>
-                        </div>
-                    </div>
-
-                    <!-- Řádky Y (Původní) -->
                     <div style="background:#f9f9f9; padding:10px; border-radius:8px; border: 1px solid #ccc; margin-bottom: 15px;">
-                        <div style="font-weight: bold; color: #555; margin-bottom: 10px; font-size: 13px;">Osa Y (Pozice řádků shora dolů)</div>
-                        <div class="row">
-                            <div class="form-group"><label>Hlavička (Y)</label><input type="number" id="cfg-cons-hlavicka" value="32" step="0.5"></div>
-                            <div class="form-group"><label>1. Řádek (Y)</label><input type="number" id="cfg-cons-tabulka" value="57" step="0.5"></div>
-                            <div class="form-group"><label>Mezera řádků</label><input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1"></div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group"><label>Součet (Y)</label><input type="number" id="cfg-cons-soucet" value="107" step="0.5"></div>
-                            <div class="form-group"><label>Spodní texty (Y)</label><input type="number" id="cfg-cons-spodni" value="111" step="0.5"></div>
-                            <div class="form-group"><label>Pata (Y)</label><input type="number" id="cfg-cons-pata" value="144" step="0.5"></div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Mezera řádků (pro tabulku)</label>
+                            <input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1">
                         </div>
                     </div>
-                    <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;" data-cs="Kalibrovat šablonu" data-de="Vorlage kalibrieren">Uložit kalibraci pro Consilium</button>
+                    <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;">Uložit rozestup řádků</button>
 
                     <button class="btn-sec" onclick="openVisualCalib()" style="margin-bottom:15px; width: 100%; background: #2980b9; color: white; padding: 15px; font-weight: bold; font-size: 14px;">🎯 Otevřít vizuální kalibraci (Tažením myší)</button>
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
@@ -1845,8 +1819,12 @@
                 return; 
             }
             
-            archiv.sort((a,b) => new Date(b.datum) - new Date(a.datum));
-            let dnes = new Date();
+// Řazení primárně podle data vystavení z hlavičky faktury
+            archiv.sort((a, b) => {
+                let datumA = (a.fakturaData && a.fakturaData.vystaveni) ? new Date(a.fakturaData.vystaveni) : new Date(a.datum);
+                let datumB = (b.fakturaData && b.fakturaData.vystaveni) ? new Date(b.fakturaData.vystaveni) : new Date(b.datum);
+                return datumB - datumA;
+            });
             dnes.setHours(0, 0, 0, 0);
 
             let overdueCount = 0;
@@ -2174,15 +2152,17 @@
             let footerTxt = (localStorage.getItem('app_lang') === 'de') ? "Der Unternehmer ist im Gewerberegister eingetragen." : "Podnikatel je zapsan v zivnostenskem rejstriku.";
             doc.text(footerTxt, 20, 280);
 
+        // --- DAŇOVÁ DOLOŽKA §13b UStG (NĚMECKO) ---      
+          // Vložíme fixně ke spodnímu okraji stránky (cca 1.5 cm od spodu), aby zbylo místo na podpisy      
           let pageHeight = doc.internal.pageSize.getHeight();       
-          let footerY = pageHeight - 45;       
+          let footerY = pageHeight - 15; // POSUNUTO ÚPLNĚ DOLŮ    
           doc.setFont("helvetica", "normal");       
-          doc.setFontSize(8);     
-          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(7); // Menší, decentnější písmo pro právní doložku     
+          doc.setTextColor(100, 100, 100); // Šedá barva, aby to nebilo do očí    
           let danovyText = "Gemäß §13b Absatz 2 Nr.4 UstG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer gemäß § 14a UstG ausgewiesen. Es gilt die Steuerschuldnerschaft des Leistungsempfängers gemäß §13 b UstG.";              
           let rozdelenyText = doc.splitTextToSize(danovyText, 180);     
           doc.text(rozdelenyText, 15, footerY); 
-
+          // ------------------------------------------
             // 10. PŘÍLOHY NA DALŠÍ STRANU
             if (f.fakturaData && f.fakturaData.prilohaTyp === 'standard') {
                 doc.addPage('a4', 'portrait'); drawStandardReportToDoc(doc, vybrane); 
@@ -2764,24 +2744,9 @@
             if(localStorage.getItem('cfg_cons_x_zakazka')) document.getElementById('cfg-cons-x-zakazka').value = localStorage.getItem('cfg_cons_x_zakazka');
         }
 
-        function saveConsiliumOffsets() {
-            localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
-            localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
+       function saveConsiliumOffsets() {
             localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
-            localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
-            localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
-            localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
-            
-            localStorage.setItem('cfg_cons_x_datum', document.getElementById('cfg-cons-x-datum').value);
-            localStorage.setItem('cfg_cons_x_zacatek', document.getElementById('cfg-cons-x-zacatek').value);
-            localStorage.setItem('cfg_cons_x_od', document.getElementById('cfg-cons-x-od').value);
-            localStorage.setItem('cfg_cons_x_do', document.getElementById('cfg-cons-x-do').value);
-            localStorage.setItem('cfg_cons_x_konec', document.getElementById('cfg-cons-x-konec').value);
-            localStorage.setItem('cfg_cons_x_hodiny', document.getElementById('cfg-cons-x-hodiny').value);
-            localStorage.setItem('cfg_cons_x_popis', document.getElementById('cfg-cons-x-popis').value);
-            localStorage.setItem('cfg_cons_x_zakazka', document.getElementById('cfg-cons-x-zakazka').value);
-
-            alert(currentLang === 'cs' ? 'Kalibrace uložena!' : 'Kalibrierung gespeichert!');
+            alert(currentLang === 'cs' ? 'Rozestup řádků uložen! Zbytek se ukládá přes vizuální kalibraci.' : 'Gespeichert!');
         }
 
         function exportCSV() {
