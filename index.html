@@ -8,14 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
-        <script>
-    // Globální proměnné nezbytné pro běh aplikace
-    let currentLang = 'cs'; // nebo 'de' podle výchozího jazyka
-    let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
-    let editRecordId = null;
-
-    window.addEventListener('load', () => {
-    // ... tvůj stávající kód pokračuje zde
+      
 
         /* --- ROZLOŽENÍ EDITORU (SEZNAM vs. PLÁTNO) --- */
 .editor-layout {
@@ -802,8 +795,13 @@
     </div>
 
 <script>
+        // Globální proměnné nezbytné pro běh aplikace
+        let currentLang = 'cs';
+        let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
+        let editRecordId = null;
+
         window.addEventListener('load', () => {
-            if(window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) return; 
+            if(window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) return;
             
             setTimeout(() => {
                 document.getElementById('a-hand').style.display = 'none';
