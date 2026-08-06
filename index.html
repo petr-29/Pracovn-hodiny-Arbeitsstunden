@@ -6003,10 +6003,96 @@ let calibElements = [
                         
                         ws.appendChild(div);
                         
-                        // Zde by mělo být volání funkce pro tažení, pokud ji pro tyto prvky používáš
-                        // nastavTahani(div); 
-                    });
-                }
+// --- OBNOVENÉ CHYBĚJÍCÍ FUNKCE ---
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+    document.getElementById('view-' + tabId).classList.remove('hidden');
+    document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    
+    if(tabId === 'zaznamy') renderZaznamy();
+    if(tabId === 'faktury') renderArchivFaktur();
+    if(tabId === 'nastaveni') {
+        document.getElementById('cfg-jmeno').value = localStorage.getItem('cfg_jmeno') || '';
+        document.getElementById('cfg-firma').value = localStorage.getItem('cfg_firma') || '';
+        document.getElementById('cfg-adresa').value = localStorage.getItem('cfg_adresa') || '';
+        document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto') || '';
+    }
+}
+
+function getWeekNumber(d) {
+    let date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+    let yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+}
+
+function ulozZaznam() {
+    let datum = document.getElementById('inp-datum').value;
+    let zacatek = document.getElementById('inp-zacatek').value;
+    let konec = document.getElementById('inp-konec').value;
+    if (!datum || !zacatek || !konec) {
+        alert(currentLang === 'cs' ? "Vyplň prosím datum, začátek a konec!" : "Bitte Datum, Beginn und Ende ausfüllen!");
+        return;
+    }
+    
+    let zaznam = {
+        id: editRecordId || Date.now(),
+        datum: datum,
+        zacatek: zacatek,
+        konec: konec,
+        prestavkaOd: document.getElementById('inp-prestavka-od').value,
+        prestavkaDo: document.getElementById('inp-prestavka-do').value,
+        cisloZakazky: document.getElementById('inp-zakazka').value,
+        sazba: parseFloat(document.getElementById('inp-sazba').value) || 0,
+        popisPrace: document.getElementById('inp-popis').value,
+        popisPraceImg: actPopisImgData,
+        selected: false
+    };
+
+    if (editRecordId) {
+        let idx = zaznamy.findIndex(z => z.id === editRecordId);
+        if(idx > -1) zaznamy[idx] = zaznam;
+        editRecordId = null;
+        document.getElementById('btn-speichern').innerText = currentLang === 'cs' ? 'Uložit Záznam' : 'Eintrag speichern';
+        document.getElementById('btn-speichern').style.background = 'var(--primary)';
+    } else {
+        zaznamy.push(zaznam);
+    }
+    
+    localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+    alert(currentLang === 'cs' ? 'Záznam uložen!' : 'Eintrag gespeichert!');
+    
+    document.getElementById('inp-popis').value = '';
+    actPopisImgData = null;
+    document.getElementById('preview-drawn-image').style.display = 'none';
+}
+
+function setLanguage(lang) {
+    currentLang = lang;
+    document.querySelectorAll('[data-cs]').forEach(el => {
+        el.innerText = el.getAttribute('data-' + lang);
+    });
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function setFilterMode(mode) {
+    document.querySelectorAll('#view-kalkulacka .segmented-control button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function toggleEarningsMask() {
+    let el = document.getElementById('stat-sum');
+    if (el.innerText === '***') {
+        let total = 0;
+        zaznamy.forEach(z => { total += (kalkulujCisteHodiny(z) * z.sazba); });
+        el.innerText = total.toFixed(2) + ' €';
+    } else {
+        el.innerText = '***';
+    }
+}                        
     </script>
 </body>
 </html>
