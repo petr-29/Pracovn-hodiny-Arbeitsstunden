@@ -690,7 +690,15 @@
             <div id="view-sablony" class="tab-content hidden">
                 <div class="card">
                     <div class="card-title" style="color: #27ae60;">1. Nahrání podkladového PDF / Obrázku</div>
-                    <p style="font-size:12px; margin-bottom:15px; color:#7f8c8d;">Nahraj čistý formulář (Zeitnachweis, Stundenzettel), na který chceš umisťovat data.</p>
+                    <div class="form-group">
+                        <label>Formát šablony</label>
+                        <select id="template-format" onchange="updateCanvasFormat()">
+                            <option value="a4-p">A4 Na stojáka (Portrait)</option>
+                            <option value="a4-l">A4 Na ležáka (Landscape)</option>
+                            <option value="a5-p">A5 Na stojáka (Portrait)</option>
+                            <option value="a5-l" selected>A5 Na ležáka (Landscape)</option>
+                        </select>
+                    </div>
                     
                     <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dcdde1; color: #000;">
                         <input type="file" id="inp-bg-template" accept="image/png, image/jpeg" onchange="nahratObrazek(this, 'vlastni_sablona_pozadi', 'preview-bg-template')">
