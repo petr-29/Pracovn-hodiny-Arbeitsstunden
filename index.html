@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -234,21 +236,22 @@
             background-position: center;
         }
 
-        .draggable-field {
-            position: absolute;
-            background-color: #3498db;
-            color: white;
-            padding: 6px 10px;
-            font-size: 11px;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: grab;
-            user-select: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            border: 1px solid #2980b9;
-            z-index: 10;
-            touch-action: none; /* Zabrání scrollování stránky při tahání prstem na iOS */
-        }
+      .draggable-field {
+    position: absolute;
+    background-color: rgba(52, 152, 219, 0.85); /* Lehce průhledné */
+    color: white;
+    padding: 2px 6px; /* Zmenšené okraje */
+    font-size: 9px; /* Zmenšené písmo */
+    font-weight: bold;
+    border-radius: 3px;
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    border: 1px solid #2980b9;
+    z-index: 10;
+    touch-action: none;
+    white-space: nowrap; /* Zabrání zalomení textu do více řádků */
+}
 
         .draggable-field:active {
             cursor: grabbing;
@@ -378,7 +381,7 @@
                     <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">Standard PDF</button>
                     <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
                     <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">Faktura PDF</button>
-                    <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Consilium PDF</button>
+                    <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="exportVlastniSablona()">📄 Vložené PDF</button>
                     <button class="btn-sec" style="background:#27ae60; color:white; font-weight:bold;" onclick="openExterniFakturaCard()">📥 Externí Faktura</button>
                 </div>
 
@@ -649,19 +652,7 @@
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
               <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
                     <!-- VIZUÁLNÍ KALIBRACE -->
-                    <div class="card-title" style="color: #8e44ad;">Kalibrace Consilium PDF</div>
-                    <p style="font-size: 11px; margin-bottom: 15px; color:#555;">Nastav si přesný rozestup mezi řádky. Ostatní pozice štítků se nastavují vizuálně tažením.</p>
                     
-                    <div style="background:#f9f9f9; padding:10px; border-radius:8px; border: 1px solid #ccc; margin-bottom: 15px;">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Mezera řádků (pro tabulku)</label>
-                            <input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1">
-                        </div>
-                    </div>
-                    <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;">Uložit rozestup řádků</button>
-
-                    <button class="btn-sec" onclick="openVisualCalib()" style="margin-bottom:15px; width: 100%; background: #2980b9; color: white; padding: 15px; font-weight: bold; font-size: 14px;">🎯 Otevřít vizuální kalibraci (Tažením myší)</button>
-                    <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
                     <div class="card-title" data-cs="Firemní identita" data-de="Firmenidentität">Firemní identita (Logo a Razítko)</div>
                     <div class="form-group">
                         <label>Logo (nahrávej ve formátu .PNG s průhledným pozadím)</label>
@@ -675,8 +666,10 @@
                         <img id="preview-razitko" style="max-height: 50px; margin-top: 10px; display: none;">
                         <button class="btn-sec" style="margin-top:5px; width: 120px; font-size: 12px;" onclick="smazatObrazek('cfg_razitko', 'preview-razitko', 'inp-razitko')">Smazat razítko</button>
                     </div>
-                    <div class="form-group">
-                        
+                 
+                    <button class="btn-main" onclick="saveSettings()" style="margin-top:15px;" data-cs="Uložit Nastavení" data-de="Einstellungen speichern">Uložit Nastavení</button>
+                </div>
+            </div>
 
             <div id="view-sablony" class="tab-content hidden">
                 <div class="card">
@@ -3050,7 +3043,81 @@ function importDataFromFile(event) {
     };
     reader.readAsText(file);
 }
+function exportVlastniSablona() {
+    let vybrane = zaznamy.filter(z => z.selected);
+    if (vybrane.length === 0) { 
+        alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro export!' : 'Bitte wählen Sie zuerst Zeilen aus!'); 
+        return; 
+    }
 
+    let bgData = localStorage.getItem('vlastni_sablona_pozadi');
+    if (!bgData) { 
+        alert(currentLang === 'cs' ? 'Nejprve v záložce Šablony nahrajte podkladový obrázek PDF/JPG!' : 'Hintergrundbild fehlt!'); 
+        return; 
+    }
+
+    // Získání formátu ze záložky Šablony
+    let formatSelect = document.getElementById('template-format');
+    let val = formatSelect ? formatSelect.value : 'a5-l';
+    let docFormat = val.includes('a4') ? 'a4' : 'a5';
+    let docOrientation = val.includes('-l') ? 'landscape' : 'portrait';
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: docFormat, orientation: docOrientation });
+
+    // Vložení podkladového obrázku
+    let w = doc.internal.pageSize.getWidth();
+    let h = doc.internal.pageSize.getHeight();
+    let imgType = bgData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+    doc.addImage(bgData, imgType, 0, 0, w, h, '', 'FAST');
+
+    let ulozenePozice = JSON.parse(localStorage.getItem('vlastni_sablona_pozice')) || {};
+    let ulozenyObsah = JSON.parse(localStorage.getItem('vlastni_sablona_obsah')) || {};
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+
+    // Přepočítání dynamických dat
+    let startD = startDatum(vybrane);
+    let endD = endDatum(vybrane);
+    let kw = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)).toString() : '';
+    let totalH = 0;
+    vybrane.forEach(z => { totalH += kalkulujCisteHodiny(z); });
+
+    sablonaPole.forEach(pole => {
+        if (ulozenePozice[pole.id]) {
+            // Převod % pozice zpět na milimetry podle velikosti papíru
+            let xMM = (ulozenePozice[pole.id].x / 100) * w;
+            let yMM = (ulozenePozice[pole.id].y / 100) * h;
+            
+            // Korekce Y (jsPDF kreslí od spodní hrany písma, web z horní)
+            yMM += 4; 
+
+            let text = '';
+            if (pole.typ === 'static') {
+                text = ulozenyObsah[pole.id] || '';
+            } else {
+                // Dynamické párování dat
+                if (pole.id === 'fld-zeitraum') text = `${startD} - ${endD}`;
+                else if (pole.id === 'fld-kw') text = kw;
+                else if (pole.id === 'fld-tag') text = startD;
+                else if (pole.id === 'fld-beginn') text = vybrane[0].zacatek;
+                else if (pole.id === 'fld-ende') text = vybrane[vybrane.length-1].konec;
+                else if (pole.id === 'fld-stunden' || pole.id === 'fld-gesamt') text = totalH.toFixed(2);
+                else if (pole.id === 'fld-auftragsnummer') text = vybrane[0].cisloZakazky || '';
+                else if (pole.id === 'fld-anmerkung') text = bezDiakritiky(vybrane[0].popisPrace || '');
+            }
+
+            if (text) {
+                doc.text(text, xMM, yMM);
+            }
+        }
+    });
+
+    doc.save(`Vlozene_PDF_${Date.now()}.pdf`);
+    oznacExportovaneZaznamy('standard'); // Nebo si vytvoř vlastní značku pro uložení stavu
+}
 function executePDFExport() {
             if (currentExportType === 'consilium') {
                 let vybrane = zaznamy.filter(z => z.selected);
