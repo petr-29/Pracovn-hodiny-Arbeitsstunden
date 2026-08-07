@@ -2639,16 +2639,25 @@ let calibElements = [
         { id: 'podpis_klient', label: 'Podpis Klienta', keyx: 'cfg_cons_x_podpis_klient', keyy: 'cfg_cons_y_podpis_klient', defX: 152, defY: 131 }
     ];
 
-    function openVisualCalib() {
+function openVisualCalib() {
         let tplData = localStorage.getItem('cfg_tpl_consilium');
         if (!tplData) {
-            alert(currentLang === 'cs' ? "Nejprve musíš nahrát Šablonu Consilium (A5 naležato) v Nastavení!" : "Bitte zuerst die Vorlage hochladen!");
+            alert(currentLang === 'cs' ? "Nejprve musíš nahrát Šablonu v Nastavení!" : "Bitte zuerst die Vorlage hochladen!");
             return;
         }
         
         let ws = document.getElementById('calib-workspace');
         ws.style.backgroundImage = `url(${tplData})`;
         ws.innerHTML = '';
+        
+        // Zjistíme aktuálně vybraný formát z roletky
+        let formatSetting = document.getElementById('cfg-tpl-format').value;
+        let w = 210, h = 148; // Výchozí A5 naležato
+        
+        if (formatSetting === 'a4-p') { w = 210; h = 297; ws.style.aspectRatio = "210/297"; }
+        else if (formatSetting === 'a4-l') { w = 297; h = 210; ws.style.aspectRatio = "297/210"; }
+        else if (formatSetting === 'a5-p') { w = 148; h = 210; ws.style.aspectRatio = "148/210"; }
+        else { ws.style.aspectRatio = "210/148"; } 
         
         calibElements.forEach(el => {
             let div = document.createElement('div');
@@ -2661,8 +2670,9 @@ let calibElements = [
             let valX = parseFloat(localStorage.getItem(el.keyx)) || el.defX;
             let valY = parseFloat(localStorage.getItem(el.keyy)) || el.defY;
             
-            div.style.left = (valX / 210 * 100) + '%';
-            div.style.top = (valY / 148 * 100) + '%';
+            // OPRAVA: Štítky se umístí podle šířky (w) a výšky (h) zvoleného papíru
+            div.style.left = (valX / w * 100) + '%';
+            div.style.top = (valY / h * 100) + '%';
             
             div.addEventListener('mousedown', startCalibDrag);
             div.addEventListener('touchstart', startCalibDrag, {passive: false});
@@ -2674,16 +2684,24 @@ let calibElements = [
 
     function closeVisualCalib() { document.getElementById('visual-calib-modal').classList.add('hidden'); }
 
-    function saveVisualCalib() {
+function saveVisualCalib() {
         let ws = document.getElementById('calib-workspace');
         let items = ws.querySelectorAll('.calib-item');
+        
+        // Zjistíme formát přímo z roletky
+        let formatSetting = document.getElementById('cfg-tpl-format').value;
+        let w = 210, h = 148;
+        if (formatSetting === 'a4-p') { w = 210; h = 297; }
+        else if (formatSetting === 'a4-l') { w = 297; h = 210; }
+        else if (formatSetting === 'a5-p') { w = 148; h = 210; }
         
         items.forEach(div => {
             let percentX = parseFloat(div.style.left);
             let percentY = parseFloat(div.style.top);
             
-            let mmX = (percentX / 100) * 210;
-            let mmY = (percentY / 100) * 148;
+            // OPRAVA: Výpočet milimetrů podle správného papíru
+            let mmX = (percentX / 100) * w;
+            let mmY = (percentY / 100) * h;
             
             let keyX = div.dataset.keyx;
             let keyY = div.dataset.keyy;
