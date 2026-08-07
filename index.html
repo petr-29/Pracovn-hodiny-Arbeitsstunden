@@ -3166,47 +3166,69 @@ vybraneZaznamy.forEach((zaznam, index) => {
             closeExportCard();
         }
 
-        async function sharePDFExport() {
-            let fileBlob = null;
-            let fileName = "";
+  async function sharePDFExport() {
+    let fileBlob = null;
+    let fileName = "";
 
-            if (currentExportType === 'vlastni') {
-                fileBlob = exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, true);
-                if (!fileBlob) return;
-                fileName = `Vlozene_PDF_${Date.now()}.pdf`;
-            } else if (currentExportType === 'consilium') {
-                fileBlob = exportConsiliumPDF(true);
-                fileName = `Consilium_${Date.now()}.pdf`;
-            } else {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-                let vybrane = zaznamy.filter(z => z.selected);
-                vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-                
-                if (currentExportType === 'standard') {
-                    drawStandardReportToDoc(doc, vybrane);
-                    fileName = `Standard_${Date.now()}.pdf`;
-                } else if (currentExportType === 'abnahme') {
-                    drawAbnahmeReportToDoc(doc, vybrane);
-                    fileName = `Abnahme_${Date.now()}.pdf`;
-                }
-                if (doc) fileBlob = doc.output('blob');
-            }
-
-            if (!fileBlob) return;
-
-            let file = new File([fileBlob], fileName, { type: 'application/pdf' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({ files: [file], title: fileName });
-                    closeExportCard();
-                } catch (err) { console.log("Sdílení zrušeno", err); }
-            } else {
-                alert('Vaše zařízení nepodporuje přímé sdílení, soubor se automaticky stáhne.');
-                if (currentExportType === 'vlastni') exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, false);
-                else executePDFExport();
-            }
+    if (currentExportType === 'vlastni') {
+        fileBlob = exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, true);
+        if (!fileBlob) return;
+        fileName = `Vlozene_PDF_${Date.now()}.pdf`;
+    } else if (currentExportType === 'consilium') {
+        fileBlob = exportConsiliumPDF(true);
+        fileName = `Consilium_${Date.now()}.pdf`;
+    } else if (currentExportType === 'faktura') {
+        // TADY JE TEN CHYBĚJÍCÍ BLOK PRO FAKTURU
+        let cisloFaktury = document.getElementById('fak-cislo').value;
+        let odberatel = document.getElementById('cfg-firma').value;
+        let suma = 0;
+        let vybrane = zaznamy.filter(z => z.selected);
+        vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+        
+        let fakturaData = {
+            vystaveni: document.getElementById('fak-vystaveni').value,
+            splatnost: document.getElementById('fak-splatnost').value,
+            prilohaTyp: document.querySelector('input[name="fak-priloha-typ"]:checked').value,
+            podpisIch: dataPodpisuIch,
+            podpisKunde: dataPodpisuKunde
+        };
+        let fakeFaktura = {
+            cislo: cisloFaktury, odberatel: odberatel, suma: suma,
+            datum: new Date().toISOString(), vybraneZaznamy: vybrane, fakturaData: fakturaData
+        };
+        const fDoc = buildFakturaDoc(fakeFaktura);
+        fileBlob = fDoc.output('blob');
+        fileName = `Faktura_${cisloFaktury.replace('/','-')}.pdf`;
+    } else {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        let vybrane = zaznamy.filter(z => z.selected);
+        vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+        
+        if (currentExportType === 'standard') {
+            drawStandardReportToDoc(doc, vybrane);
+            fileName = `Standard_${Date.now()}.pdf`;
+        } else if (currentExportType === 'abnahme') {
+            drawAbnahmeReportToDoc(doc, vybrane);
+            fileName = `Abnahme_${Date.now()}.pdf`;
         }
+        if (doc) fileBlob = doc.output('blob');
+    }
+
+    if (!fileBlob) return;
+
+    let file = new File([fileBlob], fileName, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share({ files: [file], title: fileName });
+            closeExportCard();
+        } catch (err) { console.log("Sdílení zrušeno", err); }
+    } else {
+        alert('Vaše zařízení nepodporuje přímé sdílení, soubor se automaticky stáhne.');
+        if (currentExportType === 'vlastni') exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, false);
+        else executePDFExport();
+    }
+}
 
         function executePDFExport() {
             if (currentExportType === 'vlastni') {
