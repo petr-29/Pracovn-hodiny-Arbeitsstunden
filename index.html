@@ -2685,9 +2685,9 @@ function openVisualCalib() {
         ws.style.backgroundImage = `url(${tplData})`;
         ws.innerHTML = '';
         
-        // Zjistíme aktuálně vybraný formát z roletky
-        let formatSetting = document.getElementById('cfg-tpl-format').value;
-        let w = 210, h = 148; // Výchozí A5 naležato
+        let formatSelect = document.getElementById('cfg-tpl-format');
+        let formatSetting = formatSelect ? formatSelect.value : 'a5-l';
+        let w = 210, h = 148;
         
         if (formatSetting === 'a4-p') { w = 210; h = 297; ws.style.aspectRatio = "210/297"; }
         else if (formatSetting === 'a4-l') { w = 297; h = 210; ws.style.aspectRatio = "297/210"; }
@@ -2698,14 +2698,19 @@ function openVisualCalib() {
             let div = document.createElement('div');
             div.className = 'calib-item';
             div.innerText = el.label;
-            div.dataset.keyx = el.keyx;
-            div.dataset.keyy = el.keyy;
-            if (el.syncY) div.dataset.syncy = el.syncY;
             
-            let valX = parseFloat(localStorage.getItem(el.keyx)) || el.defX;
-            let valY = parseFloat(localStorage.getItem(el.keyy)) || el.defY;
+            // BEZPEČNÉ ULOŽENÍ KLÍČŮ (místo dataset)
+            div.setAttribute('data-keyx', el.keyx);
+            div.setAttribute('data-keyy', el.keyy);
+            if (el.syncY) div.setAttribute('data-syncy', el.syncY);
             
-            // OPRAVA: Štítky se umístí podle šířky (w) a výšky (h) zvoleného papíru
+            // BEZPEČNÉ NAČÍTÁNÍ (vyřeší problém s uskočením zpět na default)
+            let savedX = localStorage.getItem(el.keyx);
+            let savedY = localStorage.getItem(el.keyy);
+            
+            let valX = (savedX !== null && savedX !== "NaN" && savedX !== "") ? parseFloat(savedX) : el.defX;
+            let valY = (savedY !== null && savedY !== "NaN" && savedY !== "") ? parseFloat(savedY) : el.defY;
+            
             div.style.left = (valX / w * 100) + '%';
             div.style.top = (valY / h * 100) + '%';
             
@@ -2717,37 +2722,44 @@ function openVisualCalib() {
         document.getElementById('visual-calib-modal').classList.remove('hidden');
     }
 
-    function closeVisualCalib() { document.getElementById('visual-calib-modal').classList.add('hidden'); }
-
-function saveVisualCalib() {
+    function saveVisualCalib() {
         let ws = document.getElementById('calib-workspace');
         let items = ws.querySelectorAll('.calib-item');
         
-        // Zjistíme formát přímo z roletky
-        let formatSetting = document.getElementById('cfg-tpl-format').value;
+        let formatSelect = document.getElementById('cfg-tpl-format');
+        let formatSetting = formatSelect ? formatSelect.value : 'a5-l';
         let w = 210, h = 148;
         if (formatSetting === 'a4-p') { w = 210; h = 297; }
         else if (formatSetting === 'a4-l') { w = 297; h = 210; }
         else if (formatSetting === 'a5-p') { w = 148; h = 210; }
         
         items.forEach(div => {
-            let percentX = parseFloat(div.style.left);
-            let percentY = parseFloat(div.style.top);
+            // Bezpečné načtení procent z inline stylu
+            let leftStr = div.style.left || "0%";
+            let topStr = div.style.top || "0%";
             
-            // OPRAVA: Výpočet milimetrů podle správného papíru
+            let percentX = parseFloat(leftStr);
+            let percentY = parseFloat(topStr);
+            
             let mmX = (percentX / 100) * w;
             let mmY = (percentY / 100) * h;
             
-            let keyX = div.dataset.keyx;
-            let keyY = div.dataset.keyy;
+            // Bezpečné čtení klíčů přes getAttribute
+            let keyX = div.getAttribute('data-keyx');
+            let keyY = div.getAttribute('data-keyy');
             
             if (keyX) localStorage.setItem(keyX, mmX.toFixed(1));
             if (keyY) localStorage.setItem(keyY, mmY.toFixed(1));
             
-            let domIdX = keyX.replace(/_/g, '-');
-            let domIdY = keyY.replace(/_/g, '-');
-            if (document.getElementById(domIdX)) document.getElementById(domIdX).value = mmX.toFixed(1);
-            if (document.getElementById(domIdY)) document.getElementById(domIdY).value = mmY.toFixed(1);
+            // Bezpečný zápis do inputů v nastavení (pokud fyzicky existují)
+            if (keyX) {
+                let domIdX = keyX.replace(/_/g, '-');
+                if (document.getElementById(domIdX)) document.getElementById(domIdX).value = mmX.toFixed(1);
+            }
+            if (keyY) {
+                let domIdY = keyY.replace(/_/g, '-');
+                if (document.getElementById(domIdY)) document.getElementById(domIdY).value = mmY.toFixed(1);
+            }
         });
         
         alert(currentLang === 'cs' ? 'Vizuální kalibrace uložena!' : 'Visuelle Kalibrierung gespeichert!');
