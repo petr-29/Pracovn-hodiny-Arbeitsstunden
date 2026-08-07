@@ -3073,8 +3073,28 @@
         }
 
         function exportVlastniSablona(podpisIch, podpisKunde, returnBlob = false) {
-            let vybrane = zaznamy.filter(z => z.selected);
-            if (vybrane.length === 0) { alert('Vyberte nejdříve řádky pro export!'); return null; }
+     // ... (začátek funkce, načtení jsPDF, vložení hlavičky, atd.) ...
+
+// ZDE ZAČÍNÁ VLOŽENÝ OPRAVENÝ KÓD
+let startY = kalibrace.radekY; 
+const rowHeight = kalibrace.vyskaRadku; 
+
+vybraneZaznamy.forEach((zaznam, index) => {
+    let currentY = startY + (index * rowHeight);
+
+    pdf.text(formátujDatum(zaznam.datum), kalibrace.datumX, currentY);
+    pdf.text(zaznam.pracovnik || 'Petr Michálek', kalibrace.jmenoX, currentY);
+    
+    pdf.text(zaznam.zacatek, kalibrace.zacatekX, currentY);
+    pdf.text(zaznam.konec, kalibrace.konecX, currentY); 
+    pdf.text(zaznam.pauza, kalibrace.pauzaX, currentY); 
+    
+    let denniCas = kalkulujCisteHodiny(zaznam).toFixed(2);
+    pdf.text(denniCas, kalibrace.celkemX, currentY);
+});
+// ZDE KONČÍ VLOŽENÝ OPRAVENÝ KÓD
+
+// ... (zbytek funkce, například vykreslení celkového součtu hodin a uložení souboru: pdf.save(...)) ...
 
             let bgData = localStorage.getItem('vlastni_sablona_pozadi');
             if (!bgData) { alert('Nejprve v záložce Šablony nahrajte podkladový obrázek PDF/JPG!'); return null; }
