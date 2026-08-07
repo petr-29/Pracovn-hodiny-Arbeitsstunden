@@ -2699,12 +2699,12 @@ function openVisualCalib() {
             div.className = 'calib-item';
             div.innerText = el.label;
             
-            // BEZPEČNÉ ULOŽENÍ KLÍČŮ (místo dataset)
+            // BEZPEČNÉ ULOŽENÍ KLÍČŮ
             div.setAttribute('data-keyx', el.keyx);
             div.setAttribute('data-keyy', el.keyy);
             if (el.syncY) div.setAttribute('data-syncy', el.syncY);
             
-            // BEZPEČNÉ NAČÍTÁNÍ (vyřeší problém s uskočením zpět na default)
+            // BEZPEČNÉ NAČÍTÁNÍ
             let savedX = localStorage.getItem(el.keyx);
             let savedY = localStorage.getItem(el.keyy);
             
@@ -2722,6 +2722,11 @@ function openVisualCalib() {
         document.getElementById('visual-calib-modal').classList.remove('hidden');
     }
 
+    // TATO FUNKCE ZAVÍRÁ OKNO (zde je oprava)
+    function closeVisualCalib() { 
+        document.getElementById('visual-calib-modal').classList.add('hidden'); 
+    }
+
     function saveVisualCalib() {
         let ws = document.getElementById('calib-workspace');
         let items = ws.querySelectorAll('.calib-item');
@@ -2734,7 +2739,6 @@ function openVisualCalib() {
         else if (formatSetting === 'a5-p') { w = 148; h = 210; }
         
         items.forEach(div => {
-            // Bezpečné načtení procent z inline stylu
             let leftStr = div.style.left || "0%";
             let topStr = div.style.top || "0%";
             
@@ -2744,14 +2748,12 @@ function openVisualCalib() {
             let mmX = (percentX / 100) * w;
             let mmY = (percentY / 100) * h;
             
-            // Bezpečné čtení klíčů přes getAttribute
             let keyX = div.getAttribute('data-keyx');
             let keyY = div.getAttribute('data-keyy');
             
             if (keyX) localStorage.setItem(keyX, mmX.toFixed(1));
             if (keyY) localStorage.setItem(keyY, mmY.toFixed(1));
             
-            // Bezpečný zápis do inputů v nastavení (pokud fyzicky existují)
             if (keyX) {
                 let domIdX = keyX.replace(/_/g, '-');
                 if (document.getElementById(domIdX)) document.getElementById(domIdX).value = mmX.toFixed(1);
