@@ -3230,18 +3230,35 @@ vybraneZaznamy.forEach((zaznam, index) => {
     }
 }
 
-        function executePDFExport() {
-            if (currentExportType === 'vlastni') {
-                exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde);
-                return;
-            }
+ function executePDFExport() {
+    if (currentExportType === 'vlastni') {
+        // Zavolá export pro vlastní šablonu s parametry podpisů a flagem pro stažení (např. false)
+        let fileBlob = exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, false);
+        
+        // Zde musíš zavolat i funkci pro uložení do historie (viz bod 2)
+        ulozitDoArchivu('vlastni', dataPodpisuIch, dataPodpisuKunde);
+        
+        closeExportCard();
+        return; 
+    }
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
             
-            let vybrane = zaznamy.filter(z => z.selected);
-            vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
-            if (vybrane.length === 0) return;
+
+     function executePDFExport() {
+    
+         let vybrane = zaznamy.filter(z => z.selected); // Získáme zaškrtnuté hodiny
+         if (currentExportType === 'vlastni') {
+        // Vygeneruješ PDF (tvůj původní kód) 
+             exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, false);
+        
+        // TADY ZAVOLÁŠ ULOŽENÍ DO ARCHIVU
+        // Předáš typ šablony, vybrané záznamy a oba podpisy
+            ulozitVykazDoArchivu('vlastni', vybrane, dataPodpisuIch, dataPodpisuKunde);
+             closeExportCard();
+        return; 
+         }
 
             if (currentExportType === 'standard') {
                 drawStandardReportToDoc(doc, vybrane);
