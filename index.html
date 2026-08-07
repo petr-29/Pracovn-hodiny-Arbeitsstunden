@@ -999,10 +999,14 @@ let div = document.createElement('div');
                     div.style.border = '2px solid red'; // Ať se podpisy dobře hledají
                     div.style.width = '100px'; // Přibližná šířka podpisu
                     div.style.height = '40px';
-                } else {
+               } else {
                     // Krátká ukázková data pro dynamická pole
-                    if(pole.id === 'fld-stunden' || pole.id === 'fld-gesamt') div.innerText = "42.50";
-                    else if(pole.id === 'fld-datum' || pole.id === 'fld-tag' || pole.id === 'fld-zeitraum') div.innerText = "01.07.2026 - 31.07.2026";
+                    if(pole.id === 'fld-stunden') div.innerText = "8.50";
+                    else if(pole.id === 'fld-gesamt') div.innerText = "42.50";
+                    else if(pole.id === 'fld-datum' || pole.id === 'fld-tag') div.innerText = "15.07.2026";
+                    else if(pole.id === 'fld-zeitraum') div.innerText = "01.07.2026 - 31.07.2026";
+                    else if(pole.id === 'fld-pausevon') div.innerText = "12:00";
+                    else if(pole.id === 'fld-pausebis') div.innerText = "12:30";
                     else div.innerText = `[${pole.label.split(' ')[1]}]`;
                 }
                 
@@ -1391,11 +1395,13 @@ let div = document.createElement('div');
                 html += `      </div>`;
                 html += `  </div>`;
                 html += `</div>`;
-            } else if (currentExportType === 'consilium') {
-                html += `<div class="preview-header-full">CONSILIUM PRO - STUNDENZETTEL (A5 Naležato)</div>`;
-                html += `<div style="text-align:center; margin-bottom: 20px; font-family:'Courier New', Courier, monospace;">Tento export využívá A5 šablonu naležato z nastavení a generuje se přímo do PDF. Spodní data vyplňte výše.</div>`;
-            } else {
-                let bezZkousky = document.getElementById('ab-bezZkousky').checked; let seZkouskou = document.getElementById('ab-seZkouskou').checked;
+            } else if (currentExportType === 'vlastni') {
+                html += `<div class="preview-header-full">VLOŽENÉ PDF (VLASTNÍ ŠABLONA)</div>`;
+                html += `<div style="text-align:center; margin-bottom: 20px; font-family:'Courier New', Courier, monospace; color: #2c3e50;">         
+            <strong style="color:#8e44ad; font-size:16px;">Tento dokument se vygeneruje do vaší vlastní nahrané šablony.</strong><br><br>
+            Dokument rovnou podepište níže a stiskněte <b>Uložit PDF</b> nebo <b>Sdílet PDF</b>.  </div>`;
+            } else {      
+                let bezZkousky = document.getElementById('ab-bezZkousky').checked;
                 let sVadami = document.getElementById('ab-sVadami').checked; let vadyText = document.getElementById('ab-vadyText').value || '---';
                 let odstraneniDo = document.getElementById('ab-odstraneniDo').value || '---';
                 let startD = startDatum(vybrane); let endD = endDatum(vybrane);
@@ -3054,41 +3060,124 @@ function importDataFromFile(event) {
     };
     reader.readAsText(file);
 }
-function exportVlastniSablona(podpisIch, podpisKunde) {
+function exportVlastniSablona(podpisIch, podpisKunde, returnBlob = false) {
     let vybrane = zaznamy.filter(z => z.selected);
-    if (vybrane.length === 0) { alert('Vyberte nejdříve řádky!'); return; }
+    if (vybrane.length === 0) { alert('Vyberte nejdříve řádky pro export!'); return null; }
 
-    // ... (Zde zůstává kontrola a načtení obrázku jako předtím) ...
+    let bgData = localStorage.getItem('vlastni_sablona_pozadi');
+    if (!bgData) { alert('Nejprve v záložce Šablony nahrajte podkladový obrázek PDF/JPG!'); return null; }
+
+    let formatSelect = document.getElementById('template-format');
+    let val = formatSelect ? formatSelect.value : 'a5-l';
+    let docFormat = val.includes('a4') ? 'a4' : 'a5';
+    let docOrientation = val.includes('-l') ? 'landscape' : 'portrait';
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: docFormat, orientation: docOrientation });
+
+    let w = doc.internal.pageSize.getWidth();
+    let h = doc.internal.pageSize.getHeight();
+    let imgType = bgData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
+    doc.addImage(bgData, imgType, 0, 0, w, h, '', 'FAST');
+
+    let ulozenePozice = JSON.parse(localStorage.getItem('vlastni_sablona_pozice')) || {};
+    let ulozenyObsah = JSON.parse(localStorage.getItem('vlastni_sablona_obsah')) || {};
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+
+    let startD = startDatum(vybrane);
+    let endD = endDatum(vybrane);
+    let kw = vybrane.length > 0 ? getWeekNumber(new Date(vybrane[0].datum)).toString() : '';
+    let totalH = 0;
+    vybrane.forEach(za => { totalH += kalkulujCisteHodiny(za); });
+    
+    // Zásadní změna: Bereme přesné hodnoty z prvního vybraného dne!
+    let z = vybrane[0]; 
 
     sablonaPole.forEach(pole => {
         if (ulozenePozice[pole.id]) {
             let xMM = (ulozenePozice[pole.id].x / 100) * w;
             let yMM = (ulozenePozice[pole.id].y / 100) * h;
             
-            // Speciální řešení pro podpisy (Vložíme PNG místo textu)
             if (pole.id === 'fld-sign-ich' && podpisIch) {
                 doc.addImage(podpisIch, 'PNG', xMM, yMM, 35, 12);
             } else if (pole.id === 'fld-sign-kunde' && podpisKunde) {
                 doc.addImage(podpisKunde, 'PNG', xMM, yMM, 35, 12);
             } else if (!pole.id.includes('sign')) {
-                // Vykreslování textů z tvé šablony (jako dřív)
                 yMM += 4; 
                 let text = '';
-                
                 if (pole.typ === 'static') {
                     text = ulozenyObsah[pole.id] || '';
                 } else {
+                    // DYNAMICKÉ PÁROVÁNÍ PŘESNĚ PODLE JEDNOHO DNE:
                     if (pole.id === 'fld-zeitraum') text = `${startD} - ${endD}`;
-                    // ... zbytek dynamického párování ...
+                    else if (pole.id === 'fld-kw') text = kw;
+                    else if (pole.id === 'fld-tag' || pole.id === 'fld-datum') text = new Date(z.datum).toLocaleDateString('de-DE');
+                    else if (pole.id === 'fld-beginn') text = z.zacatek || '';
+                    else if (pole.id === 'fld-ende') text = z.konec || '';
+                    else if (pole.id === 'fld-pausevon') text = z.prestavkaOd || '';
+                    else if (pole.id === 'fld-pausebis') text = z.prestavkaDo || '';
+                    else if (pole.id === 'fld-stunden') text = kalkulujCisteHodiny(z).toFixed(2);
+                    else if (pole.id === 'fld-gesamt') text = totalH.toFixed(2);
+                    else if (pole.id === 'fld-auftragsnummer') text = z.cisloZakazky || '';
+                    else if (pole.id === 'fld-anmerkung') text = bezDiakritiky(z.popisPrace || '');
                 }
                 if (text) doc.text(text, xMM, yMM);
             }
         }
     });
 
-    doc.save(`Vlozene_PDF_${Date.now()}.pdf`);
-    oznacExportovaneZaznamy('standard');
-    closeExportCard(); // Zavře dialogové okno s podpisy po stažení!
+    if(returnBlob) return doc.output('blob'); // Pokud sdílíme, vracíme data
+    
+    // Jinak rovnou stáhneme a zavřeme
+    doc.save(`Vlozene_PDF_${new Date(z.datum).toLocaleDateString('de-DE')}.pdf`);
+    oznacExportovaneZaznamy('standard'); 
+    closeExportCard();
+}
+
+async function sharePDFExport() {
+    let fileBlob = null;
+    let fileName = "";
+
+    if (currentExportType === 'vlastni') {
+        fileBlob = exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, true);
+        if (!fileBlob) return;
+        fileName = `Vlozene_PDF_${Date.now()}.pdf`;
+    } else if (currentExportType === 'consilium') {
+        fileBlob = exportConsiliumPDF(true);
+        fileName = `Consilium_${Date.now()}.pdf`;
+    } else {
+        // Fallback pro Standard / Abnahme / Faktura
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        let vybrane = zaznamy.filter(z => z.selected);
+        vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
+        
+        if (currentExportType === 'standard') {
+            drawStandardReportToDoc(doc, vybrane);
+            fileName = `Standard_${Date.now()}.pdf`;
+        } else if (currentExportType === 'abnahme') {
+            drawAbnahmeReportToDoc(doc, vybrane);
+            fileName = `Abnahme_${Date.now()}.pdf`;
+        }
+        if (doc) fileBlob = doc.output('blob');
+    }
+
+    if (!fileBlob) return;
+
+    let file = new File([fileBlob], fileName, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share({ files: [file], title: fileName });
+            closeExportCard();
+        } catch (err) { console.log("Sdílení zrušeno", err); }
+    } else {
+        alert('Vaše zařízení nepodporuje přímé sdílení, soubor se automaticky stáhne.');
+        if (currentExportType === 'vlastni') exportVlastniSablona(dataPodpisuIch, dataPodpisuKunde, false);
+        else executePDFExport();
+    }
 }
 function executePDFExport() {
     if (currentExportType === 'vlastni') {
