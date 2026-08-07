@@ -291,7 +291,7 @@
                     <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">Standard PDF</button>
                     <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
                     <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">Faktura PDF</button>
-                    <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Consilium PDF</button>
+                    <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Vložené PDF</button>
                 </div>
 
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
@@ -359,27 +359,28 @@
                         </div>
                     </div>
                     
+
                     <div id="consilium-fields" class="hidden">
                         <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
-                        <div class="card-title" style="color:#8e44ad;">Vyplnění spodní části (Consilium)</div>
+                        <div class="card-title" style="color:#8e44ad;">Vyplnění dodatečných polí (Vložené PDF)</div>
                         <div class="form-group">
-                            <label>Období (od-do) [1. řádek vpravo]:</label>
+                            <label>Období (od-do) [Leistungszeitraum]:</label>
                             <input type="text" id="cons-obdobi" placeholder="např. 28.7. - 29.7.2026" oninput="updateLivePreview()">
                         </div>
                         <div class="form-group">
-                            <label>Závady odstranit do [2. řádek vpravo]:</label>
+                            <label>Závady odstranit do / Dodatečný text 1:</label>
                             <input type="text" id="cons-odstranit-do" placeholder="např. ------" oninput="updateLivePreview()">
                         </div>
                         <div class="form-group">
-                            <label>Závady / Reklamace [3. řádek vpravo]:</label>
+                            <label>Poznámka / Závady (Anmerkung):</label>
                             <textarea id="cons-zavady" rows="2" placeholder="např. zadne" oninput="updateLivePreview()"></textarea>
                         </div>
                         <div class="form-group inline">
                             <input type="checkbox" id="cons-nabidnuto-chk" onchange="updateLivePreview()">
-                            <label for="cons-nabidnuto-chk" style="font-weight:normal;">Dílo nabídnuto k převzetí</label>
+                            <label for="cons-nabidnuto-chk" style="font-weight:normal;">Vložit Křížek [X] do dokumentu</label>
                         </div>
                         <div class="form-group">
-                            <label>Datum nabídnutí k převzetí:</label>
+                            <label>Dodatečné datum (např. Datum nabídnutí):</label>
                             <input type="date" id="cons-datum-nabidnuti" onchange="updateLivePreview()">
                         </div>
                     </div>
@@ -1382,11 +1383,31 @@ function drawConsiliumReportToDoc(doc, vybrane, pdfWidth = 210, pdfHeight = 148)
             doc.setFontSize(9);
             doc.setTextColor(0, 0, 0);
 
-            // 1. HLAVIČKA
-            doc.text(firma, X_HLAVICKA, Y_HLAVICKA, { align: 'center', maxWidth: 65 }); 
-            doc.text(jmeno, X_HLAVICKA + 58, Y_HLAVICKA, { align: 'center', maxWidth: 50 }); 
-            doc.text(adresaMesto, X_HLAVICKA + 113, Y_HLAVICKA, { align: 'center', maxWidth: 55 }); 
-            doc.text(`${startD} - ${endD}`, X_HLAVICKA + 157, Y_HLAVICKA, { align: 'center', maxWidth: 30 }); 
+// 1. HLAVIČKA - NYNÍ ROZDĚLENÁ NA SAMOSTATNÉ ŠTÍTKY
+            let xFirma = parseFloat(localStorage.getItem('cfg_vpdf_x_firma')) || 35;
+            let yFirma = parseFloat(localStorage.getItem('cfg_vpdf_y_firma')) || 28;
+            if (firma) doc.text(firma, xFirma, yFirma, { maxWidth: 65 });
+
+            let xStroj = parseFloat(localStorage.getItem('cfg_vpdf_x_stroj')) || 35;
+            let yStroj = parseFloat(localStorage.getItem('cfg_vpdf_y_stroj')) || 34;
+            let nazevStroje = koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : "";
+            if (nazevStroje) doc.text(nazevStroje, xStroj, yStroj, { maxWidth: 65 });
+
+            let xZakazkaTop = parseFloat(localStorage.getItem('cfg_vpdf_x_zakazka_top')) || 35;
+            let yZakazkaTop = parseFloat(localStorage.getItem('cfg_vpdf_y_zakazka_top')) || 40;
+            if (cisloZ) doc.text(cisloZ, xZakazkaTop, yZakazkaTop, { maxWidth: 50 });
+
+            let xJmeno = parseFloat(localStorage.getItem('cfg_vpdf_x_jmeno')) || 35;
+            let yJmeno = parseFloat(localStorage.getItem('cfg_vpdf_y_jmeno')) || 46;
+            if (jmeno) doc.text(jmeno, xJmeno, yJmeno, { maxWidth: 50 });
+
+            let xAdresa = parseFloat(localStorage.getItem('cfg_vpdf_x_adresa')) || 130;
+            let yAdresa = parseFloat(localStorage.getItem('cfg_vpdf_y_adresa')) || 28;
+            if (adresaMesto) doc.text(adresaMesto, xAdresa, yAdresa, { maxWidth: 55 });
+
+            let xObdobiTop = parseFloat(localStorage.getItem('cfg_vpdf_x_obdobi_top')) || 130;
+            let yObdobiTop = parseFloat(localStorage.getItem('cfg_vpdf_y_obdobi_top')) || 34;
+            doc.text(`${startD} - ${endD}`, xObdobiTop, yObdobiTop, { maxWidth: 40 });
 
             // 2. TABULKA
             let dayRecords = new Array(7).fill(null);
@@ -2617,28 +2638,35 @@ async function sharePDFExport() {
     // ==========================================
 
 let calibElements = [
-        { id: 'hlavicka', label: 'Hlavička (Firma)', keyx: 'cfg_cons_x_hlavicka', keyy: 'cfg_cons_hlavicka', defX: 27, defY: 32 },
-        { id: 'soucet', label: 'Součet', keyx: 'cfg_cons_x_soucet', keyy: 'cfg_cons_soucet', defX: 93, defY: 107 },
-        
-        { id: 'datum', label: 'Datum', keyx: 'cfg_cons_x_datum', keyy: 'cfg_cons_tabulka', defX: 20, defY: 57, syncY: 'tabulka' },
-        { id: 'zacatek', label: 'Začátek', keyx: 'cfg_cons_x_zacatek', keyy: 'cfg_cons_tabulka', defX: 40.5, defY: 57, syncY: 'tabulka' },
-        { id: 'od', label: 'Od', keyx: 'cfg_cons_x_od', keyy: 'cfg_cons_tabulka', defX: 53, defY: 57, syncY: 'tabulka' },
-        { id: 'do', label: 'Do', keyx: 'cfg_cons_x_do', keyy: 'cfg_cons_tabulka', defX: 65, defY: 57, syncY: 'tabulka' },
-        { id: 'konec', label: 'Konec', keyx: 'cfg_cons_x_konec', keyy: 'cfg_cons_tabulka', defX: 77, defY: 57, syncY: 'tabulka' },
-        { id: 'hodiny', label: 'Hodiny', keyx: 'cfg_cons_x_hodiny', keyy: 'cfg_cons_tabulka', defX: 93, defY: 57, syncY: 'tabulka' },
-        { id: 'popis', label: 'Popis', keyx: 'cfg_cons_x_popis', keyy: 'cfg_cons_y_popis', defX: 102, defY: 57 },        
-        { id: 'zakazka', label: 'Zakázka', keyx: 'cfg_cons_x_zakazka', keyy: 'cfg_cons_y_zakazka', defX: 184, defY: 57 },
+        // Rozdělená hlavička (Nové)
+        { id: 'hlavicka_firma', label: 'Hlavička (Firma/Kunde)', keyx: 'cfg_vpdf_x_firma', keyy: 'cfg_vpdf_y_firma', defX: 35, defY: 28 },
+        { id: 'hlavicka_stroj', label: 'Stroj/Projekt (Maschinenb.)', keyx: 'cfg_vpdf_x_stroj', keyy: 'cfg_vpdf_y_stroj', defX: 35, defY: 34 },
+        { id: 'hlavicka_zakazka', label: 'Zakázka nahoře', keyx: 'cfg_vpdf_x_zakazka_top', keyy: 'cfg_vpdf_y_zakazka_top', defX: 35, defY: 40 },
+        { id: 'hlavicka_jmeno', label: 'Pracovník (Vorarbeiter)', keyx: 'cfg_vpdf_x_jmeno', keyy: 'cfg_vpdf_y_jmeno', defX: 35, defY: 46 },
+        { id: 'hlavicka_adresa', label: 'Adresa', keyx: 'cfg_vpdf_x_adresa', keyy: 'cfg_vpdf_y_adresa', defX: 130, defY: 28 },
+        { id: 'hlavicka_obdobi', label: 'Období (Nahoře)', keyx: 'cfg_vpdf_x_obdobi_top', keyy: 'cfg_vpdf_y_obdobi_top', defX: 130, defY: 34 },
 
-        { id: 'obdobi', label: 'Období (28.7.-31.7.)', keyx: 'cfg_cons_x_obdobi', keyy: 'cfg_cons_y_obdobi', defX: 122, defY: 114 },
+        // Tabulka
+        { id: 'datum', label: 'Datum', keyx: 'cfg_cons_x_datum', keyy: 'cfg_cons_tabulka', defX: 20, defY: 60, syncY: 'tabulka' },
+        { id: 'zacatek', label: 'Začátek', keyx: 'cfg_cons_x_zacatek', keyy: 'cfg_cons_tabulka', defX: 40.5, defY: 60, syncY: 'tabulka' },
+        { id: 'od', label: 'Od', keyx: 'cfg_cons_x_od', keyy: 'cfg_cons_tabulka', defX: 53, defY: 60, syncY: 'tabulka' },
+        { id: 'do', label: 'Do', keyx: 'cfg_cons_x_do', keyy: 'cfg_cons_tabulka', defX: 65, defY: 60, syncY: 'tabulka' },
+        { id: 'konec', label: 'Konec', keyx: 'cfg_cons_x_konec', keyy: 'cfg_cons_tabulka', defX: 77, defY: 60, syncY: 'tabulka' },
+        { id: 'hodiny', label: 'Hodiny', keyx: 'cfg_cons_x_hodiny', keyy: 'cfg_cons_tabulka', defX: 93, defY: 60, syncY: 'tabulka' },
+        { id: 'popis', label: 'Popis / Činnost', keyx: 'cfg_cons_x_popis', keyy: 'cfg_cons_y_popis', defX: 102, defY: 60 },
+        { id: 'zakazka', label: 'Zakázka (V tabulce)', keyx: 'cfg_cons_x_zakazka', keyy: 'cfg_cons_y_zakazka', defX: 184, defY: 60 },
+
+        // Spodek formuláře (Anmerkung atd.)
+        { id: 'soucet', label: 'Součet', keyx: 'cfg_cons_x_soucet', keyy: 'cfg_cons_soucet', defX: 93, defY: 107 },
+        { id: 'obdobi', label: 'Období (od-do)', keyx: 'cfg_cons_x_obdobi', keyy: 'cfg_cons_y_obdobi', defX: 122, defY: 114 },
         { id: 'odstranit_do', label: 'Závady odstranit do', keyx: 'cfg_cons_x_odstranit_do', keyy: 'cfg_cons_y_odstranit_do', defX: 122, defY: 121.5 },
-        { id: 'zavady', label: 'Závady / Reklamace', keyx: 'cfg_cons_x_zavady', keyy: 'cfg_cons_y_zavady', defX: 122, defY: 129 },
+        { id: 'zavady', label: 'Závady / Reklamace', keyx: 'cfg_cons_x_zavady', keyy: 'cfg_cons_y_zavady', defX: 15, defY: 120 },
         { id: 'krizek', label: 'Křížek [X]', keyx: 'cfg_cons_x_chk', keyy: 'cfg_cons_y_chk', defX: 18.2, defY: 134.8 },
         { id: 'datum_nab', label: 'Datum nabídnutí', keyx: 'cfg_cons_x_datum_nab', keyy: 'cfg_cons_y_datum_nab', defX: 91, defY: 137.5 },
         { id: 'mesto_datum', label: 'Město a datum dole', keyx: 'cfg_cons_x_mesto_datum', keyy: 'cfg_cons_y_mesto_datum', defX: 16, defY: 142.5 },
-        { id: 'podpis_dodavatel', label: 'Můj Podpis', keyx: 'cfg_cons_x_podpis_dodavatel', keyy: 'cfg_cons_y_podpis_dodavatel', defX: 82, defY: 131 },
-        { id: 'podpis_klient', label: 'Podpis Klienta', keyx: 'cfg_cons_x_podpis_klient', keyy: 'cfg_cons_y_podpis_klient', defX: 152, defY: 131 }
+        { id: 'podpis_dodavatel', label: 'Můj Podpis', keyx: 'cfg_cons_x_podpis_dodavatel', keyy: 'cfg_cons_y_podpis_dodavatel', defX: 30, defY: 135 },
+        { id: 'podpis_klient', label: 'Podpis Klienta', keyx: 'cfg_cons_x_podpis_klient', keyy: 'cfg_cons_y_podpis_klient', defX: 130, defY: 135 }
     ];
-
 function openVisualCalib() {
         let tplData = localStorage.getItem('cfg_tpl_consilium');
         if (!tplData) {
