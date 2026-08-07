@@ -1345,182 +1345,189 @@ function drawConsiliumReportToDoc(doc, vybrane, pdfWidth = 210, pdfHeight = 148)
     }
 
     let imgType = tplData.split(';')[0].includes('jpeg') ? 'JPEG' : 'PNG';
-    // Tady místo natvrdo zadaných 210 a 148 vložíme proměnné
     doc.addImage(tplData, imgType, 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
-            let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value);
-            let koncovaFirmaData = document.getElementById('cfg-koncovy-firma') ? document.getElementById('cfg-koncovy-firma').value : '';
-            let koncovaAdresaData = document.getElementById('cfg-koncovy-adresa') ? document.getElementById('cfg-koncovy-adresa').value : '';
-            let firma = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
-            let adresaMesto = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData.replace(/\n/g, ", ") : (document.getElementById('cfg-adresa').value + ", " + document.getElementById('cfg-mesto').value));
+    // --- NAČTENÍ ZÁKLADNÍCH DAT Z APLIKACE ---
+    let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value);
+    let koncovaFirmaData = document.getElementById('cfg-koncovy-firma') ? document.getElementById('cfg-koncovy-firma').value : '';
+    let koncovaAdresaData = document.getElementById('cfg-koncovy-adresa') ? document.getElementById('cfg-koncovy-adresa').value : '';
+    
+    let firma = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : document.getElementById('cfg-firma').value.replace(/\n/g, ", "));
+    let adresaMesto = bezDiakritiky(koncovaAdresaData ? koncovaAdresaData.replace(/\n/g, ", ") : (document.getElementById('cfg-adresa').value + ", " + document.getElementById('cfg-mesto').value));
+    
+    // Pro kolonku Stroj/Projekt můžeme využít data koncové firmy, nebo nechat prázdné
+    let nazevStroje = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : ""); 
+    
+    let mestoStavby = bezDiakritiky(document.getElementById('cfg-mesto-stavby').value || document.getElementById('cfg-mesto').value);
+    let startD = bezDiakritiky(startDatum(vybrane)); 
+    let endD = bezDiakritiky(endDatum(vybrane));
+    let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+
+    // --- 1. ROZDĚLENÁ HLAVIČKA (Firma, Stroj, Zakázka atd.) ---
+    let xFirma = parseFloat(localStorage.getItem('cfg_vpdf_x_firma')) || 35;
+    let yFirma = parseFloat(localStorage.getItem('cfg_vpdf_y_firma')) || 28;
+    if (firma) doc.text(firma, xFirma, yFirma, { maxWidth: 65 });
+
+    let xStroj = parseFloat(localStorage.getItem('cfg_vpdf_x_stroj')) || 35;
+    let yStroj = parseFloat(localStorage.getItem('cfg_vpdf_y_stroj')) || 34;
+    if (nazevStroje) doc.text(nazevStroje, xStroj, yStroj, { maxWidth: 65 });
+
+    let xZakazkaTop = parseFloat(localStorage.getItem('cfg_vpdf_x_zakazka_top')) || 35;
+    let yZakazkaTop = parseFloat(localStorage.getItem('cfg_vpdf_y_zakazka_top')) || 40;
+    if (cisloZ) doc.text(cisloZ, xZakazkaTop, yZakazkaTop, { maxWidth: 50 });
+
+    let xJmeno = parseFloat(localStorage.getItem('cfg_vpdf_x_jmeno')) || 35;
+    let yJmeno = parseFloat(localStorage.getItem('cfg_vpdf_y_jmeno')) || 46;
+    if (jmeno) doc.text(jmeno, xJmeno, yJmeno, { maxWidth: 50 });
+
+    let xAdresa = parseFloat(localStorage.getItem('cfg_vpdf_x_adresa')) || 130;
+    let yAdresa = parseFloat(localStorage.getItem('cfg_vpdf_y_adresa')) || 28;
+    if (adresaMesto) doc.text(adresaMesto, xAdresa, yAdresa, { maxWidth: 55 });
+
+    let xObdobiTop = parseFloat(localStorage.getItem('cfg_vpdf_x_obdobi_top')) || 130;
+    let yObdobiTop = parseFloat(localStorage.getItem('cfg_vpdf_y_obdobi_top')) || 34;
+    doc.text(`${startD} - ${endD}`, xObdobiTop, yObdobiTop, { maxWidth: 40 });
+
+    // --- 2. TABULKA (Hodiny a logiky přestávky) ---
+    const Y_TABULKA  = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 60;
+    const Y_ZAKAZKA  = parseFloat(localStorage.getItem('cfg_cons_y_zakazka')) || Y_TABULKA;
+    const Y_POPIS    = parseFloat(localStorage.getItem('cfg_cons_y_popis')) || Y_TABULKA;
+    const RADKOVANI  = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
+
+    const X_DATUM   = parseFloat(localStorage.getItem('cfg_cons_x_datum')) || 20;
+    const X_ZACATEK = parseFloat(localStorage.getItem('cfg_cons_x_zacatek')) || 40.5;
+    const X_OD      = parseFloat(localStorage.getItem('cfg_cons_x_od')) || 53;
+    const X_DO      = parseFloat(localStorage.getItem('cfg_cons_x_do')) || 65;
+    const X_KONEC   = parseFloat(localStorage.getItem('cfg_cons_x_konec')) || 77;
+    const X_HODINY  = parseFloat(localStorage.getItem('cfg_cons_x_hodiny')) || 93;
+    const X_POPIS   = parseFloat(localStorage.getItem('cfg_cons_x_popis')) || 102;
+    const X_ZAKAZKA = parseFloat(localStorage.getItem('cfg_cons_x_zakazka')) || 184;
+
+    let dayRecords = new Array(7).fill(null);
+    let totalWeekHours = 0;
+    vybrane.forEach(z => { 
+        let d = new Date(z.datum + "T12:00:00").getDay(); 
+        let idx = d === 0 ? 6 : d - 1; 
+        dayRecords[idx] = z; 
+    });
+
+    for(let i=0; i<7; i++) {
+        let rec = dayRecords[i];
+        let rowY = Y_TABULKA + (i * RADKOVANI);
+        let zakazkaY = Y_ZAKAZKA + (i * RADKOVANI);
+
+        if(rec) {
+            let h = kalkulujCisteHodiny(rec); 
+            totalWeekHours += h;
             
-            let mestoStavby = bezDiakritiky(document.getElementById('cfg-mesto-stavby').value || document.getElementById('cfg-mesto').value);
-            let startD = bezDiakritiky(startDatum(vybrane)); 
-            let endD = bezDiakritiky(endDatum(vybrane));
-            let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
-
-            // --- NAČTENÍ SOUŘADNIC Z VIZUÁLNÍHO EDITORU ---
-            const X_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_x_hlavicka')) || 27;
-            const X_SOUCET   = parseFloat(localStorage.getItem('cfg_cons_x_soucet')) || 93;
-
-            const Y_HLAVICKA = parseFloat(localStorage.getItem('cfg_cons_hlavicka')) || 32;
-            const Y_TABULKA  = parseFloat(localStorage.getItem('cfg_cons_tabulka')) || 57;
-            const Y_ZAKAZKA  = parseFloat(localStorage.getItem('cfg_cons_y_zakazka')) || Y_TABULKA;
-            const Y_POPIS    = parseFloat(localStorage.getItem('cfg_cons_y_popis')) || Y_TABULKA;
-            const RADKOVANI  = parseFloat(localStorage.getItem('cfg_cons_radkovani')) || 7.1;
-            const Y_SOUCET   = parseFloat(localStorage.getItem('cfg_cons_soucet')) || 107;
-
-            const X_DATUM   = parseFloat(localStorage.getItem('cfg_cons_x_datum')) || 20;
-            const X_ZACATEK = parseFloat(localStorage.getItem('cfg_cons_x_zacatek')) || 40.5;
-            const X_OD      = parseFloat(localStorage.getItem('cfg_cons_x_od')) || 53;
-            const X_DO      = parseFloat(localStorage.getItem('cfg_cons_x_do')) || 65;
-            const X_KONEC   = parseFloat(localStorage.getItem('cfg_cons_x_konec')) || 77;
-            const X_HODINY  = parseFloat(localStorage.getItem('cfg_cons_x_hodiny')) || 93;
-            const X_POPIS   = parseFloat(localStorage.getItem('cfg_cons_x_popis')) || 102;
-            const X_ZAKAZKA = parseFloat(localStorage.getItem('cfg_cons_x_zakazka')) || 184;
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9);
-            doc.setTextColor(0, 0, 0);
-
-// 1. HLAVIČKA - NYNÍ ROZDĚLENÁ NA SAMOSTATNÉ ŠTÍTKY
-            let xFirma = parseFloat(localStorage.getItem('cfg_vpdf_x_firma')) || 35;
-            let yFirma = parseFloat(localStorage.getItem('cfg_vpdf_y_firma')) || 28;
-            if (firma) doc.text(firma, xFirma, yFirma, { maxWidth: 65 });
-
-            let xStroj = parseFloat(localStorage.getItem('cfg_vpdf_x_stroj')) || 35;
-            let yStroj = parseFloat(localStorage.getItem('cfg_vpdf_y_stroj')) || 34;
-            let nazevStroje = koncovaFirmaData ? koncovaFirmaData.replace(/\n/g, ", ") : "";
-            if (nazevStroje) doc.text(nazevStroje, xStroj, yStroj, { maxWidth: 65 });
-
-            let xZakazkaTop = parseFloat(localStorage.getItem('cfg_vpdf_x_zakazka_top')) || 35;
-            let yZakazkaTop = parseFloat(localStorage.getItem('cfg_vpdf_y_zakazka_top')) || 40;
-            if (cisloZ) doc.text(cisloZ, xZakazkaTop, yZakazkaTop, { maxWidth: 50 });
-
-            let xJmeno = parseFloat(localStorage.getItem('cfg_vpdf_x_jmeno')) || 35;
-            let yJmeno = parseFloat(localStorage.getItem('cfg_vpdf_y_jmeno')) || 46;
-            if (jmeno) doc.text(jmeno, xJmeno, yJmeno, { maxWidth: 50 });
-
-            let xAdresa = parseFloat(localStorage.getItem('cfg_vpdf_x_adresa')) || 130;
-            let yAdresa = parseFloat(localStorage.getItem('cfg_vpdf_y_adresa')) || 28;
-            if (adresaMesto) doc.text(adresaMesto, xAdresa, yAdresa, { maxWidth: 55 });
-
-            let xObdobiTop = parseFloat(localStorage.getItem('cfg_vpdf_x_obdobi_top')) || 130;
-            let yObdobiTop = parseFloat(localStorage.getItem('cfg_vpdf_y_obdobi_top')) || 34;
-            doc.text(`${startD} - ${endD}`, xObdobiTop, yObdobiTop, { maxWidth: 40 });
-
-            // 2. TABULKA
-            let dayRecords = new Array(7).fill(null);
-            let totalWeekHours = 0;
-            vybrane.forEach(z => { 
-                let d = new Date(z.datum + "T12:00:00").getDay(); 
-                let idx = d === 0 ? 6 : d - 1; 
-                dayRecords[idx] = z; 
-            });
-
-            for(let i=0; i<7; i++) {
-                let rec = dayRecords[i];
-                let rowY = Y_TABULKA + (i * RADKOVANI);
-                let zakazkaY = Y_ZAKAZKA + (i * RADKOVANI);
-
-                if(rec) {
-                    let h = kalkulujCisteHodiny(rec); 
-                    totalWeekHours += h;
-                    
-                    doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), X_DATUM, rowY, { align: 'center' }); 
-                    doc.text(rec.zacatek, X_ZACATEK, rowY, { align: 'center' }); 
-                    
-                    if (rec.prestavkaOd && rec.prestavkaDo) {
-                        doc.text(rec.prestavkaOd, X_OD, rowY, { align: 'center' }); 
-                        doc.text(rec.prestavkaDo, X_DO, rowY, { align: 'center' }); 
-                    } else if (rec.prestavka && rec.prestavka > 0) {
-                        doc.text(`${rec.prestavka}m`, X_OD + 6, rowY, { align: 'center' }); 
-                    } else {
-                        doc.text(`-`, X_OD + 6, rowY, { align: 'center' });
-                    }
-
-                    doc.text(rec.konec, X_KONEC, rowY, { align: 'center' }); 
-                    doc.text(h.toFixed(2), X_HODINY, rowY, { align: 'center' }); 
-                    
-                    if (rec.popisPrace) {
-                        doc.setFontSize(7.5);
-                        let cistyPopis = bezDiakritiky(rec.popisPrace).replace(/[\r\n]+/g, " "); 
-                        let maxZnaku = 60;
-                        if (cistyPopis.length > maxZnaku) {
-                            cistyPopis = cistyPopis.substring(0, maxZnaku) + "...";
-                        }
-                        let popisY = Y_POPIS + (i * RADKOVANI);
-                        doc.text(cistyPopis, X_POPIS, popisY); 
-                        doc.setFontSize(9);
-                    }
-
-                    let zakazka = rec.cisloZakazky || cisloZ;
-                    doc.text(zakazka, X_ZAKAZKA, zakazkaY, { align: 'center', maxWidth: 30 }); 
-                } 
+            doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), X_DATUM, rowY, { align: 'center' }); 
+            doc.text(rec.zacatek, X_ZACATEK, rowY, { align: 'center' }); 
+            
+            // LOGIKA PRO PŘESTÁVKU (Časová vs. Desítková)
+            if (rec.prestavkaOd && rec.prestavkaDo) {
+                // Zapíše čistý čas od - do
+                doc.text(rec.prestavkaOd, X_OD, rowY, { align: 'center' }); 
+                doc.text(rec.prestavkaDo, X_DO, rowY, { align: 'center' }); 
+            } else if (rec.prestavka && rec.prestavka > 0) {
+                // Přepočítá minuty na desítkovou soustavu
+                let decimalPause = (rec.prestavka / 60).toFixed(2);
+                doc.text(`${decimalPause}`, X_OD + 4, rowY, { align: 'center' }); 
+            } else {
+                doc.text(`-`, X_OD + 4, rowY, { align: 'center' });
             }
 
-            // 3. SOUČET
-            doc.setFont("helvetica", "bold");
-            doc.text(totalWeekHours.toFixed(2), X_SOUCET, Y_SOUCET, { align: 'center' });
-
-            // 4. SPODNÍ ČÁST (Zcela nezávislé pozice)
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
+            doc.text(rec.konec, X_KONEC, rowY, { align: 'center' }); 
+            doc.text(h.toFixed(2), X_HODINY, rowY, { align: 'center' }); 
             
-            let consObdobi = bezDiakritiky(document.getElementById('cons-obdobi') ? document.getElementById('cons-obdobi').value : '');
-            let consZavady = bezDiakritiky(document.getElementById('cons-zavady') ? document.getElementById('cons-zavady').value : '');
-            let consOdstranitDo = bezDiakritiky(document.getElementById('cons-odstranit-do') ? document.getElementById('cons-odstranit-do').value : '');
-            let consNabidnutoChk = document.getElementById('cons-nabidnuto-chk') ? document.getElementById('cons-nabidnuto-chk').checked : false;
-            let consDatumNabidnuti = document.getElementById('cons-datum-nabidnuti') ? document.getElementById('cons-datum-nabidnuti').value : '';
-
-            if(consDatumNabidnuti) {
-                let [y,m,d] = consDatumNabidnuti.split('-');
-                consDatumNabidnuti = `${d}.${m}.${y}`;
+            if (rec.popisPrace) {
+                doc.setFontSize(7.5);
+                let cistyPopis = bezDiakritiky(rec.popisPrace).replace(/[\r\n]+/g, " "); 
+                let maxZnaku = 60;
+                if (cistyPopis.length > maxZnaku) {
+                    cistyPopis = cistyPopis.substring(0, maxZnaku) + "...";
+                }
+                let popisY = Y_POPIS + (i * RADKOVANI);
+                doc.text(cistyPopis, X_POPIS, popisY); 
+                doc.setFontSize(9);
             }
 
-            let xObdobi = parseFloat(localStorage.getItem('cfg_cons_x_obdobi')) || 122;
-            let yObdobi = parseFloat(localStorage.getItem('cfg_cons_y_obdobi')) || 114;
+            let zakazka = rec.cisloZakazky || cisloZ;
+            doc.text(zakazka, X_ZAKAZKA, zakazkaY, { align: 'center', maxWidth: 30 }); 
+        } 
+    }
 
-            let xOdstranit = parseFloat(localStorage.getItem('cfg_cons_x_odstranit_do')) || 122;
-            let yOdstranit = parseFloat(localStorage.getItem('cfg_cons_y_odstranit_do')) || 121.5;
+    // --- 3. SOUČET HODIN ---
+    const X_SOUCET = parseFloat(localStorage.getItem('cfg_cons_x_soucet')) || 93;
+    const Y_SOUCET = parseFloat(localStorage.getItem('cfg_cons_soucet')) || 107;
+    doc.setFont("helvetica", "bold");
+    doc.text(totalWeekHours.toFixed(2), X_SOUCET, Y_SOUCET, { align: 'center' });
 
-            let xZavady = parseFloat(localStorage.getItem('cfg_cons_x_zavady')) || 122;
-            let yZavady = parseFloat(localStorage.getItem('cfg_cons_y_zavady')) || 129;
+    // --- 4. SPODNÍ ČÁST (Formulář Vložené PDF) ---
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    
+    // Načtení hodnot přímo z tvých inputů na obrazovce
+    let consObdobi = bezDiakritiky(document.getElementById('cons-obdobi') ? document.getElementById('cons-obdobi').value : '');
+    let consZavady = bezDiakritiky(document.getElementById('cons-zavady') ? document.getElementById('cons-zavady').value : '');
+    let consOdstranitDo = bezDiakritiky(document.getElementById('cons-odstranit-do') ? document.getElementById('cons-odstranit-do').value : '');
+    let consNabidnutoChk = document.getElementById('cons-nabidnuto-chk') ? document.getElementById('cons-nabidnuto-chk').checked : false;
+    let consDatumNabidnuti = document.getElementById('cons-datum-nabidnuti') ? document.getElementById('cons-datum-nabidnuti').value : '';
 
-            let xChk = parseFloat(localStorage.getItem('cfg_cons_x_chk')) || 18.2;
-            let yChk = parseFloat(localStorage.getItem('cfg_cons_y_chk')) || 134.8;
+    if(consDatumNabidnuti) {
+        let [y,m,d] = consDatumNabidnuti.split('-');
+        consDatumNabidnuti = `${d}.${m}.${y}`;
+    }
 
-            let xDatumNab = parseFloat(localStorage.getItem('cfg_cons_x_datum_nab')) || 91;
-            let yDatumNab = parseFloat(localStorage.getItem('cfg_cons_y_datum_nab')) || 137.5;
+    // Načtení souřadnic z vizuální kalibrace
+    let xObdobi = parseFloat(localStorage.getItem('cfg_cons_x_obdobi')) || 122;
+    let yObdobi = parseFloat(localStorage.getItem('cfg_cons_y_obdobi')) || 114;
 
-            let xMesto = parseFloat(localStorage.getItem('cfg_cons_x_mesto_datum')) || 16;
-            let yMesto = parseFloat(localStorage.getItem('cfg_cons_y_mesto_datum')) || 142.5;
+    let xOdstranit = parseFloat(localStorage.getItem('cfg_cons_x_odstranit_do')) || 122;
+    let yOdstranit = parseFloat(localStorage.getItem('cfg_cons_y_odstranit_do')) || 121.5;
 
-            let xPodpisDodavatel = parseFloat(localStorage.getItem('cfg_cons_x_podpis_dodavatel')) || 82;
-            let yPodpisDodavatel = parseFloat(localStorage.getItem('cfg_cons_y_podpis_dodavatel')) || 131;
+    let xZavady = parseFloat(localStorage.getItem('cfg_cons_x_zavady')) || 15;
+    let yZavady = parseFloat(localStorage.getItem('cfg_cons_y_zavady')) || 120;
 
-            let xPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_x_podpis_klient')) || 152;
-            let yPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_y_podpis_klient')) || 131;
+    let xChk = parseFloat(localStorage.getItem('cfg_cons_x_chk')) || 18.2;
+    let yChk = parseFloat(localStorage.getItem('cfg_cons_y_chk')) || 134.8;
 
-            if(consObdobi) doc.text(consObdobi, xObdobi, yObdobi, {maxWidth: 80});
-            if(consOdstranitDo) doc.text(consOdstranitDo, xOdstranit, yOdstranit, {maxWidth: 80});
-            if(consZavady) doc.text(consZavady, xZavady, yZavady, {maxWidth: 80});
+    let xDatumNab = parseFloat(localStorage.getItem('cfg_cons_x_datum_nab')) || 91;
+    let yDatumNab = parseFloat(localStorage.getItem('cfg_cons_y_datum_nab')) || 137.5;
 
-            if(consNabidnutoChk) {
-                doc.setLineWidth(0.4);
-                let chkS = 3.5;
-                doc.line(xChk, yChk, xChk + chkS, yChk + chkS);
-                doc.line(xChk + chkS, yChk, xChk, yChk + chkS);
-            }
-            
-            if(consDatumNabidnuti) doc.text(consDatumNabidnuti, xDatumNab, yDatumNab);
+    let xMesto = parseFloat(localStorage.getItem('cfg_cons_x_mesto_datum')) || 16;
+    let yMesto = parseFloat(localStorage.getItem('cfg_cons_y_mesto_datum')) || 142.5;
 
-            let datumDnes = new Date().toLocaleDateString('de-DE');
-            doc.text(`${mestoStavby}, ${datumDnes}`, xMesto, yMesto, { align: 'left', maxWidth: 70 });
+    let xPodpisDodavatel = parseFloat(localStorage.getItem('cfg_cons_x_podpis_dodavatel')) || 30;
+    let yPodpisDodavatel = parseFloat(localStorage.getItem('cfg_cons_y_podpis_dodavatel')) || 135;
 
-            if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', xPodpisDodavatel, yPodpisDodavatel, 35, 12); 
-            if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', xPodpisKlient, yPodpisKlient, 35, 12);
-        }
+    let xPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_x_podpis_klient')) || 130;
+    let yPodpisKlient = parseFloat(localStorage.getItem('cfg_cons_y_podpis_klient')) || 135;
+
+    // Vykreslení
+    if(consObdobi) doc.text(consObdobi, xObdobi, yObdobi, {maxWidth: 80});
+    if(consOdstranitDo) doc.text(consOdstranitDo, xOdstranit, yOdstranit, {maxWidth: 80});
+    if(consZavady) doc.text(consZavady, xZavady, yZavady, {maxWidth: 80});
+
+    // Vykreslení křížku
+    if(consNabidnutoChk) {
+        doc.setLineWidth(0.4);
+        let chkS = 3.5;
+        doc.line(xChk, yChk, xChk + chkS, yChk + chkS);
+        doc.line(xChk + chkS, yChk, xChk, yChk + chkS);
+    }
+    
+    if(consDatumNabidnuti) doc.text(consDatumNabidnuti, xDatumNab, yDatumNab);
+
+    let datumDnes = new Date().toLocaleDateString('de-DE');
+    doc.text(`${mestoStavby}, ${datumDnes}`, xMesto, yMesto, { align: 'left', maxWidth: 70 });
+
+    if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', xPodpisDodavatel, yPodpisDodavatel, 35, 12); 
+    if (dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', xPodpisKlient, yPodpisKlient, 35, 12);
+}
 
 function exportConsiliumPDF(returnBlob = false) {
     const formatSetting = localStorage.getItem('cfg_tpl_format') || 'a5-l';
