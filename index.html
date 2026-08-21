@@ -23,25 +23,50 @@
             --border: #dcdde1; 
         }
 
-        /* --- PROFESIONÁLNÍ ÚVODNÍ OBRAZOVKA --- */
+/* --- PROFESIONÁLNÍ ÚVODNÍ OBRAZOVKA (MODERNÍ REDESIGN) --- */
         #welcome-screen {
             position: fixed; top: 0; left: 0; height: 100vh; width: 100%;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); /* Elegantní tmavá */
+            background: radial-gradient(circle at 15% 50%, #1e293b, #0f172a 60%, #020617 100%);
             color: #ffffff; display: flex; flex-direction: column; justify-content: center;
             align-items: center; text-align: center; padding: 20px; z-index: 9999;
-            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        /* Jemný světelný efekt na pozadí pro hloubku */
+        #welcome-screen::before {
+            content: ''; position: absolute; top: -20%; left: -10%; width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(243, 156, 18, 0.08) 0%, transparent 60%);
+            border-radius: 50%; z-index: 0;
+        }
+
+        /* Kontejner s efektem matného skla */
+        #welcome-screen-content {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 50px 40px; border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
         #welcome-screen h1 {
-            font-size: 2.5em; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px;
+            font-size: 2.8em; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px;
             color: #ffffff;
             opacity: 0; transform: translateY(20px); 
             animation: fadeUp 0.8s forwards ease-out; 
             line-height: 1.2;
         }
         
+        #welcome-screen p.subtitle {
+            font-size: 1.1em; color: #94a3b8; font-weight: 400; margin-bottom: 35px;
+            opacity: 0; transform: translateY(20px);
+            animation: fadeUp 0.8s forwards 0.2s ease-out;
+        }
+
         #welcome-screen h1 span {
-            color: var(--primary); /* Zvýraznění části textu oranžovou, pokud budeš chtít */
+            color: var(--primary); /* Zvýraznění tvou firemní oranžovou */
         }
 
         @keyframes fadeUp {
@@ -49,20 +74,25 @@
         }
 
         .enter-btn {
-            padding: 16px 40px; font-size: 1.1em; 
+            padding: 18px 45px; font-size: 1.1em; 
             background: var(--primary);
-            color: #ffffff; border: none; border-radius: 8px; cursor: pointer; 
-            font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.25); 
-            transition: all 0.3s ease; 
+            color: #ffffff; border: none; border-radius: 12px; cursor: pointer; 
+            font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+            box-shadow: 0 10px 25px rgba(243, 156, 18, 0.25); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             opacity: 0; transform: translateY(20px);
-            animation: fadeUp 0.8s forwards 0.3s ease-out; /* Objeví se chvíli po nadpisu */
+            animation: fadeUp 0.8s forwards 0.4s ease-out; 
         }
         
         .enter-btn:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4); 
+            transform: translateY(-4px); 
+            box-shadow: 0 15px 35px rgba(243, 156, 18, 0.4); 
             background: var(--primary-hover); 
+        }
+        
+        .enter-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3); 
         }
 
         /* ZBYTEK UI STYLŮ (S oranžovou identitou) */
@@ -85,6 +115,15 @@
         body.dark-theme .preview-container-full { background: #ffffff; color: #000000; }
         body.dark-theme .fs-draw-modal { background: #1e1e24; }
         body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e1e24; border-color: #2f3640; }
+       
+        <!-- --- VSTUPNÍ OBRAZOVKA --- -->
+    <div id="welcome-screen">
+        <div id="welcome-screen-content">
+            <h1>Království<br><span>Pracovních Hodin</span></h1>
+            <p class="subtitle">Profesionální evidence a fakturace</p>
+            <button class="enter-btn" onclick="vstoupitDoAplikace()">Vstoupit do aplikace</button>
+        </div>
+    </div>
 
         .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
         .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
