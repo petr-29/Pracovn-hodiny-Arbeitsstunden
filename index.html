@@ -854,8 +854,9 @@
             document.getElementById('abnahme-fields').classList.add('hidden'); 
             document.getElementById('faktura-fields').classList.add('hidden');
             document.getElementById('consilium-fields').classList.add('hidden');
-            } else if (type === 'techco') {
-    document.getElementById('btn-execute-export').style.background = '#1abc9c';
+
+            if (type === 'abnahme') {
+                document.getElementById('abnahme-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#3498db';
 
             if (type === 'abnahme') {
                 document.getElementById('abnahme-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#3498db';
@@ -866,11 +867,15 @@
                 document.getElementById('fak-splatnost-dni').value = splatnostDni;
                 let d = new Date(); d.setDate(d.getDate() + splatnostDni); document.getElementById('fak-splatnost').valueAsDate = d;
             } else if (type === 'consilium') {
+                } else if (type === 'consilium') {
                 document.getElementById('consilium-fields').classList.remove('hidden');
                 document.getElementById('btn-execute-export').style.background = '#8e44ad';
+            } else if (type === 'techco') {
+                document.getElementById('btn-execute-export').style.background = '#1abc9c';
             } else {
                 document.getElementById('btn-execute-export').style.background = '#f39c12';
             }
+
             updateLivePreview(); window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
@@ -2658,8 +2663,6 @@ function executePDFExport() {
                 let suma = 0;
                 
                 vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
-
-              JavaScript
 
                 let fakturaData = {
 
