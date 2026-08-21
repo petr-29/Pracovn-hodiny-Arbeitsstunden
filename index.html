@@ -116,15 +116,6 @@
         body.dark-theme .fs-draw-modal { background: #1e1e24; }
         body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e1e24; border-color: #2f3640; }
        
-        <!-- --- VSTUPNÍ OBRAZOVKA --- -->
-    <div id="welcome-screen">
-        <div id="welcome-screen-content">
-            <h1>Království<br><span>Pracovních Hodin</span></h1>
-            <p class="subtitle">Profesionální evidence a fakturace</p>
-            <button class="enter-btn" onclick="vstoupitDoAplikace()">Vstoupit do aplikace</button>
-        </div>
-    </div>
-
         .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
         .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
         .lang-btn.active { background: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -227,15 +218,13 @@
 </head>
 <body>
 
+    <!-- --- VSTUPNÍ OBRAZOVKA --- -->
     <div id="welcome-screen">
-        <div id="anim-scene">
-            <div id="a-paper" class="anim-paper">📋</div>
-            <div id="a-hand" class="anim-hand">✍️</div>
-            <div id="a-plane" class="anim-plane">✈️</div>
-            <div id="a-final" class="anim-final-paper">📄</div>
+        <div id="welcome-screen-content">
+            <h1>Království<br><span>Pracovních Hodin</span></h1>
+            <p class="subtitle">Profesionální evidence a fakturace</p>
+            <button class="enter-btn" onclick="vstoupitDoAplikace()">Vstoupit do aplikace</button>
         </div>
-        <h1 id="welcome-title">Vítejte v Království<br>pracovních hodin</h1>
-        <button id="welcome-btn" class="enter-btn" onclick="showApp()">Vstoupit do aplikace</button>
     </div>
 
     <div id="main-app" class="hidden">
