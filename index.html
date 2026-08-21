@@ -847,36 +847,50 @@
             closeSignatureModal(); updateLivePreview();
         }
 
-        function openExportCard(type) {
-            let vybrane = zaznamy.filter(z => z.selected);
-            if(vybrane.length === 0) { alert(currentLang === 'cs' ? 'Vyberte nejdříve řádky pro export!' : 'Bitte wählen Sie zuerst die Zeilen für den Export aus!'); return; }
-            currentExportType = type; document.getElementById('export-card').classList.remove('hidden');
-            document.getElementById('abnahme-fields').classList.add('hidden'); 
-            document.getElementById('faktura-fields').classList.add('hidden');
-            document.getElementById('consilium-fields').classList.add('hidden');
+       function openExportCard(type) {
+    let vybrane = zaznamy.filter(z => z.selected);
+    if (vybrane.length === 0) {
+        alert(currentLang === 'cs'
+            ? 'Vyberte nejdříve řádky pro export!'
+            : 'Bitte wählen Sie zuerst die Zeilen für den Export aus!');
+        return;
+    }
 
-            if (type === 'abnahme') {
-                document.getElementById('abnahme-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#3498db';
+    currentExportType = type;
+    document.getElementById('export-card').classList.remove('hidden');
 
-            if (type === 'abnahme') {
-                document.getElementById('abnahme-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#3498db';
-            } else if (type === 'faktura') {
-                document.getElementById('faktura-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#e74c3c';
-                document.getElementById('fak-vystaveni').valueAsDate = new Date();
-                let splatnostDni = parseInt(localStorage.getItem('cfg_splatnost')) || 14;
-                document.getElementById('fak-splatnost-dni').value = splatnostDni;
-                let d = new Date(); d.setDate(d.getDate() + splatnostDni); document.getElementById('fak-splatnost').valueAsDate = d;
-            } else if (type === 'consilium') {
-                document.getElementById('consilium-fields').classList.remove('hidden');
-                document.getElementById('btn-execute-export').style.background = '#8e44ad';
-            } else if (type === 'techco') {
-                document.getElementById('btn-execute-export').style.background = '#1abc9c';
-            } else {
-                document.getElementById('btn-execute-export').style.background = '#f39c12';
-            }
+    // reset
+    document.getElementById('abnahme-fields').classList.add('hidden');
+    document.getElementById('faktura-fields').classList.add('hidden');
+    document.getElementById('consilium-fields').classList.add('hidden');
 
-            updateLivePreview(); window.scrollTo({top: 0, behavior: 'smooth'});
-        }
+    const exportBtn = document.getElementById('btn-execute-export');
+
+    if (type === 'abnahme') {
+        document.getElementById('abnahme-fields').classList.remove('hidden');
+        exportBtn.style.background = '#3498db';
+    } else if (type === 'faktura') {
+        document.getElementById('faktura-fields').classList.remove('hidden');
+        exportBtn.style.background = '#e74c3c';
+
+        document.getElementById('fak-vystaveni').valueAsDate = new Date();
+        let splatnostDni = parseInt(localStorage.getItem('cfg_splatnost')) || 14;
+        document.getElementById('fak-splatnost-dni').value = splatnostDni;
+        let d = new Date();
+        d.setDate(d.getDate() + splatnostDni);
+        document.getElementById('fak-splatnost').valueAsDate = d;
+    } else if (type === 'consilium') {
+        document.getElementById('consilium-fields').classList.remove('hidden');
+        exportBtn.style.background = '#8e44ad';
+    } else if (type === 'techco') {
+        exportBtn.style.background = '#1abc9c';
+    } else {
+        exportBtn.style.background = '#f39c12';
+    }
+
+    updateLivePreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
         function onVystaveniChange() {
             let vystaveniEl = document.getElementById('fak-vystaveni');
