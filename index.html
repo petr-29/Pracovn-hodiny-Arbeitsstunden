@@ -3,83 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Království Pracovních Hodin</title>
+    <!-- Můžeme nechat původní, nebo změnit na "Evidence Pracovních Hodin", nechám na tobě -->
+    <title>Království Pracovních Hodin</title> 
+    
     <!-- Knihovny -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    
     <style>
         /* MODERNÍ VÝCHOZÍ PÍSMO PRO UI */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
-        /* --- EPICKÁ ANIMACE ÚVODNÍ OBRAZOVKY --- */
-        #welcome-screen {
-            position: fixed; top: 0; left: 0; height: 100vh; width: 100%;
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
-            color: #ffffff; display: flex; flex-direction: column; justify-content: center;
-            align-items: center; text-align: center; padding: 20px; z-index: 9999;
-            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        /* GLOBÁLNÍ PROMĚNNÉ A STYLY - Profesionální paleta */
+        :root { 
+            --primary: #2563eb; /* Moderní firemní modrá */
+            --primary-hover: #1d4ed8; 
+            --bg: #f8fafc; 
+            --card-bg: #ffffff; 
+            --text: #1e293b; 
+            --border: #e2e8f0; 
         }
-        #anim-scene {
-            font-size: 90px; height: 150px; display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 20px;
-        }
-        .anim-hand { position: absolute; transform-origin: bottom right; animation: write 0.8s infinite alternate ease-in-out; text-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .anim-paper { position: absolute; transform: translateX(-30px); font-size: 80px; }
-
-        .anim-plane {
-            position: absolute; display: none; opacity: 0;
-            animation: flight 1.8s forwards cubic-bezier(0.25, 1, 0.5, 1);
-            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6));
-        }
-
-        .anim-final-paper { position: absolute; display: none; opacity: 0; animation: unfold 1s forwards ease-out; font-size: 100px; }
-
-        @keyframes write { 0% { transform: rotate(0deg) translate(0, 0); } 100% { transform: rotate(-25deg) translate(-20px, -10px); } }
-        @keyframes flight {
-            0% { transform: translate(-150vw, 150vh) scale(0.1) rotate(45deg); opacity: 1; }
-            60% { transform: translate(10px, -20px) scale(1.5) rotate(-10deg); opacity: 1; }
-            100% { transform: translate(0, 0) scale(0); opacity: 0; }
-        }
-        @keyframes unfold { 0% { transform: scale(0.2) rotateX(90deg); opacity: 0; } 100% { transform: scale(1) rotateX(0deg); opacity: 1; } }
-        @keyframes glowText { 0% { text-shadow: 0 0 10px rgba(241,196,15,0.5); } 100% { text-shadow: 0 0 30px rgba(241,196,15,1), 0 0 40px rgba(243,156,18,0.8); } }
-
-        #welcome-screen h1 {
-            font-size: 2.8em; font-weight: 900; margin-bottom: 10px; letter-spacing: -1px;
-            background: linear-gradient(45deg, #ff9f43, #f1c40f, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            opacity: 0; transform: translateY(30px); transition: all 1s ease-out; line-height: 1.1;
-        }
-        #welcome-screen h1.show { opacity: 1; transform: translateY(0); animation: glowText 2s infinite alternate ease-in-out; }
-
-        .enter-btn {
-            padding: 18px 50px; font-size: 1.2em; background: linear-gradient(135deg, #f39c12, #e67e22);
-            color: #ffffff; border: none; border-radius: 30px; cursor: pointer; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4); transition: all 0.3s ease; opacity: 0; margin-top: 30px; transform: scale(0.9);
-        }
-        .enter-btn.show { opacity: 1; transform: scale(1); }
-        .enter-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 12px 30px rgba(230, 126, 34, 0.7); background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; }
-
-        /* GLOBÁLNÍ PROMĚNNÉ A STYLY */
-        :root { --primary: #f39c12; --primary-hover: #d35400; --bg: #f5f6fa; --card-bg: #ffffff; --text: #2c3e50; --border: #dcdde1; }
+        
         body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; transition: background-color 0.3s, color 0.3s; }
         .hidden { display: none !important; }
 
-        body.dark-theme { --bg: #121214; --card-bg: #1e1e24; --text: #f5f6fa; --border: #2f3640; }
-        body.dark-theme .lang-bar { background: #1e1e24; border-bottom: 1px solid var(--border); }
-        body.dark-theme .lang-btn { color: #a5b1c2; }
-        body.dark-theme .lang-btn.active { background: #2f3640; color: #fff; }
-        body.dark-theme header { background: #1e1e24; border-bottom: 1px solid var(--border); }
-        body.dark-theme input, body.dark-theme select, body.dark-theme textarea { background: #2f3640; color: #fff; border: 1px solid var(--border); }
-        body.dark-theme .segmented-control { background: #121214; }
-        body.dark-theme .segmented-control button { color: #a5b1c2; }
-        body.dark-theme .segmented-control button.active { background: #2f3640; color: #fff; }
-        body.dark-theme .zaznam-item, body.dark-theme .faktura-item { border-bottom: 1px solid #2f3640; }
-        body.dark-theme .tab-bar { background: #1e1e24; border-top: 1px solid var(--border); }
-        body.dark-theme footer { background: #121214; color: #718093; }
-        body.dark-theme .btn-sec { background: #2f3640; color: #fff; }
+        /* DARK MODE - Moderní tmavá (Slate) */
+        body.dark-theme { --bg: #0f172a; --card-bg: #1e293b; --text: #f8fafc; --border: #334155; }
+        body.dark-theme .lang-bar { background: #1e293b; border-bottom: 1px solid var(--border); }
+        body.dark-theme .lang-btn { color: #94a3b8; }
+        body.dark-theme .lang-btn.active { background: #334155; color: #fff; }
+        body.dark-theme header { background: #1e293b; border-bottom: 1px solid var(--border); }
+        body.dark-theme input, body.dark-theme select, body.dark-theme textarea { background: #334155; color: #fff; border: 1px solid var(--border); }
+        body.dark-theme .segmented-control { background: #0f172a; }
+        body.dark-theme .segmented-control button { color: #94a3b8; }
+        body.dark-theme .segmented-control button.active { background: #334155; color: #fff; }
+        body.dark-theme .zaznam-item, body.dark-theme .faktura-item { border-bottom: 1px solid #334155; }
+        body.dark-theme .tab-bar { background: #1e293b; border-top: 1px solid var(--border); }
+        body.dark-theme footer { background: #0f172a; color: #64748b; }
+        body.dark-theme .btn-sec { background: #334155; color: #fff; }
         body.dark-theme .preview-container-full { background: #ffffff; color: #000000; }
-        body.dark-theme .fs-draw-modal { background: #1e1e24; }
-        body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e1e24; border-color: #2f3640; }
+        body.dark-theme .fs-draw-modal { background: #1e293b; }
+        body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e293b; border-color: #334155; }
 
-        .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
+        /* UI STRUKTURA */
+        .lang-bar { display: flex; justify-content: center; background: #e2e8f0; padding: 5px; gap: 5px; }
         .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
         .lang-btn.active { background: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
@@ -88,70 +55,80 @@
 
         .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .card-title { font-size: 14px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 15px; font-weight: bold; border-bottom: 1px dashed var(--border); padding-bottom: 5px;}
+        .card-title { font-size: 14px; color: #64748b; text-transform: uppercase; margin-bottom: 15px; font-weight: bold; border-bottom: 1px dashed var(--border); padding-bottom: 5px;}
 
+        /* FORMULÁŘE */
         .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
         .form-group.inline { flex-direction: row; align-items: center; gap: 10px; }
         label { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
-        input, select, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
+        input, select, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
         .row { display: flex; gap: 10px; flex-wrap: wrap; }
         .row .form-group { flex: 1; min-width: 45%; }
 
-        button.btn-main { background: var(--primary); color: #000; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button.btn-main:hover { background: var(--primary-hover); color: #fff; }
+        /* TLAČÍTKA */
+        button.btn-main { background: var(--primary); color: #fff; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button.btn-main:hover { background: var(--primary-hover); }
+        .action-toolbar { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        .btn-sec { background: #e2e8f0; color: #1e293b; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;}
+        .btn-sec:hover { background: #cbd5e1; }
 
+        /* OSTATNÍ KOMPONENTY */
         .stats-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .earnings { font-size: 28px; font-weight: bold; color: #2ecc71; }
-        .segmented-control { display: flex; background: #eee; border-radius: 8px; padding: 2px; margin-top: 10px; }
-        .segmented-control button { flex: 1; border: none; padding: 8px; background: transparent; cursor: pointer; border-radius: 6px; font-weight: bold; }
-        .segmented-control button.active { background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .earnings { font-size: 28px; font-weight: bold; color: #10b981; } /* Profesionálnější zelená */
+        
+        .segmented-control { display: flex; background: #f1f5f9; border-radius: 8px; padding: 3px; margin-top: 10px; }
+        .segmented-control button { flex: 1; border: none; padding: 8px; background: transparent; cursor: pointer; border-radius: 6px; font-weight: bold; color: #64748b; transition: 0.2s; }
+        .segmented-control button.active { background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: var(--text); }
 
-        .zaznam-item, .faktura-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f2f6; }
+        .zaznam-item, .faktura-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border); }
         .zaznam-item:last-child, .faktura-item:last-child { border-bottom: none; }
         .checkbox-container { display: flex; align-items: center; gap: 10px; }
 
-        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .tab-item { background: none; border: none; color: #7f8c8d; display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; font-weight: bold;}
+        /* SPODNÍ NAVIGACE (TAB BAR) */
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.03); }
+        .tab-item { background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; font-weight: bold; transition: color 0.2s;}
         .tab-item.active { color: var(--primary); }
 
-        footer { text-align: center; font-size: 11px; color: #95a5a6; padding: 15px 0; background: #eee; border-radius: 0 0 12px 12px; margin-top: 10px; }
-        .action-toolbar { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
-        .btn-sec { background: #e0e0e0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;}
+        footer { text-align: center; font-size: 11px; color: #94a3b8; padding: 15px 0; background: transparent; margin-top: 10px; }
 
-        .preview-container-full { background: #ffffff; border: 1px solid #bdc3c7; padding: 20px; border-radius: 8px; font-size: 13px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); color: #000000; overflow-x: auto; font-family: 'Courier New', Courier, monospace;}
+        /* NÁHLEDY A PODPISY */
+        .preview-container-full { background: #ffffff; border: 1px solid var(--border); padding: 20px; border-radius: 8px; font-size: 13px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.05); color: #000000; overflow-x: auto; font-family: 'Courier New', Courier, monospace;}
         .preview-header-full { font-weight: bold; text-align: center; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
         .preview-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
         .preview-meta-item { line-height: 1.4; }
         .preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
         .preview-table th, .preview-table td { border: 1px solid #000000; padding: 8px; text-align: left; font-size: 12px; color: #000; }
-        .preview-table th { background-color: #f2f2f2; font-weight: bold; }
+        .preview-table th { background-color: #f8fafc; font-weight: bold; }
 
-        .signature-placeholder { border: 2px dashed #3498db; background: #ecf0f1; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 5px; font-weight: bold; color: #2980b9; font-family: sans-serif;}
+        .signature-placeholder { border: 2px dashed var(--primary); background: #eff6ff; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 5px; font-weight: bold; color: var(--primary); }
         .signature-display-img { max-height: 70px; display: block; margin: 0 auto; }
-        .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; font-family: sans-serif;}
-        .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 20px; text-align: center; color: #000; }
-        canvas.sig-canvas { width: 100%; height: 200px; border: 1px solid #bdc3c7; background: #fafafa; border-radius: 6px; display: block; touch-action: none; margin: 15px 0; }
+        
+        /* MODÁLNÍ OKNA */
+        .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 20px; text-align: center; color: #000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        canvas.sig-canvas { width: 100%; height: 200px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px; display: block; touch-action: none; margin: 15px 0; }
 
-        .fs-draw-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; display: flex; flex-direction: column; font-family: sans-serif;}
+        .fs-draw-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; display: flex; flex-direction: column; }
         .fs-draw-header { padding: 15px; background: var(--card-bg); text-align: center; font-weight: bold; border-bottom: 1px solid var(--border); font-size: 18px; }
         .fs-draw-content { flex: 1; position: relative; width: 100%; background: #ffffff; }
         canvas.fs-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
         .fs-draw-footer { padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; gap: 10px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
 
-        .qr-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 4000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        .qr-modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 100%; color: #000; font-family: sans-serif;}
-        .qr-modal-content img { width: 200px; height: 200px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
+        .qr-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); z-index: 4000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .qr-modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 100%; color: #000; }
+        .qr-modal-content img { width: 200px; height: 200px; margin: 20px auto; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; }
 
-        .faktura-box { border: 1px solid #ccc; font-family: 'Courier New', Courier, monospace; }
-        .faktura-red-header { background-color: #b33939; color: white; padding: 20px; text-align: right; }
-        .faktura-modry-text { color: #2980b9; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+        /* FAKTURA BOX - PDF NÁHLED (ponechán design faktury) */
+        .faktura-box { border: 1px solid var(--border); font-family: 'Courier New', Courier, monospace; background: white; }
+        .faktura-red-header { background-color: #334155; color: white; padding: 20px; text-align: right; } /* Změněno z červené na elegantní tmavou */
+        .faktura-modry-text { color: var(--primary); font-size: 16px; font-weight: bold; margin-bottom: 10px; }
         .faktura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; font-size: 12px; }
-        .faktura-gray-bar { background-color: #f2f2f2; padding: 10px 20px; font-size: 12px; border-bottom: 1px solid #e0e0e0; border-top: 1px solid #e0e0e0; display:flex; justify-content: space-between;}
+        .faktura-gray-bar { background-color: #f8fafc; padding: 10px 20px; font-size: 12px; border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); display:flex; justify-content: space-between;}
         .faktura-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .faktura-table th { background-color: #b33939; color: white; padding: 8px; text-align: left; }
-        .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .faktura-table th { background-color: #334155; color: white; padding: 8px; text-align: left; } /* Sladěno s hlavičkou */
+        .faktura-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; }
 
         /* --- VIZUÁLNÍ KALIBRACE CONSILIUM --- */
         #visual-calib-modal {
