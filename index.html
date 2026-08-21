@@ -292,6 +292,7 @@
                     <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
                     <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">Faktura PDF</button>
                     <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Vložené PDF</button>
+                    <button class="btn-sec" style="background:#1abc9c; color:white; font-weight:bold;" onclick="openExportCard('techco')">TechCo PDF</button>
                 </div>
 
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
@@ -853,6 +854,8 @@
             document.getElementById('abnahme-fields').classList.add('hidden'); 
             document.getElementById('faktura-fields').classList.add('hidden');
             document.getElementById('consilium-fields').classList.add('hidden');
+            } else if (type === 'techco') {
+    document.getElementById('btn-execute-export').style.background = '#1abc9c';
 
             if (type === 'abnahme') {
                 document.getElementById('abnahme-fields').classList.remove('hidden'); document.getElementById('btn-execute-export').style.background = '#3498db';
@@ -1049,6 +1052,17 @@
                     html += `</div>`;
 
                 }
+                } else if (currentExportType === 'techco') {
+    let koncovaFirmaData = document.getElementById('cfg-koncovy-firma') ? document.getElementById('cfg-koncovy-firma').value : '';
+    let cisloZ = vybrane.length > 0 ? vybrane[0].cisloZakazky : '---';
+    html += `<div class="preview-header-full">TechCo - Stundenzettel</div>`;
+    html += `<div class="preview-meta-grid" style="font-family:'Courier New', Courier, monospace;">`;
+    html += `  <div class="preview-meta-item"><strong>Kunde:</strong><br>${firma.replace(/\\n/g, ", ")}</div>`;
+    html += `  <div class="preview-meta-item"><strong>Maschinenbezeichnung:</strong><br>${koncovaFirmaData}</div>`;
+    html += `  <div class="preview-meta-item"><strong>Auftragsnummer:</strong><br>${cisloZ}</div>`;
+    html += `  <div class="preview-meta-item"><strong>Vorarbeiter:</strong><br>${pKunde}</div>`;
+    html += `</div>`;
+    html += `<div style="text-align:center; color:#1abc9c; font-weight:bold; margin-top:20px;">Tento export vygeneruje PDF vizuálně zcela shodné s předlohou TechCo.</div>`;
 
             } else if (currentExportType === 'standard') {
                 let parts = jmeno.trim().split(' '); let nName = parts.pop() || ''; let vName = parts.join(' ') || '';
@@ -1270,6 +1284,109 @@
             if (dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 135, sigY-15, 50, 14);
             doc.text(new Date().toLocaleDateString('de-DE'), 130, sigY-2);
         }
+    function drawTechCoReportToDoc(doc, vybrane) {
+    let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
+    let koncovaFirmaData = document.getElementById('cfg-koncovy-firma') ? document.getElementById('cfg-koncovy-firma').value : '';
+    let firma = bezDiakritiky(document.getElementById('cfg-firma').value.replace(/\\n/g, ", "));
+    let nazevStroje = bezDiakritiky(koncovaFirmaData ? koncovaFirmaData.replace(/\\n/g, ", ") : ""); 
+    let podpisKundeText = bezDiakritiky(document.getElementById('cfg-podpis').value || '');
+    let cisloZ = bezDiakritiky(vybrane.length > 0 ? vybrane[0].cisloZakazky : '');
+
+    // Hlavička
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 40, 60);
+    doc.setFontSize(26);
+    doc.text("TechCo", 20, 23); // Místo pro nápis firmy
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(16);
+    doc.text("Stundenzettel", 190, 23, {align: 'right'});
+    
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1.2); doc.line(20, 27, 190, 27);
+    doc.setLineWidth(0.4); doc.line(20, 29, 190, 29);
+    
+    // Meta informace
+    doc.setFontSize(10);
+    let infoY = 42;
+    doc.text("Kunde:", 20, infoY);
+    doc.setFont("helvetica", "normal"); doc.text(firma, 70, infoY);
+    
+    infoY += 10; doc.setFont("helvetica", "bold"); doc.text("Maschinenbezeichnung:", 20, infoY);
+    doc.setFont("helvetica", "normal"); doc.text(nazevStroje, 70, infoY);
+    
+    infoY += 10; doc.setFont("helvetica", "bold"); doc.text("Auftragsnummer:", 20, infoY);
+    doc.setFont("helvetica", "normal"); doc.text(cisloZ, 70, infoY);
+    
+    infoY += 15; doc.setFont("helvetica", "bold"); doc.text("Vorarbeiter:", 20, infoY);
+    doc.setFont("helvetica", "normal"); doc.text(podpisKundeText, 70, infoY);
+    
+    // Tabulka
+    let tableY = 95;
+    doc.setFont("helvetica", "bold"); doc.text("Arbeitsleistung", 20, tableY - 3);
+    let cols = [20, 45, 95, 120, 145, 165, 190]; let rowHeight = 8.5;
+    
+    doc.setFillColor(180, 220, 240); // Podbarvení modře
+    doc.rect(cols[0], tableY, cols[6]-cols[0], rowHeight, 'F');
+    doc.setLineWidth(0.8); doc.line(cols[0], tableY, cols[6], tableY); doc.line(cols[0], tableY + rowHeight, cols[6], tableY + rowHeight);
+    
+    doc.setLineWidth(0.3); doc.setFontSize(9);
+    doc.text("Datum", cols[0]+2, tableY + 6);
+    doc.text("Mitarbeitername", cols[1]+2, tableY + 6);
+    doc.text("Beginn", cols[2]+2, tableY + 6);
+    doc.text("Ende", cols[3]+2, tableY + 6);
+    doc.text("Pause", cols[4]+2, tableY + 6);
+    doc.text("Gesamtstunden", cols[5]+2, tableY + 6);
+    
+    // Tělo tabulky
+    doc.setFont("helvetica", "normal");
+    for(let i=0; i<7; i++) {
+        let y = tableY + rowHeight + (i * rowHeight);
+        let rec = vybrane[i];
+        if(rec) {
+            let h = (kalkulujCisteHodiny ? kalkulujCisteHodiny(rec) : 0); 
+            let pauseTxt = (rec.prestavkaOd && rec.prestavkaDo) ? `${rec.prestavkaOd}-${rec.prestavkaDo}` : (rec.prestavka ? rec.prestavka.toString() : '0');
+            doc.text(new Date(rec.datum).toLocaleDateString('de-DE'), cols[0]+2, y + 6);
+            doc.text(jmeno, cols[1]+2, y + 6);
+            doc.text(rec.zacatek, cols[2]+2, y + 6);
+            doc.text(rec.konec, cols[3]+2, y + 6);
+            doc.text(pauseTxt, cols[4]+2, y + 6);
+            doc.text(h.toFixed(2), cols[5]+2, y + 6);
+        }
+        doc.line(cols[0], y, cols[6], y);
+    }
+    
+    let endTableY = tableY + rowHeight + (7 * rowHeight);
+    doc.setLineWidth(0.8); doc.line(cols[0], endTableY, cols[6], endTableY);
+    doc.setLineWidth(0.3);
+    for(let i=0; i<cols.length; i++) doc.line(cols[i], tableY, cols[i], endTableY);
+    
+    // Patička
+    let footerY = endTableY + 10;
+    doc.setFont("helvetica", "bold"); doc.text("Anmerkung:", 20, footerY);
+    doc.setLineWidth(0.3); doc.line(20, footerY + 20, 190, footerY + 20); 
+    
+    footerY += 35; doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    doc.text("Datum: ___________________________", 20, footerY);
+    
+    footerY += 25;
+    doc.line(20, footerY, 90, footerY);
+    doc.text("Name des Monteurs", 20, footerY + 4);
+    doc.text(jmeno, 20, footerY - 2); 
+    
+    doc.line(120, footerY, 190, footerY);
+    doc.text("Name des Vorarbeiters", 120, footerY + 4);
+    doc.text(podpisKundeText, 120, footerY - 2);
+    
+    footerY += 25;
+    doc.line(20, footerY, 90, footerY);
+    doc.text("Unterschrift des Monteurs", 20, footerY + 4);
+    doc.line(120, footerY, 190, footerY);
+    doc.text("Unterschrift des Vorarbeiters", 120, footerY + 4);
+    
+    if (typeof dataPodpisuIch !== 'undefined' && dataPodpisuIch) doc.addImage(dataPodpisuIch, 'PNG', 25, footerY - 18, 55, 16);
+    if (typeof dataPodpisuKunde !== 'undefined' && dataPodpisuKunde) doc.addImage(dataPodpisuKunde, 'PNG', 125, footerY - 18, 55, 16);
+}
 
         function drawAbnahmeReportToDoc(doc, vybrane) {
             let jmeno = bezDiakritiky(document.getElementById('cfg-jmeno').value); 
@@ -2531,6 +2648,10 @@ function executePDFExport() {
                 drawAbnahmeReportToDoc(doc, vybrane);
                 doc.save(`Abnahmeprotokoll_${new Date().getTime()}.pdf`);
                 closeExportCard();
+                } else if (currentExportType === 'techco') {
+                drawTechCoReportToDoc(doc, vybrane);
+                doc.save(`TechCo_Stundenzettel_${new Date().getTime()}.pdf`);    
+                closeExportCard();
             } else if (currentExportType === 'faktura') {
                 let cisloFaktury = document.getElementById('fak-cislo').value;
                 let odberatel = document.getElementById('cfg-firma').value;
@@ -2580,6 +2701,11 @@ async function sharePDFExport() {
         drawAbnahmeReportToDoc(doc, vybrane);
         fileBlob = doc.output('blob');
         fileName = `Abnahmeprotokoll_${new Date().getTime()}.pdf`;
+        } else if (currentExportType === 'techco') {
+        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        drawTechCoReportToDoc(doc, vybrane);
+        fileBlob = doc.output('blob');    
+        fileName = `TechCo_Stundenzettel_${new Date().getTime()}.pdf`;
     } else if (currentExportType === 'faktura') {
         // Logika pro fakturu - nejprve ji uložíme do paměti aplikace
         let cisloFaktury = document.getElementById('fak-cislo').value;
