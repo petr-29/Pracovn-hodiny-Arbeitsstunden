@@ -338,26 +338,28 @@
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
                     <div class="card-title" data-cs="Kontrola dokumentu před podpisem" data-de="Dokumentprüfung vor Unterschrift">Kontrola dokumentu před podpisem</div>
                     
-                    <div id="faktura-fields" class="hidden">
-                        <div class="row">
-                            <div class="form-group">
-                                <label id="fak-cislo-label">Číslo faktury (např. 2026/07-001)</label>
-                                <input type="text" id="fak-cislo" value="2026/07-001" oninput="updateLivePreview()">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group">
-                                <label>Datum vystavení</label>
-                                <input type="date" id="fak-vystaveni" onchange="onVystaveniChange(); updateLivePreview();">
-                            </div>
-                            <div class="form-group">
-                                <label>Splatnost (dny)</label> 
-                                <input type="number" id="fak-splatnost-dni" value="14" oninput="onSplatnostDniChange(); updateLivePreview();" style="font-weight: bold; background: #fff3e0; color: #000;">                            </div>
-                            <div class="form-group">
-                                <label>Datum splatnosti</label>
-                                <input type="date" id="fak-splatnost" onchange="updateLivePreview()">
-                            </div>
-                        </div>
+                  <div id="faktura-fields" class="hidden">
+    <div class="row">
+        <div class="form-group">
+            <label>Číslo faktury (např. 2026/08-005)</label>
+            <input type="text" id="fak-cislo" value="2026/08-005" oninput="updateLivePreview()">
+        </div>
+        <div class="form-group">
+            <label>Cestovné (EUR)</label>
+            <!-- Zde zadáš pouze částku, např. 50 -->
+            <input type="number" id="fak-cestovne" value="0" step="0.5" oninput="updateLivePreview()">
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-group">
+            <label>Datum vystavení</label>
+            <input type="date" id="fak-vystaveni" onchange="updateLivePreview()">
+        </div>
+        <div class="form-group">
+            <label>Datum splatnosti</label>
+            <input type="date" id="fak-splatnost" onchange="updateLivePreview()">
+        </div>
+    </div>
                         
                         <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dcdde1; margin-top: 10px; color: #000;">
                             <label style="color: #2c3e50; font-weight: bold; margin-bottom: 10px; display: block;" data-cs="Vyberte přílohu k faktuře:" data-de="Anlage zur Rechnung auswählen:">Vyberte přílohu k faktuře:</label>
