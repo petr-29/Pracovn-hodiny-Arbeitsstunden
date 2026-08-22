@@ -193,7 +193,7 @@
         .faktura-table th { background-color: var(--primary); color: white; padding: 8px; text-align: left; }
         .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
 
-        /* --- VIZUÁLNÍ KALIBRACE CONSILIUM --- */
+        /* --- VIZUÁLNÍ KALIBRACE --- */
         #visual-calib-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9); z-index: 5000;
@@ -270,7 +270,7 @@
                             <input type="time" id="inp-zacatek" value="07:30" oninput="updateLiveHours()">
                         </div>
                         <div class="form-group">
-                            <label id="lbl-ende" data-cs="Konec" data-de="Ende">Konec</label>
+                            <label id="lbl-ende" data-cs="Konec" data-de="Ende">1                                                                                                                                                    q</label>
                             <input type="time" id="inp-konec" value="17:00" oninput="updateLiveHours()">
                         </div>
                     </div>
@@ -577,44 +577,27 @@
                     </div>
 
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
-                    <!-- NOVÁ VYLEPŠENÁ KALIBRACE (OSY X a Y) -->
-                    <div class="card-title" style="color: #8e44ad;" data-cs="Kalibrace Consilium PDF (v milimetrech)" data-de="Consilium PDF Kalibrierung (in mm)">Kalibrace Consilium PDF (v milimetrech)</div>
-                    <p style="font-size: 11px; margin-bottom: 15px; color:#555;">Nastav si přesný střed (osu X) pro každý sloupeček zvlášť. Můžeš hýbat texty zleva doprava.</p>
-                    
-                    <!-- Sloupečky X (Nové podle obrázku) -->
-                    <div style="background:#e8f4f8; padding:10px; border-radius:8px; border: 1px solid #3498db; margin-bottom: 15px;">
-                        <div style="font-weight: bold; color: #2980b9; margin-bottom: 10px; font-size: 13px;">Osa X (Pozice sloupců zleva doprava)</div>
-                        <div class="row">
-                            <div class="form-group"><label>Datum (X)</label><input type="number" id="cfg-cons-x-datum" value="20" step="0.5"></div>
-                            <div class="form-group"><label>Začátek (X)</label><input type="number" id="cfg-cons-x-zacatek" value="40.5" step="0.5"></div>
-                            <div class="form-group"><label>Od (X)</label><input type="number" id="cfg-cons-x-od" value="53" step="0.5"></div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group"><label>Do (X)</label><input type="number" id="cfg-cons-x-do" value="65" step="0.5"></div>
-                            <div class="form-group"><label>Konec (X)</label><input type="number" id="cfg-cons-x-konec" value="77" step="0.5"></div>
-                            <div class="form-group"><label>Hodiny (X)</label><input type="number" id="cfg-cons-x-hodiny" value="93" step="0.5"></div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group"><label>Popis práce (X)</label><input type="number" id="cfg-cons-x-popis" value="102" step="0.5"></div>
-                            <div class="form-group"><label>Zakázka (X)</label><input type="number" id="cfg-cons-x-zakazka" value="184" step="0.5"></div>
-                        </div>
-                    </div>
+<!-- Kalibrace – pouze mezera řádků -->
+<div style="background:#f9f9f9; padding:10px; border-radius:8px; border: 1px solid #ccc; margin-bottom: 15px;">
+    <div style="font-weight: bold; color: #555; margin-bottom: 10px; font-size: 13px;">
+        Osa Y (Pouze mezera řádků)
+    </div>
 
-                    <!-- Řádky Y (Původní) -->
-                    <div style="background:#f9f9f9; padding:10px; border-radius:8px; border: 1px solid #ccc; margin-bottom: 15px;">
-                        <div style="font-weight: bold; color: #555; margin-bottom: 10px; font-size: 13px;">Osa Y (Pozice řádků shora dolů)</div>
-                        <div class="row">
-                            <div class="form-group"><label>Hlavička (Y)</label><input type="number" id="cfg-cons-hlavicka" value="32" step="0.5"></div>
-                            <div class="form-group"><label>1. Řádek (Y)</label><input type="number" id="cfg-cons-tabulka" value="57" step="0.5"></div>
-                            <div class="form-group"><label>Mezera řádků</label><input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1"></div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group"><label>Součet (Y)</label><input type="number" id="cfg-cons-soucet" value="107" step="0.5"></div>
-                            <div class="form-group"><label>Spodní texty (Y)</label><input type="number" id="cfg-cons-spodni" value="111" step="0.5"></div>
-                            <div class="form-group"><label>Pata (Y)</label><input type="number" id="cfg-cons-pata" value="144" step="0.5"></div>
-                        </div>
-                    </div>
-                    <button class="btn-sec" onclick="saveConsiliumOffsets()" style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;" data-cs="Kalibrovat šablonu" data-de="Vorlage kalibrieren">Uložit kalibraci pro Consilium</button>
+    <div class="row">
+        <div class="form-group">
+            <label>Mezera řádků</label>
+            <input type="number" id="cfg-cons-radkovani" value="7.1" step="0.1">
+        </div>
+    </div>
+</div>
+
+<button class="btn-sec" onclick="saveConsiliumOffsets()" 
+        style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;"
+        data-cs="Kalibrovat šablonu" 
+        data-de="Vorlage kalibrieren">
+    Uložit kalibraci pro Consilium
+</button>
+
 
                     <button class="btn-sec" onclick="openVisualCalib()" style="margin-bottom:15px; width: 100%; background: #2980b9; color: white; padding: 15px; font-weight: bold; font-size: 14px;">🎯 Otevřít vizuální kalibraci (Tažením myší)</button>
                     <hr style="border:0; border-top:1px dashed #ccc; margin:20px 0;">
