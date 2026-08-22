@@ -591,7 +591,7 @@
     </div>
 </div>
 
-<button class="btn-sec" onclick="saveVlozenePdfOffsets()" 
+<button class="btn-sec" onclick="saveVlozenePDFOffsets()" 
         style="margin-bottom:15px; width: 100%; background: #8e44ad; color: white;"
         data-cs="Kalibrovat šablonu" 
         data-de="Vorlage kalibrieren">
@@ -2347,7 +2347,7 @@ function exportConsiliumPDF(returnBlob = false) {
             if(localStorage.getItem('cfg_cons_x_zakazka')) document.getElementById('cfg-cons-x-zakazka').value = localStorage.getItem('cfg_cons_x_zakazka');
         }
 
-        function saveConsiliumOffsets() {
+        function saveVlozenePDFOffsets() {
             localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
             localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
             localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
