@@ -215,6 +215,45 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: background 0.1s;
         }
         .calib-item:active { cursor: grabbing; background: rgba(231, 76, 60, 1); z-index: 10; transform: translate(-50%, -50%) scale(1.1); }
+
+        /* STYLY PRO PDF FAKTURU */
+
+        .invoice-template {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #000;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+.inv-header {
+    background-color: #f39c12; /* Oranžová barva */
+    color: #fff;
+    padding: 20px 30px;
+    text-align: right;
+}
+.inv-header h1 { margin: 0; font-size: 28px; letter-spacing: 0.5px; }
+.inv-header p { margin: 5px 0 0 0; font-size: 14px; }
+.inv-body { padding: 30px; }
+.inv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 20px;
+}
+.inv-logo { max-width: 140px; margin-bottom: 15px; }
+.inv-section-title { font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
+.inv-text { font-size: 13px; line-height: 1.5; margin: 0; }
+.inv-payment-info { font-size: 13px; margin: 20px 0; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+.inv-dates { font-size: 13px; color: #2980b9; font-weight: bold; line-height: 1.8; margin-bottom: 20px; }
+.inv-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+.inv-table th { background-color: #f39c12; color: #fff; padding: 12px; text-align: left; font-size: 13px; font-weight: bold; }
+.inv-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+.inv-table th.right, .inv-table td.right { text-align: right; }
+.inv-total { text-align: right; font-size: 22px; font-weight: bold; margin-bottom: 40px; color: #000; }
+.inv-signature { text-align: center; float: right; width: 200px; }
+.inv-signature img { max-width: 100%; max-height: 80px; display: block; margin: 0 auto; }
+.inv-signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; font-size: 13px; }
+.inv-footer { clear: both; padding-top: 50px; font-size: 11px; color: #7f8c8d; }
     </style>
 </head>
 <body>
@@ -1210,6 +1249,120 @@
             }
             document.getElementById('document-live-preview').innerHTML = html;
         }
+    function generateInvoiceHTML() {
+    // 1. Získání hodnot z inputů
+    const cisloFaktury = document.getElementById('fak-cislo').value || '';
+    const datumVystaveni = document.getElementById('fak-vystaveni').value.split('-').reverse().join('. ');
+    const datumSplatnosti = document.getElementById('fak-splatnost').value.split('-').reverse().join('. ');
+    
+    // Zákazník a dodavatel z nastavení
+    const odberatelFirma = document.getElementById('cfg-firma').value.replace(/\n/g, '<br>');
+    const odberatelIco = document.getElementById('cfg-ico-odberatel').value;
+    
+    // Zde musíš vložit cestu k tvému logu nebo Base64 kód obrázku loga!
+    const logoSrc = "cesta_k_tvemu_logu.png"; 
+    const podpisSrc = dataPodpisuIch || ""; // Bere z tvého existujícího canvasu
+
+    // 2. Matematika (Výpočet hodin a cestovného)
+    // Příklad z tvých záznamů - nahraď reálnými proměnnými z tvé apky
+    let celkemHodin = 30.5; 
+    let sazbaEur = 34;
+    let cenaZaPraci = celkemHodin * sazbaEur;
+    
+    let cestovne = parseFloat(document.getElementById('fak-cestovne').value) || 0;
+    let celkovaCastka = cenaZaPraci + cestovne;
+
+    // Formátování čísel (např. 1 037,00)
+    const formatEur = (num) => num.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // 3. HTML Šablona
+    let html = `
+    <div class="invoice-template">
+        <div class="inv-header">
+            <h1>Faktura č. ${cisloFaktury}</h1>
+            <p>Neplátce DPH</p>
+        </div>
+        
+        <div class="inv-body">
+            <div class="inv-grid">
+                <div>
+                    <img src="${logoSrc}" class="inv-logo" alt="ELEKTRO MICHÁLEK">
+                    <div class="inv-section-title">Dodavatel</div>
+                    <p class="inv-text">
+                        <strong>Petr Michálek</strong><br>
+                        Nám. Prokopa Holého 11<br>
+                        350 02 Cheb<br>
+                        Česká republika<br>
+                        IČO: 64837530<br><br>
+                        IBAN: LT163250076086088383 | SWIFT: REVOLT21<br>
+                        Vystavil: Petr Michálek<br>
+                        Tel: +420 601 515 360 | Email: el.michalekpetr@gmail.com
+                    </p>
+                </div>
+                <div>
+                    <div class="inv-section-title">Odběratel</div>
+                    <p class="inv-text">${odberatelFirma}<br><br>${odberatelIco}</p>
+                </div>
+            </div>
+
+            <div class="inv-payment-info">
+                Způsob platby: Bankovní převod
+            </div>
+
+            <div class="inv-dates">
+                DATUM VYSTAVENÍ: ${datumVystaveni}<br>
+                DATUM SPLATNOSTI: ${datumSplatnosti}
+            </div>
+
+            <table class="inv-table">
+                <thead>
+                    <tr>
+                        <th>Popis</th>
+                        <th class="right">Množství</th>
+                        <th class="right">Cena/mj.</th>
+                        <th class="right">Celkem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Pracovní hodiny dle výkazu</td>
+                        <td class="right">${celkemHodin.toFixed(2)} h</td>
+                        <td class="right">${sazbaEur} €</td>
+                        <td class="right">${formatEur(cenaZaPraci)} EUR</td>
+                    </tr>`;
+                    
+    // Přidání řádku pro cestovné pouze pokud je zadáno více než 0
+    if (cestovne > 0) {
+        html += `
+                    <tr>
+                        <td>Cestovné</td>
+                        <td class="right">1 kpl</td>
+                        <td class="right">${formatEur(cestovne)} €</td>
+                        <td class="right">${formatEur(cestovne)} EUR</td>
+                    </tr>`;
+    }
+
+    html += `
+                </tbody>
+            </table>
+
+            <div class="inv-total">
+                Celkem k úhradě: ${formatEur(celkovaCastka)} EUR
+            </div>
+
+            <div class="inv-signature">
+                <img src="${podpisSrc}" alt="Podpis dodavatele">
+                <div class="inv-signature-line">Podpis</div>
+            </div>
+
+            <div class="inv-footer">
+                Podnikatel je zapsán v živnostenském rejstříku.
+            </div>
+        </div>
+    </div>`;
+
+    return html;
+}
 
         function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
@@ -2678,6 +2831,7 @@ function importDataFromFile(event) {
     };
     reader.readAsText(file);
 }
+    
 
 function executePDFExport() {
             if (currentExportType === 'consilium') {
