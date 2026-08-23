@@ -762,70 +762,8 @@ function updateLivePreview() {
     let celkemSDph = celkemCena + cestovne;
 
     let previewContainer = document.getElementById('document-live-preview');
-    if (!previewContainer) return;
-
-    // Generování HTML podle vzoru (odpovídá oficiální faktuře[span_0](start_span)[span_0](end_span))
-    previewContainer.innerHTML = `
-        <div class="invoice-template">
-            <div style="font-weight: bold; font-size: 16px; color: var(--primary); margin-bottom: 10px;">ELEKTRO</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 12px; margin-bottom: 20px;">
-                <div>
-                    <strong>Lieferant</strong><br>
-                    ${dodJmeno.replace(/\n/g, '<br>')}<br>
-                    ${dodAdresa.replace(/\n/g, '<br>')}<br>
-                    Id. Nr.: ${dodIco}<br>
-                    ${dodBanka}
-                </div>
-                <div style="text-align: right;">
-                    <h2 style="margin: 0; font-size: 20px;">Rechnung Nr. ${cisloFaktury}</h2>
-                    <p style="margin: 5px 0 0 0; font-size: 11px; color: #555;">Wir sind kein Mehrwertsteuerzahler.</p>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 12px; background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
-                <div>
-                    <strong>Abnehmer</strong><br>
-                    ${odbFirma.replace(/\n/g, '<br>')}<br>
-                    ${odbIco}
-                </div>
-                <div>
-                    <strong>AUSSTELLUNGSDATUM:</strong> ${datumVystaveni}<br>
-                    <strong>FÄLLIGKEITSDATUM:</strong> ${datumSplatnostiFormatted}<br>
-                    <strong>GESAMTZAHLUNGSBETRAG:</strong> € ${celkemSDph.toFixed(2)}
-                </div>
-            </div>
-
-            <table class="inv-table">
-                <thead>
-                    <tr>
-                        <th>Beschreibung</th>
-                        <th class="right">Menge</th>
-                        <th class="right">Preis/Einheit</th>
-                        <th class="right">Gesamt</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Elektroinstalační práce / Výkaz hodin</td>
-                        <td class="right">${celkemHodin.toFixed(2)} St</td>
-                        <td class="right">--</td>
-                        <td class="right">€ ${celkemCena.toFixed(2)}</td>
-                    </tr>
-                    ${cestovne > 0 ? `<tr><td>Cestovné / Fahrtkosten</td><td class="right">1</td><td class="right">€ ${cestovne.toFixed(2)}</td><td class="right">€ ${cestovne.toFixed(2)}</td></tr>` : ''}
-                </tbody>
-            </table>
-
-            <div style="text-align: right; font-size: 16px; font-weight: bold; margin-bottom: 20px;">
-                Gesamtzahlungsbetrag: € ${celkemSDph.toFixed(2)}
-            </div>
-
-            <div style="font-size: 11px; color: #666; border-top: 1px solid #eee; pt: 10px; margin-top: 20px;">
-                Podnikatel je zapsán v živnostenském rejstříku.<br>
-                Ausgefertigt im System Království Pracovních Hodin
-            </div>
-        </div>
-    `;
-}
+   if (!previewContainer) 
+                        <
 
 // --- ULOŽENÍ VÝKAZU / FAKTURY DO PŘÍSLUŠNÉHO TÝDNE S PODPISEM ---
 function executePDFExport() {
@@ -852,7 +790,7 @@ function executePDFExport() {
             let img = document.getElementById(previewId);
             img.src = ''; img.style.display = 'none';
             document.getElementById(inputId).value = '';
-        }
+        
 
         function showApp() {
             const welcome = document.getElementById('welcome-screen');
