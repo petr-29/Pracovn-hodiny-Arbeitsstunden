@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -24,7 +23,7 @@
             --border: #dcdde1; 
         }
 
-/* --- PROFESIONÁLNÍ ÚVODNÍ OBRAZOVKA (MODERNÍ REDESIGN) --- */
+        /* --- PROFESIONÁLNÍ ÚVODNÍ OBRAZOVKA --- */
         #welcome-screen {
             position: fixed; top: 0; left: 0; height: 100vh; width: 100%;
             background: radial-gradient(circle at 15% 50%, #1e293b, #0f172a 60%, #020617 100%);
@@ -34,14 +33,12 @@
             overflow: hidden;
         }
 
-        /* Jemný světelný efekt na pozadí pro hloubku */
         #welcome-screen::before {
             content: ''; position: absolute; top: -20%; left: -10%; width: 50vw; height: 50vw;
             background: radial-gradient(circle, rgba(243, 156, 18, 0.08) 0%, transparent 60%);
             border-radius: 50%; z-index: 0;
         }
 
-        /* Kontejner s efektem matného skla */
         #welcome-screen-content {
             position: relative; z-index: 1;
             display: flex; flex-direction: column; align-items: center;
@@ -60,14 +57,14 @@
             line-height: 1.2;
         }
         
+        #welcome-screen h1 span {
+            color: var(--primary); /* Zvýraznění tvou firemní oranžovou */
+        }
+
         #welcome-screen p.subtitle {
             font-size: 1.1em; color: #94a3b8; font-weight: 400; margin-bottom: 35px;
             opacity: 0; transform: translateY(20px);
             animation: fadeUp 0.8s forwards 0.2s ease-out;
-        }
-
-        #welcome-screen h1 span {
-            color: var(--primary); /* Zvýraznění tvou firemní oranžovou */
         }
 
         @keyframes fadeUp {
@@ -90,13 +87,8 @@
             box-shadow: 0 15px 35px rgba(243, 156, 18, 0.4); 
             background: var(--primary-hover); 
         }
-        
-        .enter-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3); 
-        }
 
-        /* ZBYTEK UI STYLŮ (S oranžovou identitou) */
+        /* ZBYTEK UI STYLŮ */
         body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; transition: background-color 0.3s, color 0.3s; }
         .hidden { display: none !important; }
 
@@ -116,7 +108,7 @@
         body.dark-theme .preview-container-full { background: #ffffff; color: #000000; }
         body.dark-theme .fs-draw-modal { background: #1e1e24; }
         body.dark-theme .fs-draw-header, body.dark-theme .fs-draw-footer { background: #1e1e24; border-color: #2f3640; }
-       
+
         .lang-bar { display: flex; justify-content: center; background: #e0e0e0; padding: 5px; gap: 5px; }
         .lang-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.2s;}
         .lang-btn.active { background: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -185,6 +177,7 @@
         .qr-modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 100%; color: #000; font-family: sans-serif;}
         .qr-modal-content img { width: 200px; height: 200px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
 
+        /* FAKTURY A PDF ŠABLONY S ORANŽOVOU */
         .faktura-box { border: 1px solid #ccc; font-family: 'Courier New', Courier, monospace; }
         .faktura-red-header { background-color: var(--primary); color: white; padding: 20px; text-align: right; }
         .faktura-modry-text { color: var(--text); font-size: 16px; font-weight: bold; margin-bottom: 10px; }
@@ -194,69 +187,29 @@
         .faktura-table th { background-color: var(--primary); color: white; padding: 8px; text-align: left; }
         .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
 
-        /* --- VIZUÁLNÍ KALIBRACE --- */
-        #visual-calib-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.9); z-index: 5000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        #calib-workspace {
-            position: relative; width: 95vw; max-width: 900px;
-            aspect-ratio: 210/148; /* Poměr stran A5 naležato */
-            background-size: 100% 100%; background-repeat: no-repeat;
-            background-color: #fff; border: 2px solid #3498db; overflow: hidden;
-            border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .calib-item {
-            position: absolute; background: rgba(52, 152, 219, 0.9); color: white;
-            padding: 3px 6px; font-size: 11px; font-weight: bold; font-family: sans-serif;
-            cursor: grab; transform: translate(-50%, -50%); border-radius: 4px;
-            border: 1px solid #fff; white-space: nowrap; user-select: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: background 0.1s;
-        }
-        .calib-item:active { cursor: grabbing; background: rgba(231, 76, 60, 1); z-index: 10; transform: translate(-50%, -50%) scale(1.1); }
-
-        /* STYLY PRO PDF FAKTURU */
-
-        .invoice-template {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    color: #000;
-    background: #fff;
-    width: 100%;
-    box-sizing: border-box;
-}
-.inv-header {
-    background-color: #f39c12; /* Oranžová barva */
-    color: #fff;
-    padding: 20px 30px;
-    text-align: right;
-}
-.inv-header h1 { margin: 0; font-size: 28px; letter-spacing: 0.5px; }
-.inv-header p { margin: 5px 0 0 0; font-size: 14px; }
-.inv-body { padding: 30px; }
-.inv-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    margin-bottom: 20px;
-}
-.inv-logo { max-width: 140px; margin-bottom: 15px; }
-.inv-section-title { font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
-.inv-text { font-size: 13px; line-height: 1.5; margin: 0; }
-.inv-payment-info { font-size: 13px; margin: 20px 0; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-.inv-dates { font-size: 13px; color: #2980b9; font-weight: bold; line-height: 1.8; margin-bottom: 20px; }
-.inv-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-.inv-table th { background-color: #f39c12; color: #fff; padding: 12px; text-align: left; font-size: 13px; font-weight: bold; }
-.inv-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-.inv-table th.right, .inv-table td.right { text-align: right; }
-.inv-total { text-align: right; font-size: 22px; font-weight: bold; margin-bottom: 40px; color: #000; }
-.inv-signature { text-align: center; float: right; width: 200px; }
-.inv-signature img { max-width: 100%; max-height: 80px; display: block; margin: 0 auto; }
-.inv-signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; font-size: 13px; }
-.inv-footer { clear: both; padding-top: 50px; font-size: 11px; color: #7f8c8d; }
+        .invoice-template { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000; background: #fff; width: 100%; box-sizing: border-box; }
+        .inv-header { background-color: var(--primary); color: #fff; padding: 20px 30px; text-align: right; }
+        .inv-header h1 { margin: 0; font-size: 28px; letter-spacing: 0.5px; }
+        .inv-header p { margin: 5px 0 0 0; font-size: 14px; }
+        .inv-body { padding: 30px; }
+        .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 20px; }
+        .inv-logo { max-width: 140px; margin-bottom: 15px; }
+        .inv-section-title { font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
+        .inv-text { font-size: 13px; line-height: 1.5; margin: 0; }
+        .inv-payment-info { font-size: 13px; margin: 20px 0; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .inv-dates { font-size: 13px; color: #2980b9; font-weight: bold; line-height: 1.8; margin-bottom: 20px; }
+        .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .inv-table th { background-color: var(--primary); color: #fff; padding: 12px; text-align: left; font-size: 13px; font-weight: bold; }
+        .inv-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .inv-table th.right, .inv-table td.right { text-align: right; }
+        .inv-total { text-align: right; font-size: 22px; font-weight: bold; margin-bottom: 40px; color: #000; }
+        .inv-signature { text-align: center; float: right; width: 200px; }
+        .inv-signature img { max-width: 100%; max-height: 80px; display: block; margin: 0 auto; }
+        .inv-signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; font-size: 13px; }
+        .inv-footer { clear: both; padding-top: 50px; font-size: 11px; color: #7f8c8d; }
     </style>
 </head>
-<body>
+
 
     <!-- --- VSTUPNÍ OBRAZOVKA --- -->
     <div id="welcome-screen">
