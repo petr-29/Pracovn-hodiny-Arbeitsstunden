@@ -929,17 +929,6 @@
             }
         }
 
-        function onSplatnostDniChange() {
-            let vystaveniEl = document.getElementById('fak-vystaveni');
-            let dniEl = document.getElementById('fak-splatnost-dni');
-            let splatnostEl = document.getElementById('fak-splatnost');
-            if (vystaveniEl.valueAsDate) {
-                let d = new Date(vystaveniEl.valueAsDate);
-                let dni = parseInt(dniEl.value) || 0;
-                d.setDate(d.getDate() + dni);
-                splatnostEl.valueAsDate = d;
-            }
-        }
 
         function formatMena(castka) { let parts = castka.toFixed(2).split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " "); return parts.join(',') + ' EUR'; }
         
@@ -1285,7 +1274,8 @@
                     </tr>`;
                     
     // Přidání řádku pro cestovné pouze pokud je zadáno více než 0
-    if (cestovne > 0) {
+ 
+        if (cestovne > 0) {
         html += `
                     <tr>
                         <td>Cestovné</td>
@@ -1295,7 +1285,8 @@
                     </tr>`;
     }
 
-    html += `
+  
+        html += `
                 </tbody>
             </table>
 
@@ -1314,10 +1305,12 @@
         </div>
     </div>`;
 
-    return html;
+  
+        return html;
 }
 
-        function closeExportCard() {
+          
+    function closeExportCard() {
             document.getElementById('export-card').classList.add('hidden');
             dataPodpisuKunde = null; dataPodpisuIch = null;
             document.getElementById('box-kunde').innerText = currentLang === 'cs' ? 'Klikněte pro podepsání' : 'Klicken zum Unterschreiben';
