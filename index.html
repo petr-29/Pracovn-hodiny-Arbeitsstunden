@@ -716,61 +716,6 @@
             }, 2000); 
         });
 
-    // --- POMOCNÉ FUNKCE PRO VÝPOČET SPLATNOSTI A DATUMŮ ---
-function vypocitejSplatnost(datumVystaveniStr, pocetDni) {
-    if (!datumVystaveniStr) return "";
-    let casti = datumVystaveniStr.split('-');
-    let datum = new Date(casti[0], casti[1] - 1, casti[2]);
-    datum.setDate(datum.getDate() + parseInt(pocetDni || 14));
-    
-    let den = String(datum.getDate()).padStart(2, '0');
-    let mesic = String(datum.getMonth() + 1).padStart(2, '0');
-    let rok = datum.getFullYear();
-    return `${den}.${mesic}.${rok}`;
-}
-
-// --- AKTUALIZACE ŽIVÉHO NÁHLEDU FAKTURY PODLE VZORU ---
-function updateLivePreview() {
-    let cisloFaktury = document.getElementById('fak-cislo') ? document.getElementById('fak-cislo').value : "2026/08-005";
-    let datumVystaveni = document.getElementById('fak-vystaveni') ? document.getElementById('fak-vystaveni').value : new Date().toISOString().split('T')[0];
-    let pocetDniSplatnosti = document.getElementById('cfg-splatnost') ? document.getElementById('cfg-splatnost').value : 14;
-    let datumSplatnostiFormatted = vypocitejSplatnost(datumVystaveni, pocetDniSplatnosti);
-    
-    let cestovne = parseFloat(document.getElementById('fak-cestovne') ? document.getElementById('fak-cestovne').value : 0) || 0;
-    
-    // Načtení dat dodavatele a odběratele z formuláře
-    let dodJmeno = document.getElementById('cfg-jmeno') ? document.getElementById('cfg-jmeno').value : "Petr Michálek";
-    let dodAdresa = document.getElementById('cfg-dod-adresa') ? document.getElementById('cfg-dod-adresa').value : "";
-    let dodIco = document.getElementById('cfg-dod-ico') ? document.getElementById('cfg-dod-ico').value : "";
-    let dodBanka = document.getElementById('cfg-dod-banka') ? document.getElementById('cfg-dod-banka').value : "";
-    
-    let odbFirma = document.getElementById('cfg-firma') ? document.getElementById('cfg-firma').value : "";
-    let odbIco = document.getElementById('cfg-ico-odberatel') ? document.getElementById('cfg-ico-odberatel').value : "";
-
-    // Výpočet celkových hodin a ceny ze záznamů
-    let celkem Hodin = 0;
-    let celkemCena = 0;
-    // Předpokládá existující pole záznamů v aplikaci
-    if (typeof zaznamy !== 'undefined') {
-        zaznamy.forEach(z => {
-            if (z.vybrano) {
-                celkemHodin += parseFloat(z.hodiny) || 0;
-                celkemCena += (parseFloat(z.hodiny) || 0) * (parseFloat(z.sazba) || 0);
-            }
-        });
-    }
-    let celkemSDph = celkemCena + cestovne;
-
-    let previewContainer = document.getElementById('document-live-preview');
-   if (!previewContainer) 
-                        <
-
-// --- ULOŽENÍ VÝKAZU / FAKTURY DO PŘÍSLUŠNÉHO TÝDNE S PODPISEM ---
-function executePDFExport() {
-    alert("Dokument a faktura byly úspěšně vygenerovány, podepsány a uloženy do historie příslušného týdne!");
-    // Zde probíhá uložení do localStorage pod aktuální týdenní filtr/záznamy
-}
-
         function bezDiakritiky(text) { if (!text) return ''; return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
         function nahratObrazek(input, storageKey, previewId) {
@@ -790,7 +735,7 @@ function executePDFExport() {
             let img = document.getElementById(previewId);
             img.src = ''; img.style.display = 'none';
             document.getElementById(inputId).value = '';
-        
+        }
 
         function showApp() {
             const welcome = document.getElementById('welcome-screen');
