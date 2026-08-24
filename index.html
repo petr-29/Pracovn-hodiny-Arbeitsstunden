@@ -1218,7 +1218,7 @@
     const formatEur = (num) => num.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // 3. HTML Šablona
-    let html = `
+    let html = 
     <div class="invoice-template">
         <div class="inv-header">
             <h1>Faktura č. ${cisloFaktury}</h1>
@@ -1276,8 +1276,8 @@
     // Přidání řádku pro cestovné pouze pokud je zadáno více než 0
  
         if (cestovne > 0) {
-        html += `
-                    <tr>
+        html += 
+                <tr>
                         <td>Cestovné</td>
                         <td class="right">1 kpl</td>
                         <td class="right">${formatEur(cestovne)} €</td>
@@ -1286,7 +1286,7 @@
     }
 
   
-        html += `
+        html += 
                 </tbody>
             </table>
 
