@@ -2952,7 +2952,70 @@ async function sharePDFExport() {
         }
     }
 }
-    
+     function saveExterniFaktura() {
+            let vybrane = zaznamy.filter(z => z.selected);
+            let cislo = document.getElementById('ext-cislo').value || 'EXT-' + Math.floor(Math.random() * 10000);
+            let firma = document.getElementById('ext-firma').value || 'Externí firma';
+            let fileInput = document.getElementById('ext-file');
+            
+            let suma = 0;
+            vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
+
+            // Pomocná funkce pro samotné uložení
+            let saveToArchive = (fileData, fileType) => {
+                let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+                archiv.push({
+                    id: Date.now(),
+                    cislo: cislo,
+                    odberatel: firma,
+                    suma: suma,
+                    datum: new Date().toISOString(),
+                    vybraneZaznamy: vybrane,
+                    isExternal: true, // Značka, že jde o externí fakturu
+                    fileData: fileData,
+                    fileType: fileType,
+                    zaplaceno: false,
+                    zalohy: 0
+                });
+                
+                try {
+                    localStorage.setItem('archiv_faktur', JSON.stringify(archiv));
+                    oznacExportovaneZaznamy('faktura');
+                    alert(currentLang === 'cs' ? 'Externí faktura uložena do archivu!' : 'Externe Rechnung gespeichert!');
+                    closeExterniFakturaCard();
+                    renderArchivFaktur();
+                } catch(e) {
+                    alert('Chyba: Paměť prohlížeče je plná. Nepodařilo se uložit soubor.');
+                }
+            };
+
+            // Zpracování souboru (PDF/Obrázek), pokud byl vybrán
+            if (fileInput.files && fileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) { 
+                    saveToArchive(e.target.result, fileInput.files[0].type); 
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                saveToArchive(null, null); // Uložení bez souboru
+            }
+        }
+
+        function oznacExportovaneZaznamy(typ) {
+            zaznamy.forEach(z => {
+                if (z.selected) {
+                    if (typ === 'standard') z.pdfStandard = true;
+                    if (typ === 'abnahme') z.pdfAbnahme = true;
+                    if (typ === 'faktura') z.pdfFaktura = true;
+                    if (typ === 'consilium') z.pdfVložené PDF = true;
+                    if (typ === 'TechCo PDF') z.pdfTechCo PDF = true;
+                    z.selected = false; // Odznačení po exportu
+                }
+            });
+            localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+            renderZaznamy();
+        }
+
     // ==========================================
     // VIZUÁLNÍ DRAG & DROP KALIBRACE CONSILIUM
     // ==========================================
@@ -3034,7 +3097,41 @@ function openVisualCalib() {
         
         document.getElementById('visual-calib-modal').classList.remove('hidden');
     }
+        function updateCanvasFormat() {
+            let format = document.getElementById('template-format').value;
+            let canvas = document.getElementById('editor-canvas');
+            if(format === 'a4-p') { canvas.style.aspectRatio = '210/297'; }
+            else if(format === 'a4-l') { canvas.style.aspectRatio = '297/210'; }
+            else if(format === 'a5-p') { canvas.style.aspectRatio = '148/210'; }
+            else if(format === 'a5-l') { canvas.style.aspectRatio = '210/148'; }
+        }
 
+        function openExterniFakturaCard() {
+            document.getElementById('externi-faktura-card').classList.remove('hidden');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function closeExterniFakturaCard() {
+            document.getElementById('externi-faktura-card').classList.add('hidden');
+        }
+
+        function quickExportWeek(rok, tyden, typ) {
+            let tydenZaznamy = zaznamy.filter(z => {
+                let d = new Date(z.datum);
+                return d.getFullYear() === rok && getWeekNumber(d) === tyden;
+            });
+            if(tydenZaznamy.length === 0) return;
+            
+            zaznamy.forEach(z => z.selected = false);
+            tydenZaznamy.forEach(z => z.selected = true);
+            
+            currentExportType = typ;
+            if(typ === 'standard') {
+                executePDFExport();
+            } else if(typ === 'consilium') {
+                exportConsiliumPDF();
+            }
+        }
     // TATO FUNKCE ZAVÍRÁ OKNO (zde je oprava)
     function closeVisualCalib() { 
         document.getElementById('visual-calib-modal').classList.add('hidden'); 
