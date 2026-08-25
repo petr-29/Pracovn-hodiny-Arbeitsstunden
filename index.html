@@ -215,12 +215,12 @@
         <div id="welcome-screen-content">
             <h1>Království <span>Pracovních Hodin</span></h1>
             <p class="subtitle">Generátor výkazů práce, fakturace a správa zákazníků</p>
-            <button class="enter-btn" onclick="document.getElementById('welcome-screen').style.opacity='0'; setTimeout(()=>document.getElementById('welcome-screen').style.display='none', 800);">Vstoupit do aplikace</button>
+            <button class="enter-btn" onclick="vstoupitDoAplikace()">Vstoupit do aplikace</button>
         </div>
+      </div>
 
     <div id="main-app" class="hidden">
-        
-        <div class="lang-bar" id="main-lang-bar">
+         <div class="lang-bar" id="main-lang-bar">
             <button class="lang-btn active" onclick="setLanguage('cs')">Čeština</button>
             <button class="lang-btn" onclick="setLanguage('de')">Deutsch</button>
         </div>
@@ -760,7 +760,22 @@
             let inp = document.getElementById(inputId);
             if(inp) inp.value = '';
         }
+function vstoupitDoAplikace() {
+    // 1. Zobrazíme hlavní aplikaci odebráním třídy 'hidden'
+    const mainApp = document.getElementById('main-app');
+    if (mainApp) {
+        mainApp.classList.remove('hidden');
+    }
 
+    // 2. Plynule skryjeme úvodní obrazovku
+    const welcomeScr = document.getElementById('welcome-screen');
+    if (welcomeScr) {
+        welcomeScr.style.opacity = '0';
+        setTimeout(() => {
+            welcomeScr.style.display = 'none';
+        }, 800);
+    }
+}
         function showApp() {
             const welcome = document.getElementById('welcome-screen');
             welcome.style.opacity = '0';
