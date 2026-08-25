@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -321,11 +320,12 @@
                 <div class="action-toolbar" id="records-toolbar">
                     <button class="btn-sec" onclick="selectAllZaznamy()" id="btn-all" data-cs="Vše" data-de="Alle">Vše</button>
                     <button class="btn-sec" onclick="exportCSV()" id="btn-csv-exp">CSV</button>
-                    <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">Standard PDF</button>
-                    <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">Abnahme PDF</button>
-                    <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">Faktura PDF</button>
-                    <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">Vložené PDF</button>
-                    <button class="btn-sec" style="background:#1abc9c; color:white; font-weight:bold;" onclick="openExportCard('techco')">TechCo PDF</button>
+                    <button class="btn-sec" style="background:#f39c12; color:black; font-weight:bold;" onclick="openExportCard('standard')">📄 Standard PDF</button>
+                    <button class="btn-sec" style="background:#3498db; color:white; font-weight:bold;" onclick="openExportCard('abnahme')">📄 Abnahme PDF</button>
+                    <button class="btn-sec" style="background:#8e44ad; color:white; font-weight:bold;" onclick="openExportCard('consilium')">📄 Vložené PDF</button>
+                    <button class="btn-sec" style="background:#1abc9c; color:white; font-weight:bold;" onclick="openExportCard('techco')">📄 TechCo PDF</button>
+                    <button class="btn-sec" style="background:#e74c3c; color:white; font-weight:bold;" onclick="openExportCard('faktura')">🗓️Faktura PDF</button>
+                    <button class="btn-sec" style="background:#27ae60; color:white; font-weight:bold;" onclick="openExterniFakturaCard()">📥 Externí Faktura</button>
                 </div>
 
                 <div id="export-card" class="card hidden" style="border: 2px solid #2c3e50;">
@@ -440,7 +440,29 @@
                         <button class="btn-main" id="btn-execute-export" style="flex:1.5; background:#2c3e50; color:white;" onclick="executePDFExport()" data-cs="Uložit PDF" data-de="PDF speichern">Uložit PDF</button>
                     </div>
                 </div>
-
+ <div id="externi-faktura-card" class="card hidden" style="border: 2px solid #27ae60;">
+                    <div class="card-title" style="color: #27ae60;">📥 Vložit externí fakturu (Jiná společnost)</div>
+                    <p style="font-size:12px; margin-bottom:15px; color:#555;">Pokud Vám záznamy fakturovala jiná firma, nahrajte sem jejich doklad. Záznamy se tím "zavřou" a naskočí do archivu.</p>
+                    
+                    <div class="form-group">
+                        <label>Společnost (Kdo to reálně fakturoval?)</label>
+                        <input type="text" id="ext-firma" placeholder="např. Partnerská s.r.o.">
+                    </div>
+                    <div class="form-group">
+                        <label>Číslo faktury (Ruční zápis)</label>
+                        <input type="text" id="ext-cislo" placeholder="např. 2026-EXT-01">
+                    </div>
+                    <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dcdde1;">
+                        <label style="color: #2c3e50; font-weight: bold;">Nahrát soubor (PDF, JPG, PNG)</label>
+                        <input type="file" id="ext-file" accept="application/pdf, image/*" style="margin-top: 10px;">
+                    </div>
+                    <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
+                    <div class="row">
+                        <button class="btn-sec" style="flex:1;" onclick="closeExterniFakturaCard()">Zrušit</button>
+                        <button class="btn-main" style="background:#27ae60; color:white; flex:2;" onclick="saveExterniFaktura()">Uložit do archivu</button>
+                    </div>
+                </div>
+                
                 <!-- MĚSÍČNÍ SOUHRN V ZÁZNAMECH -->
                 <div class="card" id="mesicni-souhrn-card" style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
