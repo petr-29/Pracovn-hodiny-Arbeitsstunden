@@ -2866,7 +2866,15 @@ function executePDFExport() {
     const cestovniCastka = (parseFloat(z.km) || 0) * (parseFloat(z.sazbaKm) || parseFloat(z.sazba_km) || 0);
     // Pokud ukládáte cestovné jako přímou částku, použijte: const cestovniCastka = parseFloat(z.cestovne) || 0;
     
-    suma += hodinovaCastka + cestovniCastka;
+   pridatRadekDoPdfTable(z.datum, `${z.popis} (${odpracovaneHodiny} h)`, z.sazba, cenaHodiny);
+
+    // 2. Samostatný řádek za cestovné (pokud jsou km zadány)
+    const km = parseFloat(z.km) || 0;
+    const sazbaKm = parseFloat(z.sazbaKm) || parseFloat(z.sazba_km) || 0;
+    if (km > 0 && sazbaKm > 0) {
+        const cenaCesta = km * sazbaKm;
+        pridatRadekDoPdfTable(z.datum, `Cestovní náklady (${km} km)`, sazbaKm, cenaCesta);
+    }
 });
                 let fakturaData = {
 
