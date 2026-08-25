@@ -2861,8 +2861,13 @@ function executePDFExport() {
                 let odberatel = document.getElementById('cfg-firma').value;
                 let suma = 0;
                 
-                vybrane.forEach(z => { suma += (kalkulujCisteHodiny(z) * z.sazba); });
-
+                vybrane.forEach(z => {
+    const hodinovaCastka = kalkulujCisteHodiny(z) * (parseFloat(z.sazba) || 0);
+    const cestovniCastka = (parseFloat(z.km) || 0) * (parseFloat(z.sazbaKm) || parseFloat(z.sazba_km) || 0);
+    // Pokud ukládáte cestovné jako přímou částku, použijte: const cestovniCastka = parseFloat(z.cestovne) || 0;
+    
+    suma += hodinovaCastka + cestovniCastka;
+});
                 let fakturaData = {
 
                     vystaveni: document.getElementById('fak-vystaveni').value,
