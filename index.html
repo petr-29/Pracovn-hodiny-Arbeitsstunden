@@ -2443,7 +2443,7 @@ function exportConsiliumPDF(returnBlob = false) {
             }
         }
 
-        function selectAllZaznamy() {
+           function selectAllZaznamy() {
             let all = zaznamy.every(z => z.selected); zaznamy.forEach(z => z.selected = !all);
             localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy)); renderZaznamy();
         }
@@ -2466,7 +2466,7 @@ function exportConsiliumPDF(returnBlob = false) {
             localStorage.setItem('cfg_dod_kontakt', document.getElementById('cfg-dod-kontakt').value); 
             
             localStorage.setItem('cfg_splatnost', document.getElementById('cfg-splatnost').value);
-            localStorage.setItem('cfg_tpl_format', document.getElementById('cfg-tpl-format').value);
+            
             alert(currentLang === 'cs' ? 'Nastavení uloženo!' : 'Einstellungen gespeichert!');
         }
 
@@ -2477,7 +2477,7 @@ function exportConsiliumPDF(returnBlob = false) {
             if(localStorage.getItem('cfg_mesto')) document.getElementById('cfg-mesto').value = localStorage.getItem('cfg_mesto');
             if(localStorage.getItem('cfg_podpis')) document.getElementById('cfg-podpis').value = localStorage.getItem('cfg_podpis');
             if(localStorage.getItem('cfg_ico_odberatel')) document.getElementById('cfg-ico-odberatel').value = localStorage.getItem('cfg_ico_odberatel');
-            if(localStorage.getItem('cfg_tpl_format')) document.getElementById('cfg-tpl-format').value = localStorage.getItem('cfg_tpl_format');
+            
             if(localStorage.getItem('cfg_koncovy_firma')) document.getElementById('cfg-koncovy-firma').value = localStorage.getItem('cfg_koncovy_firma');
             if(localStorage.getItem('cfg_koncovy_adresa')) document.getElementById('cfg-koncovy-adresa').value = localStorage.getItem('cfg_koncovy_adresa');
             if(localStorage.getItem('cfg_mesto_stavby')) document.getElementById('cfg-mesto-stavby').value = localStorage.getItem('cfg_mesto_stavby');
@@ -2510,24 +2510,9 @@ function exportConsiliumPDF(returnBlob = false) {
             if(localStorage.getItem('cfg_cons_x_zakazka')) document.getElementById('cfg-cons-x-zakazka').value = localStorage.getItem('cfg_cons_x_zakazka');
         }
 
-        function saveVlozenePDFOffsets() {
-            localStorage.setItem('cfg_cons_hlavicka', document.getElementById('cfg-cons-hlavicka').value);
-            localStorage.setItem('cfg_cons_tabulka', document.getElementById('cfg-cons-tabulka').value);
+       function saveConsiliumOffsets() {
             localStorage.setItem('cfg_cons_radkovani', document.getElementById('cfg-cons-radkovani').value);
-            localStorage.setItem('cfg_cons_soucet', document.getElementById('cfg-cons-soucet').value);
-            localStorage.setItem('cfg_cons_pata', document.getElementById('cfg-cons-pata').value);
-            localStorage.setItem('cfg_cons_spodni', document.getElementById('cfg-cons-spodni').value);
-            
-            localStorage.setItem('cfg_cons_x_datum', document.getElementById('cfg-cons-x-datum').value);
-            localStorage.setItem('cfg_cons_x_zacatek', document.getElementById('cfg-cons-x-zacatek').value);
-            localStorage.setItem('cfg_cons_x_od', document.getElementById('cfg-cons-x-od').value);
-            localStorage.setItem('cfg_cons_x_do', document.getElementById('cfg-cons-x-do').value);
-            localStorage.setItem('cfg_cons_x_konec', document.getElementById('cfg-cons-x-konec').value);
-            localStorage.setItem('cfg_cons_x_hodiny', document.getElementById('cfg-cons-x-hodiny').value);
-            localStorage.setItem('cfg_cons_x_popis', document.getElementById('cfg-cons-x-popis').value);
-            localStorage.setItem('cfg_cons_x_zakazka', document.getElementById('cfg-cons-x-zakazka').value);
-
-            alert(currentLang === 'cs' ? 'Kalibrace uložena!' : 'Kalibrierung gespeichert!');
+            alert(currentLang === 'cs' ? 'Rozestup řádků uložen! Zbytek se ukládá přes vizuální kalibraci.' : 'Gespeichert!');
         }
 
         function exportCSV() {
