@@ -192,6 +192,82 @@
         .faktura-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .faktura-table th { background-color: var(--primary); color: white; padding: 8px; text-align: left; }
         .faktura-table td { padding: 8px; border-bottom: 1px solid #eee; }
+/* --- ROZBALOVACÍ SEZNAMY (Měsíce a Týdny) --- */
+details.month-group {
+    background: var(--card-bg);
+    margin-bottom: 15px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+details.month-group > summary::-webkit-details-marker { display: none; } /* Skrytí defaultní šipky */
+summary.month-summary {
+    padding: 15px 20px;
+    background: #2c3e50;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+}
+summary.month-summary:hover { background: #34495e; }
+
+details.week-group {
+    border-top: 1px solid var(--border);
+    background: #fdfdfd;
+}
+details.week-group > summary::-webkit-details-marker { display: none; }
+summary.week-summary {
+    padding: 12px 20px;
+    background: #ecf0f1;
+    color: #2c3e50;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    list-style: none;
+}
+summary.week-summary:hover { background: #dfe6e9; }
+
+.records-list {
+    padding: 10px;
+    background: var(--bg);
+}
+
+.summary-stats {
+    text-align: right;
+    font-size: 13px;
+    font-weight: normal;
+}
+.summary-stats strong { font-size: 15px; color: #2ecc71; margin-left: 10px; }
+
+/* --- UPOZORŇOVACÍ PRAPOREK (TOAST) --- */
+.toast-praporek {
+    position: fixed;
+    top: 30px;
+    right: 20px;
+    background: #2ecc71;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    font-weight: bold;
+    z-index: 9999;
+    transform: translateX(150%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.toast-praporek.show { transform: translateX(0); }
+.toast-praporek.error { background: #e74c3c; }
 
         /* --- VIZUÁLNÍ KALIBRACE --- */
         #visual-calib-modal {
