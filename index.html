@@ -881,7 +881,64 @@ function executePDFExport() {
     }
 }
 
-// 2. Sdílení PDF přímo do mobilu (AirDrop, WhatsApp, Email apod.)
+// Pomocné funkce pro zavírání oken a obsluhu podpisu
+function closeExportCard() {
+    let card = document.getElementById('export-card') || document.getElementById('export-modal');
+    if (card) card.classList.add('hidden');
+}
+
+function closeSignatureModal() {
+    document.getElementById('signature-modal').classList.add('hidden');
+}
+
+function clearModalCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function saveModalSignature() {
+    let dataUrl = canvas.toDataURL('image/png');
+    if (targetSignature === 'kunde') {
+        dataPodpisuKunde = dataUrl;
+        let box = document.getElementById('box-kunde');
+        if (box) box.innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
+    } else {
+        dataPodpisuIch = dataUrl;
+        let box = document.getElementById('box-ich');
+        if (box) box.innerHTML = `<img src="${dataUrl}" class="signature-display-img">`;
+    }
+    closeSignatureModal();
+    if (typeof updateLivePreview === 'function') updateLivePreview();
+}
+
+// Vykreslení TechCo výkazu do jsPDF
+function drawTechCoReportToDoc(doc, vybrane) {
+    let s = JSON.parse(localStorage.getItem('app_settings')) || {};
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("TechCo Industrieservice - Stundenzettel", 15, 20);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Odběratel / Kunde: ${s.firmaTechco || s.firma || 'TechCo Industrieservice'}`, 15, 28);
+    doc.text(`Dodavatel: ${s.jmeno || 'Petr Michálek'}`, 15, 34);
+
+    let tableRows = vybrane.map(z => [
+        new Date(z.datum).toLocaleDateString('cs-CZ'),
+        `${z.zacatek} - ${z.konec}`,
+        `${Number(z.cisteHodiny || 0).toFixed(2)} h`,
+        z.popis || 'Práce na zakázce'
+    ]);
+
+    doc.autoTable({
+        startY: 42,
+        head: [['Datum', 'Čas', 'Hodiny', 'Popis činnosti']],
+        body: tableRows,
+        theme: 'grid',
+        headStyles: { fillColor: [26, 188, 156] }
+    });
+}
+
+// Opravená a dokončená funkce pro sdílení PDF přes mobilní Web Share API
 async function sharePDFExport() {
     const { jsPDF } = window.jspdf;
     let vybrane = typeof vybraneZaznamy !== 'undefined' && vybraneZaznamy.length > 0 
@@ -893,65 +950,35 @@ async function sharePDFExport() {
         return;
     }
 
-    let fileBlob = null;
-    let fileName = `Stundenzettel_${new Date().getTime()}.pdf`;
-
-    if (currentExportType === 'techco') {
-        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-        drawTechCoReportToDoc(doc, vybrane);
-        fileBlob = doc.output('blob');
-        fileName = `TechCo_Stundenzettel_${new Date().getTime()}.pdf`;
+    let doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     
-    } else if (currentExportType === 'consilium') {
-        const doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'landscape' });
-        if (typeof drawConsiliumReportToDoc === 'function') {
-            drawConsiliumReportToDoc(doc, vybrane);
-            fileBlob = doc.output('blob');
-            fileName = `Consilium_Stundenzettel_${new Date().getTime()}.pdf`;
-        }
-    }
-
-    if (!fileBlob) {
-        ukazPraporek('Chyba při přípravě souboru ke sdílení', 'error');
+    if (currentExportType === 'techco') {
+        drawTechCoReportToDoc(doc, vybrane);
+    } else {
+        vygenerujPDF();
         return;
     }
 
-    const file = new File([fileBlob], fileName, { type: 'application/pdf' });
+    let fileName = `Stundenzettel_${Date.now()}.pdf`;
+    let blob = doc.output('blob');
+    let file = new File([blob], fileName, { type: 'application/pdf' });
 
-    // Využití Web Share API (pro iOS Safari / Android Chrome)
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
             await navigator.share({
                 files: [file],
                 title: 'Stundenzettel PDF',
-                text: 'Pracovní výkaz v příloze.'
+                text: 'Přikládám vygenerovaný výkaz hodin.'
             });
-            ukazPraporek('Soubor byl sdílen');
-            closeExportCard();
+            ukazPraporek('PDF úspěšně sdíleno!');
         } catch (err) {
-            if (err.name !== 'AbortError') {
-                ukazPraporek('Sdílení se nezdařilo', 'error');
-            }
+            if (err.name !== 'AbortError') ukazPraporek('Chyba při sdílení PDF', 'error');
         }
     } else {
-        // Fallback pro prohlížeče bez podpory Web Share API -> přímé stažení
-        let url = URL.createObjectURL(fileBlob);
-        let a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-        ukazPraporek('Přímé sdílení není podporováno, soubor byl stažen');
-        closeExportCard();
+        doc.save(fileName);
+        ukazPraporek('Sdílení není podporováno, soubor byl stažen.');
     }
-}
-
-// 3. Zavření exportní karty/okna
-function closeExportCard() {
-    let exportModal = document.getElementById('export-modal') || document.getElementById('export-card-modal');
-    if (exportModal) {
-        exportModal.classList.add('hidden');
-    }
+    closeExportCard();
 }
 </script>
 </body>
