@@ -1013,7 +1013,7 @@ summary.week-summary:hover { background: #dfe6e9; }
             closeSignatureModal(); updateLivePreview();
         }
 
-       function openExportCard(type) {
+    function openExportCard(type) {
     let vybrane = zaznamy.filter(z => z.selected);
     if (vybrane.length === 0) {
         alert(currentLang === 'cs'
@@ -1057,81 +1057,6 @@ summary.week-summary:hover { background: #dfe6e9; }
     updateLivePreview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-        function onVystaveniChange() {
-            let vystaveniEl = document.getElementById('fak-vystaveni');
-            let dniEl = document.getElementById('fak-splatnost-dni');
-            let splatnostEl = document.getElementById('fak-splatnost');
-            if (vystaveniEl.valueAsDate) {
-                let d = new Date(vystaveniEl.valueAsDate);
-                let dni = parseInt(dniEl.value) || 14;
-                d.setDate(d.getDate() + dni);
-                splatnostEl.valueAsDate = d;
-            }
-        }
-
-        function onSplatnostDniChange() {
-            let vystaveniEl = document.getElementById('fak-vystaveni');
-            let dniEl = document.getElementById('fak-splatnost-dni');
-            let splatnostEl = document.getElementById('fak-splatnost');
-            if (vystaveniEl.valueAsDate) {
-                let d = new Date(vystaveniEl.valueAsDate);
-                let dni = parseInt(dniEl.value) || 0;
-                d.setDate(d.getDate() + dni);
-                splatnostEl.valueAsDate = d;
-            }
-        }
-
-        function formatMena(castka) { let parts = castka.toFixed(2).split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " "); return parts.join(',') + ' EUR'; }
-        
-        function startDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[0].datum).toLocaleDateString('de-DE') : '---'; }
-        function endDatum(vybrane) { return vybrane.length > 0 ? new Date(vybrane[vybrane.length-1].datum).toLocaleDateString('de-DE') : '---'; }
-
-        function kalkulujCisteHodiny(zaznam) {
-            let [h1, m1] = zaznam.zacatek.split(':').map(Number);
-            let [h2, m2] = zaznam.konec.split(':').map(Number);
-            let start = h1 * 60 + m1;
-            let konec = h2 * 60 + m2;
-            if (konec < start) konec += 24 * 60;
-
-            let pauseMinut = 0;
-            if (zaznam.prestavkaOd && zaznam.prestavkaDo) {
-                let [ph1, pm1] = zaznam.prestavkaOd.split(':').map(Number);
-                let [ph2, pm2] = zaznam.prestavkaDo.split(':').map(Number);
-                let pStart = ph1 * 60 + pm1; let pKonec = ph2 * 60 + pm2;
-                if (pKonec < pStart) pKonec += 24 * 60;
-                pauseMinut = pKonec - pStart;
-            } else if (zaznam.prestavka) {
-                pauseMinut = Number(zaznam.prestavka);
-            }
-
-            let cisty = (konec - start - pauseMinut) / 60;
-            return cisty > 0 ? cisty : 0;
-        }
-
-        function updateLiveHours() {
-            let z = document.getElementById('inp-zacatek').value;
-            let k = document.getElementById('inp-konec').value;
-            let pOd = document.getElementById('inp-prestavka-od').value;
-            let pDo = document.getElementById('inp-prestavka-do').value;
-            
-            if(!z || !k) { document.getElementById('live-calc-result').innerText = "0.00 h"; return; }
-            let [h1, m1] = z.split(':').map(Number); let [h2, m2] = k.split(':').map(Number);
-            let start = h1 * 60 + m1; let konec = h2 * 60 + m2; if (konec < start) konec += 24 * 60;
-            
-            let pauseMinut = 0;
-            if (pOd && pDo) {
-                let [ph1, pm1] = pOd.split(':').map(Number);
-                let [ph2, pm2] = pDo.split(':').map(Number);
-                let pStart = ph1 * 60 + pm1; let pKonec = ph2 * 60 + pm2;
-                if (pKonec < pStart) pKonec += 24 * 60;
-                pauseMinut = pKonec - pStart;
-            }
-
-            let cisty = (konec - start - pauseMinut) / 60;
-            document.getElementById('live-calc-result').innerText = (cisty > 0 ? cisty : 0).toFixed(2) + " h";
-        }
-
         function updateLivePreview() {
             let vybrane = zaznamy.filter(z => z.selected);
             vybrane.sort((a,b) => new Date(a.datum) - new Date(b.datum));
