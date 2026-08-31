@@ -838,28 +838,7 @@ summary.week-summary:hover { background: #dfe6e9; }
             }, 2000); 
         });
 
-        function bezDiakritiky(text) { if (!text) return ''; return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
-
-        function nahratObrazek(input, storageKey, previewId) {
-            if (input.files && input.files[0]) {
-                let reader = new FileReader();
-                reader.onload = function(e) {
-                    localStorage.setItem(storageKey, e.target.result);
-                    let img = document.getElementById(previewId);
-                    img.src = e.target.result; img.style.display = 'block';
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function smazatObrazek(storageKey, previewId, inputId) {
-            localStorage.removeItem(storageKey);
-            let img = document.getElementById(previewId);
-            img.src = ''; img.style.display = 'none';
-            document.getElementById(inputId).value = '';
-        }
-
-        function showApp() {
+    function showApp() {
             const welcome = document.getElementById('welcome-screen');
             welcome.style.opacity = '0';
             setTimeout(() => {
@@ -871,47 +850,61 @@ summary.week-summary:hover { background: #dfe6e9; }
             nastavCisloNoveFaktury();
             updateLiveHours();
         }
+    
+    function bezDiakritiky(text) {
+    if (!text) return '';
+    return text.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
-        function nastavCisloNoveFaktury() {
-            let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
-            let cisloInput = document.getElementById('fak-cislo');
-            let dnes = new Date();
-            let rok = dnes.getFullYear();
-            let mesic = String(dnes.getMonth() + 1).padStart(2, '0');
-            let aktualniPrefix = `${rok}/${mesic}-`;
-            function ukazPraporek(zprava, typ = 'success') {
+function ukazPraporek(zprava, typ = 'success') {
     let existujici = document.querySelector('.toast-praporek');
     if (existujici) existujici.remove();
 
     let toast = document.createElement('div');
     toast.className = `toast-praporek ${typ === 'error' ? 'error' : ''}`;
-    
+
     let ikona = typ === 'error' ? '❌' : '✅';
     toast.innerHTML = `<span>${ikona}</span> <span>${zprava}</span>`;
-    
+
     document.body.appendChild(toast);
-    
-    setTimeout(() => { toast.classList.add('show'); }, 50);
-    
+    setTimeout(() => toast.classList.add('show'), 50);
+
     setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 400); 
+        setTimeout(() => toast.remove(), 400);
     }, 3500);
 }
-            let labelEl = document.getElementById('fak-cislo-label');
-            if (labelEl) { labelEl.textContent = `Číslo faktury (např. ${aktualniPrefix}001)`; }
 
-            let mesicniFaktury = archiv.filter(f => f.cislo && f.cislo.startsWith(aktualniPrefix));
-            let maxCislo = 0;
-            mesicniFaktury.forEach(f => {
-                let parts = f.cislo.split('-');
-                if (parts.length === 2 && parts[1] !== '' && !isNaN(parts[1])) {
-                    let num = parseInt(parts[1]);
-                    if (num > maxCislo) maxCislo = num;
-                }
-            });
-            
-            cisloInput.value = aktualniPrefix + String(maxCislo + 1).padStart(3, '0');
+function nastavCisloNoveFaktury() {
+    let archiv = JSON.parse(localStorage.getItem('archiv_faktur')) || [];
+    let cisloInput = document.getElementById('fak-cislo');
+    let dnes = new Date();
+    let rok = dnes.getFullYear();
+    let mesic = String(dnes.getMonth() + 1).padStart(2, '0');
+    let aktualniPrefix = `${rok}/${mesic}-`;
+
+    let labelEl = document.getElementById('fak-cislo-label');
+    if (labelEl) labelEl.textContent = `Číslo faktury (např. ${aktualniPrefix}001)`;
+
+    let mesicniFaktury = archiv.filter(f => f.cislo && f.cislo.startsWith(aktualniPrefix));
+    let maxCislo = 0;
+
+    mesicniFaktury.forEach(f => {
+        let parts = f.cislo.split('-');
+        if (parts.length === 2 && parts[1] !== '' && !isNaN(parts[1])) {
+            let num = parseInt(parts[1], 10);
+            if (num > maxCislo) maxCislo = num;
+        }
+    });
+
+    if (cisloInput) cisloInput.value = aktualniPrefix + String(maxCislo + 1).padStart(3, '0');
+}
+
+        function smazatObrazek(storageKey, previewId, inputId) {
+            localStorage.removeItem(storageKey);
+            let img = document.getElementById(previewId);
+            img.src = ''; img.style.display = 'none';
+            document.getElementById(inputId).value = '';
         }
 
         let remoteMode = false; let currentExportType = ''; let currentDrawSessionId = null;
