@@ -631,11 +631,11 @@ summary.week-summary:hover { background: #dfe6e9; }
 
 <div class="form-group">
     <label data-cs="Název firmy / Projektu" data-de="Projektname / Kunde">Koncový Zákazník / Místo výkonu / Název firmy (Pro koho se reálně dělalo)</label>
-    <textarea id="cfg-firma" rows="2">TechCo Industrieservice GmbH&#10;Bruckweiherstraße 9&#10;91056 Erlangen</textarea>
+   <textarea id="cfg-firma-techco" rows="2">TechCo Industrieservice GmbH...</textarea>
 </div>
-<div class="form-group">
+<div class="form-group"
     <label data-cs="IČO / DIČ Odběratele" data-de="IČO / DIČ">Daňová čísla (USt.-ID-Nr. / Steuer.Nr)</label>
-    <input type="text" id="cfg-ico-odberatel" value="USt.-ID-Nr.: DE 45 22 56 175, Steuer.Nr: 216 / 140 / 1 0069">
+   <input type="text" id="cfg-ico-odberatel-techco" value="USt.-ID-Nr.: DE ...">
 </div>
                     <div class="form-group">
                         <label data-cs="Název firmy (Fakturační údaje)" data-de="Firmenname (Rechnungsdaten)">Název firmy (Fakturační údaje)</label>
@@ -818,12 +818,12 @@ summary.week-summary:hover { background: #dfe6e9; }
     </div>
 
 <script>
-      window.addEventListener('load', () => {
-    // Speciální režimy
+window.addEventListener('load', () => {
     if (window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) {
         showApp();
         return;
     }
+});
     
             setTimeout(() => {
                 document.getElementById('a-hand').style.display = 'none';
@@ -1034,16 +1034,18 @@ function ukazPraporek(zprava, typ = 'success') {
     if (type === 'abnahme') {
         document.getElementById('abnahme-fields').classList.remove('hidden');
         exportBtn.style.background = '#3498db';
-    } else if (type === 'faktura') {
-        document.getElementById('faktura-fields').classList.remove('hidden');
-        exportBtn.style.background = '#e74c3c';
+ } else if (type === 'faktura') {
+    document.getElementById('faktura-fields').classList.remove('hidden');
+    exportBtn.style.background = '#e74c3c';
 
-        document.getElementById('fak-vystaveni').valueAsDate = new Date();
-        let splatnostDni = parseInt(localStorage.getItem('cfg_splatnost')) || 14;
-        document.getElementById('fak-splatnost-dni').value = splatnostDni;
-        let d = new Date();
-        d.setDate(d.getDate() + splatnostDni);
-        document.getElementById('fak-splatnost').valueAsDate = d;
+    const vystaveniEl = document.getElementById('fak-vystaveni');
+    const splatnostEl = document.getElementById('fak-splatnost');
+    if (vystaveniEl) vystaveniEl.valueAsDate = new Date();
+
+    const d = new Date();
+    const splatnostDni = parseInt(localStorage.getItem('cfg_splatnost'), 10) || 14;
+    d.setDate(d.getDate() + splatnostDni);
+    if (splatnostEl) splatnostEl.valueAsDate = d;
     } else if (type === 'consilium') {
         document.getElementById('consilium-fields').classList.remove('hidden');
         exportBtn.style.background = '#8e44ad';
