@@ -181,6 +181,299 @@ function saveFullscreenCanvas() { const blank = document.createElement('canvas')
 function toggleDarkMode() { const isDark = document.body.classList.toggle('dark-theme'); localStorage.setItem('app_theme', isDark ? 'dark' : 'light'); document.getElementById('btn-toggle-dark').innerText = isDark ? '☀️ ON' : '🌙 OFF'; }
 function loadTheme() { const savedTheme = localStorage.getItem('app_theme'); if (savedTheme === 'dark') { document.body.classList.add('dark-theme'); document.getElementById('btn-toggle-dark').innerText = '☀️ ON'; } else { document.body.classList.remove('dark-theme'); document.getElementById('btn-toggle-dark').innerText = '🌙 OFF'; } }
 function openSignatureModal(target) { targetSignature = target; let textTitle = target === 'kunde' ? (currentLang === 'cs' ? 'Podpis: Kunde / Šéf' : 'Unterschrift: Kunde / Chef') : (currentLang === 'cs' ? 'Podpis: Váš' : 'Unterschrift: Ihre'); document.getElementById('modal-sig-title').innerText = textTitle; document.getElementById('signature-modal').classList.remove('hidden'); canvas.width = canvas.offsetWidth; canvas.height = 200; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a3ca6'; }
+// --- 1. ŽIVÝ VÝPOČET ČISTÉ PRACOVNÍ DOBY ---
+function updateLiveHours() {
+    let zacatek = document.getElementById('inp-zacatek')?.value;
+    let konec = document.getElementById('inp-konec')?.value;
+    let pauzaOd = document.getElementById('inp-prestavka-od')?.value;
+    let pauzaDo = document.getElementById('inp-prestavka-do')?.value;
+    let resultEl = document.getElementById('live-calc-result');
+
+    if (!zacatek || !konec || !resultEl) return;
+
+    let getMinutes = (timeStr) => {
+        if (!timeStr) return 0;
+        let [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    let startMin = getMinutes(zacatek);
+    let endMin = getMinutes(konec);
+    let breakStartMin = getMinutes(pauzaOd);
+    let breakEndMin = getMinutes(pauzaDo);
+
+    let celkemMinut = endMin - startMin;
+    if (celkemMinut < 0) celkemMinut += 24 * 60; // Přes půlnoc
+
+    let pauzaMinut = 0;
+    if (pauzaOd && pauzaDo) {
+        pauzaMinut = breakEndMin - breakStartMin;
+        if (pauzaMinut < 0) pauzaMinut += 24 * 60;
+    }
+
+    let cistyCasMinut = Math.max(0, celkemMinut - pauzaMinut);
+    let hodiny = (cistyCasMinut / 60).toFixed(2);
+
+    resultEl.textContent = `${hodiny} h`;
+}
+
+// Funkce pro výpočet čistých hodin ze záznamu (používá renderZaznamy)
+function kalkulujCisteHodiny(zaznam) {
+    if (!zaznam || !zaznam.zacatek || !zaznam.konec) return 0;
+    let getMinutes = (timeStr) => {
+        let [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    };
+    let startMin = getMinutes(zaznam.zacatek);
+    let endMin = getMinutes(zaznam.konec);
+    let celkem = endMin - startMin;
+    if (celkem < 0) celkem += 24 * 60;
+
+    let pauza = 0;
+    if (zaznam.pauzaOd && zaznam.pauzaDo) {
+        pauza = getMinutes(zaznam.pauzaDo) - getMinutes(zaznam.pauzaOd);
+        if (pauza < 0) pauza += 24 * 60;
+    }
+    return Math.max(0, (celkem - pauza) / 60);
+}
+
+
+// --- 2. SPRÁVA NASTAVENÍ A FIREMNÍ IDENTITY ---
+function saveSettings() {
+    let settings = {
+        jmeno: document.getElementById('cfg-jmeno')?.value || '',
+        dodAdresa: document.getElementById('cfg-dod-adresa')?.value || '',
+        dodIco: document.getElementById('cfg-dod-ico')?.value || '',
+        dodBanka: document.getElementById('cfg-dod-banka')?.value || '',
+        dodKontakt: document.getElementById('cfg-dod-kontakt')?.value || '',
+        splatnost: document.getElementById('cfg-splatnost')?.value || '14',
+        
+        firmaTechco: document.getElementById('cfg-firma-techco')?.value || '',
+        icoOdberatelTechco: document.getElementById('cfg-ico-odberatel-techco')?.value || '',
+        firma: document.getElementById('cfg-firma')?.value || '',
+        adresa: document.getElementById('cfg-adresa')?.value || '',
+        mesto: document.getElementById('cfg-mesto')?.value || '',
+        icoOdberatel: document.getElementById('cfg-ico-odberatel')?.value || '',
+        podpis: document.getElementById('cfg-podpis')?.value || '',
+        
+        koncovyFirma: document.getElementById('cfg-koncovy-firma')?.value || '',
+        koncovyAdresa: document.getElementById('cfg-koncovy-adresa')?.value || '',
+        mestoStavby: document.getElementById('cfg-mesto-stavby')?.value || '',
+        consRadkovani: document.getElementById('cfg-cons-radkovani')?.value || '7.1',
+        tplFormat: document.getElementById('cfg-tpl-format')?.value || 'a5-l'
+    };
+
+    localStorage.setItem('app_settings', JSON.stringify(settings));
+    ukazPraporek('Nastavení bylo úspěšně uloženo!');
+}
+
+function loadSettings() {
+    let saved = localStorage.getItem('app_settings');
+    if (!saved) return;
+    let s = JSON.parse(saved);
+
+    const setVal = (id, val) => {
+        let el = document.getElementById(id);
+        if (el && val !== undefined) el.value = val;
+    };
+
+    setVal('cfg-jmeno', s.jmeno);
+    setVal('cfg-dod-adresa', s.dodAdresa);
+    setVal('cfg-dod-ico', s.dodIco);
+    setVal('cfg-dod-banka', s.dodBanka);
+    setVal('cfg-dod-kontakt', s.dodKontakt);
+    setVal('cfg-splatnost', s.splatnost);
+    setVal('cfg-firma-techco', s.firmaTechco);
+    setVal('cfg-ico-odberatel-techco', s.icoOdberatelTechco);
+    setVal('cfg-firma', s.firma);
+    setVal('cfg-adresa', s.adresa);
+    setVal('cfg-mesto', s.mesto);
+    setVal('cfg-ico-odberatel', s.icoOdberatel);
+    setVal('cfg-podpis', s.podpis);
+    setVal('cfg-koncovy-firma', s.koncovyFirma);
+    setVal('cfg-koncovy-adresa', s.koncovyAdresa);
+    setVal('cfg-mesto-stavby', s.mestoStavby);
+    setVal('cfg-cons-radkovani', s.consRadkovani);
+    setVal('cfg-tpl-format', s.tplFormat);
+
+    // Načtení uložených obrázků (Logo, Razítko, Šablona)
+    nactiUlozenyObrazek('cfg_logo', 'preview-logo');
+    nactiUlozenyObrazek('cfg_razitko', 'preview-razitko');
+    nactiUlozenyObrazek('cfg_tpl_consilium', 'preview-tpl-consilium');
+}
+
+function nahratObrazek(inputEl, storageKey, previewId) {
+    if (!inputEl.files || !inputEl.files[0]) return;
+    let file = inputEl.files[0];
+    let reader = new FileReader();
+    reader.onload = function (e) {
+        let base64 = e.target.result;
+        localStorage.setItem(storageKey, base64);
+        let img = document.getElementById(previewId);
+        if (img) {
+            img.src = base64;
+            img.style.display = 'block';
+        }
+        ukazPraporek('Obrázek uložen');
+    };
+    reader.readAsDataURL(file);
+}
+
+function nactiUlozenyObrazek(storageKey, previewId) {
+    let data = localStorage.getItem(storageKey);
+    let img = document.getElementById(previewId);
+    if (data && img) {
+        img.src = data;
+        img.style.display = 'block';
+    }
+}
+
+
+// --- 3. ADRESÁŘ KLIENTŮ ---
+function ulozDoAdresare() {
+    let nazev = prompt('Zadej název pro uložení tohoto klienta/projektu do adresáře:');
+    if (!nazev) return;
+
+    let klient = {
+        id: Date.now().toString(),
+        nazevUlozeny: nazev,
+        firmaTechco: document.getElementById('cfg-firma-techco')?.value || '',
+        icoOdberatelTechco: document.getElementById('cfg-ico-odberatel-techco')?.value || '',
+        firma: document.getElementById('cfg-firma')?.value || '',
+        adresa: document.getElementById('cfg-adresa')?.value || '',
+        mesto: document.getElementById('cfg-mesto')?.value || '',
+        icoOdberatel: document.getElementById('cfg-ico-odberatel')?.value || '',
+        podpis: document.getElementById('cfg-podpis')?.value || '',
+        koncovyFirma: document.getElementById('cfg-koncovy-firma')?.value || '',
+        koncovyAdresa: document.getElementById('cfg-koncovy-adresa')?.value || '',
+        mestoStavby: document.getElementById('cfg-mesto-stavby')?.value || ''
+    };
+
+    let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+    adresar.push(klient);
+    localStorage.setItem('adresar_klientu', JSON.stringify(adresar));
+    obnovAdresarSelect();
+    ukazPraporek(`Klient "${nazev}" uložen do adresáře`);
+}
+
+function obnovAdresarSelect() {
+    let select = document.getElementById('adresar-select');
+    if (!select) return;
+
+    let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+    select.innerHTML = '<option value="-1">-- Vyber uloženou firmu --</option>';
+
+    adresar.forEach((k, idx) => {
+        let opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = k.nazevUlozeny;
+        select.appendChild(opt);
+    });
+}
+
+function nactiZAdresare() {
+    let select = document.getElementById('adresar-select');
+    let idx = select?.value;
+    if (idx === undefined || idx < 0) return;
+
+    let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+    let k = adresar[idx];
+    if (!k) return;
+
+    document.getElementById('cfg-firma-techco').value = k.firmaTechco || '';
+    document.getElementById('cfg-ico-odberatel-techco').value = k.icoOdberatelTechco || '';
+    document.getElementById('cfg-firma').value = k.firma || '';
+    document.getElementById('cfg-adresa').value = k.adresa || '';
+    document.getElementById('cfg-mesto').value = k.mesto || '';
+    document.getElementById('cfg-ico-odberatel').value = k.icoOdberatel || '';
+    document.getElementById('cfg-podpis').value = k.podpis || '';
+    document.getElementById('cfg-koncovy-firma').value = k.koncovyFirma || '';
+    document.getElementById('cfg-koncovy-adresa').value = k.koncovyAdresa || '';
+    document.getElementById('cfg-mesto-stavby').value = k.mestoStavby || '';
+
+    saveSettings();
+    ukazPraporek(`Data klienta "${k.nazevUlozeny}" načtena`);
+}
+
+function smazZAdresare() {
+    let select = document.getElementById('adresar-select');
+    let idx = select?.value;
+    if (idx === undefined || idx < 0) {
+        ukazPraporek('Nejprve vyber klienta ze seznamu', 'error');
+        return;
+    }
+
+    let adresar = JSON.parse(localStorage.getItem('adresar_klientu')) || [];
+    let smazany = adresar.splice(idx, 1);
+    localStorage.setItem('adresar_klientu', JSON.stringify(adresar));
+    obnovAdresarSelect();
+    ukazPraporek(`Klient "${smazany[0]?.nazevUlozeny}" smazán`);
+}
+
+
+// --- 4. KOMPLETNÍ ZÁLOHA A SYNCHRONIZACE (JSON EXPORT/IMPORT) ---
+function exportDataToFile() {
+    let fullBackup = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        fullBackup[key] = localStorage.getItem(key);
+    }
+
+    let jsonStr = JSON.stringify(fullBackup, null, 2);
+    let blob = new Blob([jsonStr], { type: 'application/json' });
+    let url = URL.createObjectURL(blob);
+    
+    let datum = new Date().toISOString().slice(0, 10);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `Zaloha_PracovniHodiny_${datum}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    ukazPraporek('Záložní soubor byl stažen');
+}
+
+function importDataFromFile(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            let data = JSON.parse(e.target.result);
+            if (typeof data !== 'object') throw new Error('Neplatný formát');
+
+            if (confirm('Nahráním zálohy přepíšeš všechna aktuální data v aplikaci. Chceš pokračovat?')) {
+                localStorage.clear();
+                Object.keys(data).forEach(key => {
+                    localStorage.setItem(key, data[key]);
+                });
+                ukazPraporek('Data úspěšně obnovena ze zálohy!');
+                setTimeout(() => location.reload(), 1000);
+            }
+        } catch (err) {
+            ukazPraporek('Chyba při čtení záložního souboru', 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+
+// --- 5. INICIALIZACE PO NAČTENÍ STRÁNKY ---
+document.addEventListener('DOMContentLoaded', () => {
+    loadTheme();
+    loadSettings();
+    obnovAdresarSelect();
+    
+    // Nastavení dnešního data do formuláře zadávání
+    let inpDatum = document.getElementById('inp-datum');
+    if (inpDatum && !inpDatum.value) {
+        inpDatum.value = new Date().toISOString().slice(0, 10);
+    }
+    updateLiveHours();
+});    
 </script>
 </body>
 </html>
