@@ -879,7 +879,25 @@ summary.week-summary:hover { background: #dfe6e9; }
             let rok = dnes.getFullYear();
             let mesic = String(dnes.getMonth() + 1).padStart(2, '0');
             let aktualniPrefix = `${rok}/${mesic}-`;
+            function ukazPraporek(zprava, typ = 'success') {
+    let existujici = document.querySelector('.toast-praporek');
+    if (existujici) existujici.remove();
 
+    let toast = document.createElement('div');
+    toast.className = `toast-praporek ${typ === 'error' ? 'error' : ''}`;
+    
+    let ikona = typ === 'error' ? '❌' : '✅';
+    toast.innerHTML = `<span>${ikona}</span> <span>${zprava}</span>`;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => { toast.classList.add('show'); }, 50);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400); 
+    }, 3500);
+}
             let labelEl = document.getElementById('fak-cislo-label');
             if (labelEl) { labelEl.textContent = `Číslo faktury (např. ${aktualniPrefix}001)`; }
 
@@ -892,6 +910,7 @@ summary.week-summary:hover { background: #dfe6e9; }
                     if (num > maxCislo) maxCislo = num;
                 }
             });
+            
             cisloInput.value = aktualniPrefix + String(maxCislo + 1).padStart(3, '0');
         }
 
@@ -2444,24 +2463,127 @@ function exportConsiliumPDF(returnBlob = false) {
             document.getElementById('stat-sum').innerText = maskEarnings ? "**** €" : `${celkemPenez.toFixed(2)} €`;
         }
 
-        function renderZaznamy() {
-            let container = document.getElementById('seznam-container'); 
-            container.innerHTML = '';
+        // Pomocná funkce pro získání ISO čísla týdne z data
+function getIsoWeekNumber(d) {
+    let date = new Date(d.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    let week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+}
 
-            let dnes = new Date();
-            let aktualniMesic = dnes.getMonth();
-            let aktualniRok = dnes.getFullYear();
-            let mesicniHodiny = 0;
-            let mesicniPeneze = 0;
+function renderZaznamy() {
+    let container = document.getElementById('seznam-container'); 
+    container.innerHTML = '';
 
-            zaznamy.forEach(z => {
-                let zd = new Date(z.datum);
-                if (zd.getMonth() === aktualniMesic && zd.getFullYear() === aktualniRok) {
-                    let h = kalkulujCisteHodiny(z);
-                    mesicniHodiny += h;
-                    mesicniPeneze += h * z.sazba;
-                }
+    if (!zaznamy || zaznamy.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#7f8c8d;">Zatím nemáš žádné záznamy.</div>';
+        return;
+    }
+
+    // 1. Příprava struktury pro seskupení dat
+    let groupedData = {};
+
+    zaznamy.forEach(z => {
+        let datum = new Date(z.datum);
+        let rok = datum.getFullYear();
+        let mesic = datum.getMonth() + 1;
+        let tyden = getIsoWeekNumber(datum);
+        
+        // Klíče pro třídění (např. "2026-08", "Týden 35")
+        let klicMesic = `${rok}-${String(mesic).padStart(2, '0')}`;
+        let klicTyden = `Týden ${tyden}`;
+        
+        let hodiny = kalkulujCisteHodiny(z);
+        let penize = hodiny * (z.sazba || 0);
+
+        // Vytvoření struktury měsíce, pokud ještě neexistuje
+        if (!groupedData[klicMesic]) {
+            groupedData[klicMesic] = { nazev: `${mesic}/${rok}`, totalH: 0, totalEur: 0, tydny: {} };
+        }
+        // Vytvoření struktury týdne uvnitř měsíce
+        if (!groupedData[klicMesic].tydny[klicTyden]) {
+            groupedData[klicMesic].tydny[klicTyden] = { nazev: klicTyden, totalH: 0, totalEur: 0, polozky: [] };
+        }
+
+        // Přičítání statistik
+        groupedData[klicMesic].totalH += hodiny;
+        groupedData[klicMesic].totalEur += penize;
+        groupedData[klicMesic].tydny[klicTyden].totalH += hodiny;
+        groupedData[klicMesic].tydny[klicTyden].totalEur += penize;
+        
+        // Uložení samotného záznamu
+        groupedData[klicMesic].tydny[klicTyden].polozky.push(z);
+    });
+
+    // 2. Vykreslení HTML na základě seskupených dat
+    // Seřadíme měsíce sestupně (od nejnovějšího)
+    let serazeneMesice = Object.keys(groupedData).sort().reverse();
+
+    serazeneMesice.forEach((klicM, index) => {
+        let mesicData = groupedData[klicM];
+        // První (nejnovější) měsíc necháme rovnou rozbalený pomocí atributu "open"
+        let isOpen = index === 0 ? 'open' : '';
+        
+        let htmlBlock = `
+            <details class="month-group" ${isOpen}>
+                <summary class="month-summary">
+                    <span>📅 Měsíc: ${mesicData.nazev}</span>
+                    <div class="summary-stats">
+                        ${mesicData.totalH.toFixed(2)} h <strong>${mesicData.totalEur.toFixed(2)} €</strong>
+                    </div>
+                </summary>
+        `;
+
+        // Seřazení týdnů sestupně
+        let serazeneTydny = Object.keys(mesicData.tydny).sort((a,b) => b.localeCompare(a));
+        
+        serazeneTydny.forEach(klicT => {
+            let tydenData = mesicData.tydny[klicT];
+            
+            htmlBlock += `
+                <details class="week-group">
+                    <summary class="week-summary">
+                        <span>🗓️ ${tydenData.nazev}</span>
+                        <div class="summary-stats">
+                            ${tydenData.totalH.toFixed(2)} h <strong style="color: #27ae60;">${tydenData.totalEur.toFixed(2)} €</strong>
+                        </div>
+                    </summary>
+                    <div class="records-list">
+            `;
+
+            // Vykreslení jednotlivých dní v daném týdnu
+            tydenData.polozky.forEach(z => {
+                let ikonaPdf = z.maVygenerovanePdf ? '📄✅' : '';
+                let datumFormat = new Date(z.datum).toLocaleDateString('cs-CZ');
+                let hodinyZaznam = kalkulujCisteHodiny(z).toFixed(2);
+                let penizeZaznam = (kalkulujCisteHodiny(z) * (z.sazba || 0)).toFixed(2);
+                
+                htmlBlock += `
+                    <div class="zaznam-item" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:8px 0;">
+                        <div class="checkbox-container" style="display:flex; gap:10px; align-items:center;">
+                            <input type="checkbox" onchange="toggleSelectZaznam('${z.id}')" ${z.selected ? 'checked' : ''}>
+                            <div>
+                                <strong>${datumFormat}</strong> - ${z.zakazka || 'Bez projektu'} ${ikonaPdf}<br>
+                                <span style="font-size: 12px; color: #7f8c8d;">${z.zacatek} - ${z.konec}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right; font-weight: bold;">
+                            ${hodinyZaznam} h<br>
+                            <span style="font-size:12px; color:#2c3e50;">${penizeZaznam} €</span>
+                        </div>
+                    </div>
+                `;
             });
+
+            htmlBlock += `</div></details>`; // Uzavření týdne
+        });
+
+        htmlBlock += `</details>`; // Uzavření měsíce
+        container.innerHTML += htmlBlock;
+    });
+}
+
 
             const nazvyMesicuCS = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
             document.getElementById('mesicni-souhrn-label').innerText = `${nazvyMesicuCS[aktualniMesic]} ${aktualniRok}`;
@@ -2493,7 +2615,7 @@ function exportConsiliumPDF(returnBlob = false) {
                 let h = kalkulujCisteHodiny(z); 
                 let item = document.createElement('div'); 
                 item.className = 'zaznam-item';
-                
+              
                 let badges = '';
                 if(z.pdfFaktura) badges += `<span style="background:#e74c3c; color:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">FA</span>`;
                 if(z.pdfStandard) badges += `<span style="background:#f39c12; color:black; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">STD</span>`;
@@ -2967,8 +3089,34 @@ function executePDFExport() {
                     alert(currentLang === 'cs' ? 'Faktura úspěšně uložena do archivu! Můžeš si ji stáhnout v záložce Faktury.' : 'Rechnung im Archiv gespeichert!');
                     closeExportCard();
                 }
+                
+    // Uložení stavu k vybraným záznamům, aby se u nich objevil příznak
+    let vybrane = zaznamy.filter(z => z.selected);
+    vybrane.forEach(z => {
+        z.maVygenerovanePdf = true; 
+        z.posledniExport = currentExportType; // např. 'techco' nebo 'consilium'
+    });
+    
+    // Důležité: Uložit upravené pole zpět do localStorage a překreslit
+    localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+    vykresliSeskupeneZaznamy();
+
+    // Vystřelení praporku podle toho, co se tvořilo
+    let typExportuText = '';
+    if (currentExportType === 'techco') typExportuText = 'TechCo dokument';
+    else if (currentExportType === 'consilium') typExportuText = 'Vložené PDF (Consilium)';
+    else if (currentExportType === 'faktura') typExportuText = 'Faktura';
+    else typExportuText = 'Standardní PDF';
+
+    ukazPraporek(`${typExportuText} bylo úspěšně vygenerováno a připojeno k týdnu!`);
+    
+    // Zavřít kartu po exportu
+    closeExportCard(); 
+                
+                }
             } 
         } 
+    
 async function sharePDFExport() {
     let fileBlob = null;
     let fileName = "";
