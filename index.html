@@ -6,9 +6,8 @@
     <title>Království Pracovních Hodin</title>
     
     <!-- Knihovny -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         :root { --primary: #f39c12; --primary-hover: #d35400; --bg: #f5f6fa; --card-bg: #ffffff; --text: #2c3e50; --border: #dcdde1; }
@@ -473,7 +472,165 @@ document.addEventListener('DOMContentLoaded', () => {
         inpDatum.value = new Date().toISOString().slice(0, 10);
     }
     updateLiveHours();
-});    
+});   
+    // ==========================================
+// LOGIKA PRACOVNÍCH ZÁZNAMŮ A FAKTURACE
+// ==========================================
+
+// 1. Uložení nového záznamu z kalkulačky
+function ulozZaznam() {
+    let datum = document.getElementById('inp-datum')?.value;
+    let zacatek = document.getElementById('inp-zacatek')?.value;
+    let konec = document.getElementById('inp-konec')?.value;
+    let pauzaOd = document.getElementById('inp-prestavka-od')?.value || '';
+    let pauzaDo = document.getElementById('inp-prestavka-do')?.value || '';
+    let popisText = document.getElementById('inp-popis')?.value || '';
+
+    if (!datum || !zacatek || !konec) {
+        ukazPraporek('Vyplň prosím datum, začátek a konec práce.', 'error');
+        return;
+    }
+
+    let novyZaznam = {
+        id: Date.now().toString(),
+        datum: datum,
+        zacatek: zacatek,
+        konec: konec,
+        pauzaOd: pauzaOd,
+        pauzaDo: pauzaDo,
+        popis: currentInputMode === 'text' ? popisText : '',
+        nacresk: actPopisImgData || null,
+        klient: document.getElementById('cfg-firma-techco')?.value || 'Nespecifikováno'
+    };
+
+    // Vypočítáme čisté hodiny pomocí již připravené funkce
+    novyZaznam.cisteHodiny = kalkulujCisteHodiny(novyZaznam);
+
+    let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
+    zaznamy.push(novyZaznam);
+    localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+
+    ukazPraporek('Záznam byl úspěšně uložen!');
+    vycistiFormularZaznamu();
+    renderZaznamy();
+    renderFakturyPrehled();
+}
+
+// 2. Vykreslení seznamu v záložce "Záznamy"
+function renderZaznamy() {
+    let container = document.getElementById('view-zaznamy');
+    if (!container) return;
+
+    let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
+
+    let listEl = document.getElementById('zaznamy-list-wrapper');
+    if (!listEl) {
+        listEl = document.createElement('div');
+        listEl.id = 'zaznamy-list-wrapper';
+        listEl.style.marginTop = '15px';
+        container.appendChild(listEl);
+    }
+
+    if (zaznamy.length === 0) {
+        listEl.innerHTML = '<div class="card" style="text-align:center; color:#7f8c8d; padding:20px;">Zatím nemáš žádné uložené záznamy.</div>';
+        return;
+    }
+
+    // Seřazení od nejnovějšího podle data
+    zaznamy.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+
+    let celkemHodinVse = 0;
+    let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+
+    zaznamy.forEach(z => {
+        let hodiny = Number(z.cisteHodiny || 0);
+        celkemHodinVse += hodiny;
+        let datumFormated = new Date(z.datum).toLocaleDateString('cs-CZ');
+
+        html += `
+            <div class="card" style="margin-bottom:0; padding:12px; border-left: 5px solid #3498db; background: #fff;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                    <strong style="font-size:15px; color:#2c3e50;">📅 ${datumFormated}</strong>
+                    <span style="background:#3498db; color:#fff; padding:3px 8px; border-radius:12px; font-weight:bold; font-size:13px;">
+                        ${hodiny.toFixed(2)} h
+                    </span>
+                </div>
+                <div style="font-size:13px; color:#555; margin-bottom:5px;">
+                    🕒 <b>Čas:</b> ${z.zacatek} – ${z.konec} ${z.pauzaOd ? `(Pauza: ${z.pauzaOd}–${z.pauzaDo})` : ''}
+                </div>
+                ${z.popis ? `<div style="font-size:13px; color:#333; margin-top:5px; background:#f8f9fa; padding:6px; border-radius:4px;"><b>Popis:</b> ${z.popis}</div>` : ''}
+                ${z.nacresk ? `<div style="margin-top:5px;"><img src="${z.nacresk}" style="max-height:60px; border:1px solid #ccc; border-radius:4px;"></div>` : ''}
+                <div style="display:flex; justify-content:flex-end; gap:5px; margin-top:8px;">
+                    <button class="btn-sec" style="background:#e74c3c; color:white; padding:4px 10px; font-size:12px;" onclick="smazZaznam('${z.id}')">🗑️ Smazat</button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `
+        <div style="padding:12px; background:#2c3e50; color:white; border-radius:8px; font-weight:bold; text-align:right; margin-top:5px; font-size:14px;">
+            Celkem odpracováno: ${celkemHodinVse.toFixed(2)} h
+        </div>
+    </div>`;
+
+    listEl.innerHTML = html;
+}
+
+// 3. Mazání konkrétního záznamu
+function smazZaznam(id) {
+    if (!confirm('Opravdu chceš tento záznam smazat?')) return;
+
+    let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
+    zaznamy = zaznamy.filter(z => z.id !== id);
+    localStorage.setItem('pracovni_zaznamy', JSON.stringify(zaznamy));
+
+    ukazPraporek('Záznam smazán');
+    renderZaznamy();
+    renderFakturyPrehled();
+}
+
+// 4. Vyčištění zadávání po uložení
+function vycistiFormularZaznamu() {
+    let popis = document.getElementById('inp-popis');
+    if (popis) popis.value = '';
+    if (typeof clearFsCanvas === 'function') clearFsCanvas();
+}
+
+// 5. Příprava přehledu v záložce "Faktury"
+function renderFakturyPrehled() {
+    let container = document.getElementById('view-faktury');
+    if (!container) return;
+
+    let zaznamy = JSON.parse(localStorage.getItem('pracovni_zaznamy')) || [];
+    let celkemHodin = zaznamy.reduce((sum, z) => sum + (Number(z.cisteHodiny) || 0), 0);
+
+    let fakBox = document.getElementById('faktury-summary-box');
+    if (!fakBox) {
+        fakBox = document.createElement('div');
+        fakBox.id = 'faktury-summary-box';
+        fakBox.className = 'card';
+        fakBox.style.background = '#fcf8e3';
+        fakBox.style.borderColor = '#faebcc';
+        container.insertBefore(fakBox, container.firstChild);
+    }
+
+    fakBox.innerHTML = `
+        <div class="card-title" style="color: #8a6d3b;">🧾 Podklady pro fakturaci</div>
+        <p style="margin-bottom:12px; font-size:14px; color: #8a6d3b;">
+            Připraveno k fakturaci: <b>${zaznamy.length} záznamů</b> (Celkem: <b>${celkemHodin.toFixed(2)} hodin</b>).
+        </p>
+        <button class="btn-main" style="background:#8e44ad; color:white; width:100%; font-weight:bold;" onclick="ukazPraporek('Příprava PDF exportu...')">
+            📄 Vygenerovat podklady pro fakturu / Stundenzettel
+        </button>
+    `;
+}
+
+// Automatic render po načtení
+window.addEventListener('load', () => {
+    renderZaznamy();
+    renderFakturyPrehled();
+});
+    
 </script>
 </body>
 </html>
