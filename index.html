@@ -819,8 +819,13 @@ summary.week-summary:hover { background: #dfe6e9; }
 
 <script>
       window.addEventListener('load', () => {
-            if(window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) return; 
-                
+    // Speciální režimy
+    if (window.location.search.includes('fullsync=') || window.location.search.includes('remoteSig=')) {
+        showApp();
+        return;
+    }
+    // U nové úvodní obrazovky už není potřeba animovat neexistující elementy
+});
             setTimeout(() => {
                 document.getElementById('a-hand').style.display = 'none';
                 document.getElementById('a-paper').style.display = 'none';
