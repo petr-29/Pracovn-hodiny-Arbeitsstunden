@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stundenzettel App</title>
     <style>
-        /* Definice barev a zakulacení */
         :root {
             --bg-main: #121212;
             --bg-card: #1e1e1e;
+            --bg-card-sub: #161616;
+            --bg-card-deep: #101010;
             --primary-orange: #FF8C00;
             --primary-orange-hover: #FFA500;
             --text-main: #ffffff;
@@ -16,73 +17,36 @@
             --radius-large: 24px;
             --radius-medium: 16px;
             --radius-small: 12px;
+            --danger: #E74C3C;
+            --info: #3498DB;
+            --success: #2ECC71;
+            --success-hover: #27ae60;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); }
+        .hidden { display: none !important; }
 
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            padding-bottom: 80px;
+        /* Vstupní obrazovka */
+        #splash-screen {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
         }
+        .app-logo { font-size: 64px; margin-bottom: 20px; }
+        .app-title { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+        .app-subtitle { color: var(--text-muted); margin-bottom: 40px; }
 
-        .app-container {
+        /* Hlavní aplikace */
+        #main-app {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-        }
-
-        /* Nový úvod */
-        header {
-            margin-bottom: 30px;
-            padding-top: 10px;
-        }
-
-        .greeting {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 5px;
-        }
-        
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .card {
-            background-color: var(--bg-card);
-            border-radius: var(--radius-large);
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .summary-card {
-            border-left: 6px solid var(--primary-orange);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .summary-title {
-            color: var(--text-muted);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        .summary-value-eur {
-            color: var(--primary-orange);
-            font-size: 24px;
-            font-weight: bold;
-            text-align: right;
+            padding-bottom: 80px;
         }
 
         /* Tlačítka */
@@ -95,254 +59,722 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.2s ease;
             width: 100%;
+            transition: 0.2s;
+        }
+        .btn:active { background-color: var(--primary-orange-hover); }
+        .btn-outline { background-color: transparent; color: var(--text-main); border: 2px solid #333; margin-top: 10px; }
+        .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; cursor: pointer; }
+        .btn-small { background-color: var(--info); color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; cursor: pointer; font-weight: 600; }
+        
+        .btn-pichačky-start {
+            background-color: var(--success);
+            color: #000;
+            font-size: 18px;
+            padding: 16px;
+            border-radius: var(--radius-large);
+            font-weight: bold;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        .btn-pichačky-start:active { background-color: var(--success-hover); }
+
+        .btn-pichačky-stop {
+            background-color: var(--danger);
+            color: #fff;
+            font-size: 18px;
+            padding: 16px;
+            border-radius: var(--radius-large);
+            font-weight: bold;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
         }
 
-        .btn:active {
-            background-color: var(--primary-orange-hover);
-        }
-
-        .btn-outline {
-            background-color: transparent;
-            color: var(--text-main);
+        /* Panel Píchaček */
+        .pichačky-card {
+            background: linear-gradient(145deg, #1a1a1a, #161616);
             border: 2px solid #333;
-            margin-top: 10px;
+            border-radius: var(--radius-large);
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .stopwatch-display {
+            font-size: 38px;
+            font-weight: 800;
+            color: var(--primary-orange);
+            margin: 10px 0;
+            letter-spacing: 2px;
         }
 
-        /* Záznamy v seznamu */
+        /* Horní navigace PDF / Exporty */
+        .pdf-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .pdf-btn {
+            flex: 1 1 calc(50% - 4px);
+            background-color: #2a2a2a;
+            color: var(--text-main);
+            border: none;
+            padding: 12px 8px;
+            border-radius: var(--radius-medium);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .pdf-btn:hover { background-color: #383838; }
+        .pdf-btn.purple { background-color: #8E44AD; }
+        .pdf-btn.red { background-color: #E74C3C; }
+        .pdf-btn.blue { background-color: #3498DB; }
+        .pdf-btn.orange { background-color: var(--primary-orange); color: #000; }
+
+        /* Karty a stromeček */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-large);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease;
+        }
+
+        /* 1. Úroveň: Měsíc */
+        .month-card {
+            border-left: 6px solid var(--primary-orange);
+            cursor: pointer;
+        }
+        .month-card:hover { background-color: #262626; }
+        
+        .summary-title {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 3px;
+        }
+        .summary-value {
+            color: var(--primary-orange);
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .month-content {
+            margin-left: 12px;
+            padding-left: 10px;
+            border-left: 2px dashed #333;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* 2. Úroveň: Týden */
+        .week-card {
+            background-color: var(--bg-card-sub);
+            border-left: 4px solid var(--primary-orange);
+            cursor: pointer;
+        }
+        .week-card:hover { background-color: #202020; }
+
+        .week-content {
+            margin-left: 12px;
+            padding-left: 10px;
+            border-left: 2px dashed #2c2c2c;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* 3. Úroveň: Denní záznam */
         .record-item {
+            background-color: var(--bg-card-deep);
+            border: 1px solid #282828;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* Vlastní checkboxy */
+        .custom-checkbox {
+            width: 24px;
+            height: 24px;
+            background-color: #121212;
+            border: 2px solid #444;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .custom-checkbox.checked {
+            background-color: var(--primary-orange);
+            border-color: var(--primary-orange);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .record-info { flex: 1; }
+        .record-info div { margin-bottom: 2px; }
+        .record-time { color: var(--text-muted); font-size: 12px; }
+        .record-desc { font-size: 13px; color: #ccc; }
+        .record-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .record-hours { background-color: #222; color: var(--primary-orange); padding: 4px 10px; border-radius: var(--radius-small); font-weight: bold; font-size: 13px; }
+
+        /* Uložená PDF v týdnu */
+        .week-pdf-section {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: var(--radius-medium);
+            padding: 10px 14px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
-        .record-time {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-top: 4px;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .record-hours {
-            background-color: #2a2a2a;
-            color: var(--primary-orange);
-            padding: 6px 12px;
-            border-radius: var(--radius-medium);
-            font-weight: bold;
-        }
-
-        /* Modální okno (Formulář) */
+        /* Modál formulář */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex; justify-content: center; align-items: center;
+            padding: 15px; z-index: 100;
+            opacity: 0; pointer-events: none; transition: 0.3s;
         }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-content {
-            background-color: var(--bg-main);
-            width: 100%;
-            max-width: 400px;
-            border-radius: var(--radius-large);
-            padding: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
             background-color: var(--bg-card);
-            border: 1px solid #333;
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: var(--radius-small);
-            font-size: 16px;
-            outline: none;
+            width: 100%; max-width: 450px;
+            border-radius: var(--radius-large);
+            padding: 24px; border: 1px solid #333;
+            max-height: 90vh; overflow-y: auto;
         }
-        
-        .form-group input:focus {
-            border-color: var(--primary-orange);
+
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-group { flex: 1; margin-bottom: 15px; }
+        .form-group label { display: block; color: var(--text-muted); margin-bottom: 6px; font-size: 13px; }
+        .form-group input, .form-group select {
+            width: 100%; background-color: #121212; border: 1px solid #333;
+            color: var(--text-main); padding: 12px; border-radius: var(--radius-small);
+            font-size: 16px; outline: none;
         }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary-orange); }
+        .section-title { font-size: 13px; color: var(--primary-orange); margin-bottom: 10px; margin-top: 5px; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <!-- Osobní úvod -->
-        <header>
-            <h1 class="greeting">Ahoj Petře 👋</h1>
-            <p class="subtitle">Tvůj přehled odpracovaných hodin</p>
-        </header>
-
-        <!-- Souhrnná karta -->
-        <div class="card summary-card">
-            <div>
-                <div class="summary-title">Měsíční souhrn</div>
-                <div style="font-size: 18px; font-weight: 500;" id="current-month-text">Září 2026</div>
-            </div>
-            <div>
-                <div class="summary-value-eur" id="total-eur">0.00 €</div>
-                <div style="color: var(--text-muted); text-align: right; font-size: 14px;" id="total-hours">0.00 h</div>
-            </div>
-        </div>
-
-        <!-- Seznam záznamů -->
-        <div id="records-list">
-            <!-- Sem se budou generovat záznamy pomocí JS -->
-        </div>
-
-        <button class="btn" style="margin-top: 10px;" onclick="openModal()">+ Přidat nový záznam</button>
+    <!-- ÚVODNÍ OBRAZOVKA -->
+    <div id="splash-screen">
+        <div class="app-logo">⏱️</div>
+        <h1 class="app-title">Stundenzettel</h1>
+        <p class="app-subtitle">Profesionální evidence hodin a výkazů</p>
+        <button class="btn" style="max-width: 250px;" onclick="enterApp()">Vstoupit do aplikace</button>
     </div>
 
-    <!-- Modální okno pro přidání hodin -->
+    <!-- HLAVNÍ APLIKACE -->
+    <div id="main-app" class="hidden">
+        
+        <!-- PÍCHAČKY (Živé stopky) -->
+        <div class="pichačky-card">
+            <div style="font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Rychlé píchačky</div>
+            <div class="stopwatch-display" id="stopwatch-time">00:00:00</div>
+            <div id="pichačky-controls">
+                <button class="btn-pichačky-start" onclick="startStopwatch()">🟢 Zahájit práci (Příchod)</button>
+            </div>
+            <div id="pichačky-active-info" class="hidden" style="margin-top: 10px;">
+                <input type="text" id="pichačky-popis" placeholder="Popis práce (např. montáž rozvaděče...)" style="width: 100%; background: #121212; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;">
+                <button class="btn-pichačky-stop" onclick="stopStopwatch()">🔴 Ukončit práci (Odchod & Uložit)</button>
+            </div>
+        </div>
+
+        <!-- Horní navigace pro generování PDF z vybraných záznamů -->
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Vygenerovat PDF z označených dnů:</div>
+        <div class="pdf-nav">
+            <button class="pdf-btn blue" onclick="generatePdf('Standard')">📄 Standard PDF</button>
+            <button class="pdf-btn orange" onclick="generatePdf('Abnahme')">📑 Abnahme PDF</button>
+            <button class="pdf-btn red" onclick="generatePdf('Faktura')">💰 Faktura PDF</button>
+            <button class="pdf-btn purple" onclick="generatePdf('Vložené')">📂 Vložené PDF</button>
+        </div>
+
+        <!-- STROMOVÝ SEZNAM ZÁZNAMŮ -->
+        <div id="tree-container">
+            <!-- Dynamický stromeček -->
+        </div>
+
+        <button class="btn btn-outline" style="margin-top: 15px;" onclick="openModal()">+ Zapsat hodiny ručně</button>
+    </div>
+
+    <!-- MODÁLNÍ OKNO PRO RUČNÍ ZÁZNAM -->
     <div class="modal-overlay" id="add-modal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 20px;">Nový záznam</h2>
+            <h2 style="margin-bottom: 20px;">Ruční záznam hodin</h2>
             
             <div class="form-group">
                 <label>Datum</label>
                 <input type="date" id="input-datum">
             </div>
             
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 1;">
-                    <label>Od</label>
-                    <input type="time" id="input-od" value="07:00">
+            <div class="section-title">Pracovní doba</div>
+            <div class="form-row">
+                <div class="form-group"><label>Od</label><input type="time" id="input-od" value="07:00"></div>
+                <div class="form-group"><label>Do</label><input type="time" id="input-do" value="16:00"></div>
+            </div>
+
+            <div class="section-title">Přestávka</div>
+            <div class="form-row">
+                <div class="form-group"><label>Pauza Od</label><input type="time" id="input-pauza-od" value="12:00"></div>
+                <div class="form-group"><label>Pauza Do</label><input type="time" id="input-pauza-do" value="12:30"></div>
+            </div>
+
+            <div class="section-title">Finance</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Hodinová sazba</label>
+                    <input type="number" id="input-sazba" value="25" step="0.5">
                 </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Do</label>
-                    <input type="time" id="input-do" value="16:00">
+                <div class="form-group">
+                    <label>Měna</label>
+                    <select id="input-mena">
+                        <option value="EUR">€ (EUR)</option>
+                        <option value="CZK">Kč (CZK)</option>
+                    </select>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Popis (volitelné)</label>
+                <label>Popis práce</label>
                 <input type="text" id="input-popis" placeholder="Např. tahání kabelů...">
             </div>
 
-            <button class="btn" onclick="saveRecord()">Uložit záznam</button>
+            <button class="btn" onclick="saveManualRecord()">Uložit záznam</button>
             <button class="btn btn-outline" onclick="closeModal()">Zrušit</button>
         </div>
     </div>
 
     <script>
-        // 1. Nastavení výchozích hodnot
-        const SAZBA_EUR = 25; // Tvoje hodinová sazba v eurech
-        let zaznamy = JSON.parse(localStorage.getItem('nove_pracovni_zaznamy')) || [];
+        let zaznamy = JSON.parse(localStorage.getItem('stundenzettel_zaznamy')) || [];
+        let weekPdfs = JSON.parse(localStorage.getItem('stundenzettel_week_pdfs')) || {};
+        let selectedRecordIds = JSON.parse(localStorage.getItem('stundenzettel_selected')) || [];
+        
+        let openMonths = JSON.parse(localStorage.getItem('st_open_months')) || {};
+        let openWeeks = JSON.parse(localStorage.getItem('st_open_weeks')) || {};
 
-        // Inicializace při načtení stránky
-        window.onload = () => {
-            document.getElementById('input-datum').valueAsDate = new Date(); // Dnešní datum do formuláře
-            renderRecords();
-        };
+        // Stav stopek (Píchaček)
+        let activeSession = JSON.parse(localStorage.getItem('stundenzettel_active_session')) || null;
+        let stopwatchInterval = null;
 
-        // 2. Obsluha modálního okna
-        function openModal() {
-            document.getElementById('add-modal').classList.add('active');
+        const czechMonths = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
+
+        function enterApp() {
+            document.getElementById('splash-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('input-datum').valueAsDate = new Date();
+            initStopwatch();
+            renderApp();
         }
 
-        function closeModal() {
-            document.getElementById('add-modal').classList.remove('active');
-        }
-
-        // 3. Uložení nového záznamu
-        function saveRecord() {
-            const datum = document.getElementById('input-datum').value;
-            const odCas = document.getElementById('input-od').value;
-            const doCas = document.getElementById('input-do').value;
-            const popis = document.getElementById('input-popis').value;
-
-            if (!datum || !odCas || !doCas) {
-                alert('Vyplň prosím datum a čas.');
-                return;
+        /* --- LOGIKA PÍCHAČEK (STOPKY) --- */
+        function initStopwatch() {
+            if (activeSession) {
+                document.getElementById('pichačky-controls').classList.add('hidden');
+                document.getElementById('pichačky-active-info').classList.remove('hidden');
+                document.getElementById('pichačky-popis').value = activeSession.popis || '';
+                startStopwatchInterval();
             }
+        }
 
-            // Jednoduchý výpočet hodin (bez odečtu pauzy pro začátek)
-            let [h1, m1] = odCas.split(':').map(Number);
-            let [h2, m2] = doCas.split(':').map(Number);
-            let hodinyCiste = (h2 + m2/60) - (h1 + m1/60);
+        function startStopwatch() {
+            const now = new Date().getTime();
+            activeSession = {
+                startTime: now,
+                popis: ''
+            };
+            localStorage.setItem('stundenzettel_active_session', JSON.stringify(activeSession));
+            document.getElementById('pichačky-controls').classList.add('hidden');
+            document.getElementById('pichačky-active-info').classList.remove('hidden');
+            startStopwatchInterval();
+        }
+
+        function startStopwatchInterval() {
+            if (stopwatchInterval) clearInterval(stopwatchInterval);
             
-            if (hodinyCiste < 0) hodinyCiste = 0; // Ošetření přes půlnoc si necháme na jindy
+            stopwatchInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const diffMs = now - activeSession.startTime;
+                const totalSeconds = Math.floor(diffMs / 1000);
+                
+                const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+                const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+                const seconds = String(totalSeconds % 60).padStart(2, '0');
+
+                document.getElementById('stopwatch-time').innerText = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function stopStopwatch() {
+            if (!activeSession) return;
+            const endTime = new Date();
+            const startTime = new Date(activeSession.startTime);
+            const popisInput = document.getElementById('pichačky-popis').value;
+
+            const formatTime = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+            const formatDate = (d) => d.toISOString().split('T')[0];
+
+            let pratelneMinut = (endTime - startTime) / 60000;
+            // Automatické odečtení 30 minut pauzy, pokud pracoval déle než 6 hodin
+            if (pratelneMinut > 360) pratelneMinut -= 30;
+            if (pratelneMinut < 0) pratelneMinut = 0;
+            const cisteHodiny = Math.round((pratelneMinut / 60) * 100) / 100;
 
             const novyZaznam = {
                 id: Date.now(),
-                datum: datum,
-                od: odCas,
-                do: doCas,
-                hodiny: hodinyCiste,
-                popis: popis
+                datum: formatDate(startTime),
+                od: formatTime(startTime),
+                do: formatTime(endTime),
+                pauzaOd: pratelneMinut > 360 ? '12:00' : '',
+                pauzaDo: pratelneMinut > 360 ? '12:30' : '',
+                cisteHodiny: cisteHodiny > 0 ? cisteHodiny : 0.5,
+                sazba: 25,
+                mena: 'EUR',
+                popis: popisInput || 'Práce dle stopek'
             };
 
             zaznamy.push(novyZaznam);
-            
-            // Seřazení od nejnovějšího po nejstarší
             zaznamy.sort((a, b) => new Date(b.datum) - new Date(a.datum));
-            
-            localStorage.setItem('nove_pracovni_zaznamy', JSON.stringify(zaznamy));
-            
-            closeModal();
-            renderRecords();
+            localStorage.setItem('stundenzettel_zaznamy', JSON.stringify(zaznamy));
+
+            // Vyčištění stopek
+            clearInterval(stopwatchInterval);
+            activeSession = null;
+            localStorage.removeItem('stundenzettel_active_session');
+            document.getElementById('stopwatch-time').innerText = "00:00:00";
+            document.getElementById('pichačky-active-info').classList.add('hidden');
+            document.getElementById('pichačky-controls').classList.remove('hidden');
+            document.getElementById('pichačky-popis').value = '';
+
+            renderApp();
+            alert('Práce byla úspěšně ukončena a uložena do záznamů!');
         }
 
-        // 4. Vykreslení seznamu a přepočet
-        function renderRecords() {
-            const container = document.getElementById('records-list');
+        /* --- SPRÁVA MODÁLU PRO RUČNÍ ZÁZNAM --- */
+        function openModal() { document.getElementById('add-modal').classList.add('active'); }
+        function closeModal() { document.getElementById('add-modal').classList.remove('active'); }
+
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function getWeekNumber(dateObj) {
+            const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function saveManualRecord() {
+            const datum = document.getElementById('input-datum').value;
+            const od = document.getElementById('input-od').value;
+            const doC = document.getElementById('input-do').value;
+            const pauzaOd = document.getElementById('input-pauza-od').value;
+            const pauzaDo = document.getElementById('input-pauza-do').value;
+            const sazba = parseFloat(document.getElementById('input-sazba').value) || 0;
+            const mena = document.getElementById('input-mena').value;
+            const popis = document.getElementById('input-popis').value;
+
+            if (!datum || !od || !doC) {
+                alert('Prosím vyplň datum, začátek a konec pracovní doby.');
+                return;
+            }
+
+            let pratelneMinut = timeToMinutes(doC) - timeToMinutes(od);
+            let pauzaMinut = timeToMinutes(pauzaDo) - timeToMinutes(pauzaOd);
+            if (pauzaMinut > 0) pratelneMinut -= pauzaMinut;
+            if (pratelneMinut < 0) pratelneMinut = 0;
+
+            const cisteHodiny = Math.round((pratelneMinut / 60) * 100) / 100;
+
+            const novyZaznam = {
+                id: Date.now(), datum, od, do: doC,
+                pauzaOd: pauzaMinut > 0 ? pauzaOd : '',
+                pauzaDo: pauzaMinut > 0 ? pauzaDo : '',
+                cisteHodiny, sazba, mena, popis
+            };
+
+            zaznamy.push(novyZaznam);
+            zaznamy.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+            localStorage.setItem('stundenzettel_zaznamy', JSON.stringify(zaznamy));
+            closeModal();
+            renderApp();
+        }
+
+        function deleteRecord(id, event) {
+            event.stopPropagation();
+            zaznamy = zaznamy.filter(z => z.id !== id);
+            selectedRecordIds = selectedRecordIds.filter(selectedId => selectedId !== id);
+            localStorage.setItem('stundenzettel_zaznamy', JSON.stringify(zaznamy));
+            localStorage.setItem('stundenzettel_selected', JSON.stringify(selectedRecordIds));
+            renderApp();
+        }
+
+        /* --- ZAŠKRTÁVÁNÍ A VÝBĚR --- */
+        function toggleRecordSelection(id, event) {
+            event.stopPropagation();
+            const index = selectedRecordIds.indexOf(id);
+            if (index > -1) {
+                selectedRecordIds.splice(index, 1);
+            } else {
+                selectedRecordIds.push(id);
+            }
+            localStorage.setItem('stundenzettel_selected', JSON.stringify(selectedRecordIds));
+            renderApp();
+        }
+
+        function toggleSelectAllWeek(weekRecordIds, event) {
+            event.stopPropagation();
+            const allSelected = weekRecordIds.every(id => selectedRecordIds.includes(id));
+
+            if (allSelected) {
+                selectedRecordIds = selectedRecordIds.filter(id => !weekRecordIds.includes(id));
+            } else {
+                weekRecordIds.forEach(id => {
+                    if (!selectedRecordIds.includes(id)) selectedRecordIds.push(id);
+                });
+            }
+            localStorage.setItem('stundenzettel_selected', JSON.stringify(selectedRecordIds));
+            renderApp();
+        }
+
+        /* --- VYGENEROVÁNÍ PDF Z OZNAČENÝCH --- */
+        function generatePdf(pdfType) {
+            if (selectedRecordIds.length === 0) {
+                alert('Nejprve zaškrtni alespoň jeden den/záznam, pro který chceš PDF vytvořit.');
+                return;
+            }
+
+            const nowStr = new Date().toLocaleDateString('cs-CZ');
+            const pdfName = `${pdfType} výkaz (${selectedRecordIds.length} dnů, ${nowStr})`;
+
+            zaznamy.forEach(z => {
+                if (selectedRecordIds.includes(z.id)) {
+                    const dateObj = new Date(z.datum);
+                    const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth()).padStart(2, '0')}`;
+                    const weekNum = getWeekNumber(dateObj);
+                    const weekKey = `${monthKey}-W${weekNum}`;
+
+                    if (!weekPdfs[weekKey]) weekPdfs[weekKey] = [];
+                    
+                    const alreadyExists = weekPdfs[weekKey].some(p => p.name === pdfName);
+                    if (!alreadyExists) {
+                        weekPdfs[weekKey].push({
+                            id: Date.now() + Math.random(),
+                            name: pdfName,
+                            date: nowStr
+                        });
+                    }
+                }
+            });
+
+            localStorage.setItem('stundenzettel_week_pdfs', JSON.stringify(weekPdfs));
+            alert(`Úspěšně vygenerováno: ${pdfName}!\nDokument byl uložen do příslušných týdnů v seznamu.`);
+            renderApp();
+        }
+
+        function viewPdf(pdfName, event) {
+            event.stopPropagation();
+            alert(`Otevírám náhled dokumentu: ${pdfName}\n(Zde se zobrazí tisková náhledová šablona k přeposlání).`);
+        }
+
+        function deletePdf(weekKey, pdfId, event) {
+            event.stopPropagation();
+            if(confirm("Opravdu chceš tento uložený výkaz smazat?")) {
+                weekPdfs[weekKey] = weekPdfs[weekKey].filter(p => p.id !== pdfId);
+                localStorage.setItem('stundenzettel_week_pdfs', JSON.stringify(weekPdfs));
+                renderApp();
+            }
+        }
+
+        function toggleMonth(monthKey) {
+            openMonths[monthKey] = !openMonths[monthKey];
+            localStorage.setItem('st_open_months', JSON.stringify(openMonths));
+            renderApp();
+        }
+
+        function toggleWeek(weekKey, event) {
+            event.stopPropagation();
+            openWeeks[weekKey] = !openWeeks[weekKey];
+            localStorage.setItem('st_open_weeks', JSON.stringify(openWeeks));
+            renderApp();
+        }
+
+        /* --- RENDER APLIKACE --- */
+        function renderApp() {
+            const container = document.getElementById('tree-container');
             container.innerHTML = '';
-            
-            let celkemHodin = 0;
 
             if (zaznamy.length === 0) {
                 container.innerHTML = `
-                    <div class="card" style="text-align: center; color: var(--text-muted);">
-                        Zatím nemáš žádné záznamy.
+                    <div class="card" style="text-align: center; color: var(--text-muted); cursor: default;">
+                        Zatím zde nejsou žádné záznamy. Spusť píchačky nahoře nebo přidej hodiny ručně.
                     </div>`;
-            } else {
-                zaznamy.forEach(z => {
-                    celkemHodin += z.hodiny;
-                    
-                    // Formátování data do české podoby (např. 1. 9. 2026)
-                    const dateObj = new Date(z.datum);
-                    const formatDatum = dateObj.toLocaleDateString('cs-CZ');
-
-                    const html = `
-                    <div class="card record-item">
-                        <div>
-                            <div style="font-weight: 500;">${formatDatum}</div>
-                            <div class="record-time">🕒 ${z.od} - ${z.do} ${z.popis ? `| <i>${z.popis}</i>` : ''}</div>
-                        </div>
-                        <div class="record-hours">${z.hodiny.toFixed(2)} h</div>
-                    </div>`;
-                    
-                    container.innerHTML += html;
-                });
+                return;
             }
 
-            // Přepočet a vypsání souhrnu nahoře
-            document.getElementById('total-hours').innerText = `${celkemHodin.toFixed(2)} h`;
-            document.getElementById('total-eur').innerText = `${(celkemHodin * SAZBA_EUR).toFixed(2)} €`;
+            let tree = {};
+
+            zaznamy.forEach(z => {
+                const dateObj = new Date(z.datum);
+                const monthName = czechMonths[dateObj.getMonth()];
+                const year = dateObj.getFullYear();
+                const monthKey = `${year}-${String(dateObj.getMonth()).padStart(2, '0')}`;
+                const monthTitle = `${monthName} ${year}`;
+                
+                const weekNum = getWeekNumber(dateObj);
+                const weekKey = `${monthKey}-W${weekNum}`;
+                const weekTitle = `${weekNum}. týden`;
+
+                if (!tree[monthKey]) {
+                    tree[monthKey] = { title: monthTitle, totalHours: 0, totalMoneyEUR: 0, totalMoneyCZK: 0, weeks: {} };
+                }
+                if (!tree[monthKey].weeks[weekKey]) {
+                    tree[monthKey].weeks[weekKey] = { title: weekTitle, totalHours: 0, totalMoneyEUR: 0, totalMoneyCZK: 0, records: [] };
+                }
+
+                tree[monthKey].totalHours += z.cisteHodiny;
+                tree[monthKey].weeks[weekKey].totalHours += z.cisteHodiny;
+
+                const zarobok = z.cisteHodiny * z.sazba;
+                if (z.mena === 'EUR') {
+                    tree[monthKey].totalMoneyEUR += zarobok;
+                    tree[monthKey].weeks[weekKey].totalMoneyEUR += zarobok;
+                } else {
+                    tree[monthKey].totalMoneyCZK += zarobok;
+                    tree[monthKey].weeks[weekKey].totalMoneyCZK += zarobok;
+                }
+
+                tree[monthKey].weeks[weekKey].records.push(z);
+            });
+
+            for (const [monthKey, monthData] of Object.entries(tree)) {
+                const isMonthOpen = openMonths[monthKey] !== false;
+                
+                let monthMoneyStr = `${monthData.totalMoneyEUR.toFixed(2)} €`;
+                if (monthData.totalMoneyCZK > 0 && monthData.totalMoneyEUR === 0) monthMoneyStr = `${monthData.totalMoneyCZK.toFixed(2)} Kč`;
+                else if (monthData.totalMoneyCZK > 0) monthMoneyStr = `${monthData.totalMoneyEUR.toFixed(2)} € + ${monthData.totalMoneyCZK.toFixed(2)} Kč`;
+
+                let branchHtml = `
+                <div class="card month-card" onclick="toggleMonth('${monthKey}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="summary-title">Měsíční souhrn ${isMonthOpen ? '▼' : '▶'}</div>
+                            <div style="font-size: 16px; font-weight: 600;">📅 ${monthData.title}</div>
+                        </div>
+                        <div>
+                            <div class="summary-value">${monthMoneyStr}</div>
+                            <div style="color: var(--text-muted); text-align: right; font-size: 12px;">${monthData.totalHours.toFixed(2)} h celkem</div>
+                        </div>
+                    </div>
+                `;
+
+                if (isMonthOpen) {
+                    branchHtml += `<div class="month-content">`;
+                    
+                    for (const [weekKey, weekData] of Object.entries(monthData.weeks)) {
+                        const isWeekOpen = openWeeks[weekKey] !== false;
+                        const weekRecordIds = weekData.records.map(r => r.id);
+                        const allWeekChecked = weekRecordIds.length > 0 && weekRecordIds.every(id => selectedRecordIds.includes(id));
+
+                        let weekMoneyStr = `${weekData.totalMoneyEUR.toFixed(2)} €`;
+                        if (weekData.totalMoneyCZK > 0 && weekData.totalMoneyEUR === 0) weekMoneyStr = `${weekData.totalMoneyCZK.toFixed(2)} Kč`;
+                        else if (weekData.totalMoneyCZK > 0) weekMoneyStr = `${weekData.totalMoneyEUR.toFixed(2)} € + ${weekData.totalMoneyCZK.toFixed(2)} Kč`;
+
+                        branchHtml += `
+                        <div class="card week-card" onclick="toggleWeek('${weekKey}', event)">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div class="summary-title" style="color: var(--primary-orange);">${isWeekOpen ? '▼' : '▶'} Podrobnosti týdne</div>
+                                    <div style="font-size: 15px; font-weight: 500;">📌 ${weekData.title}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="color: var(--primary-orange); font-weight: bold; font-size: 16px;">${weekMoneyStr}</div>
+                                    <div style="color: var(--text-muted); font-size: 12px;">${weekData.totalHours.toFixed(2)} h</div>
+                                </div>
+                            </div>
+                        `;
+
+                        if (isWeekOpen) {
+                            branchHtml += `<div class="week-content" style="margin-top: 12px;">`;
+                            
+                            branchHtml += `
+                            <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: #121212; padding: 8px 12px; border-radius: var(--radius-small);">
+                                <span style="font-size: 13px; color: var(--text-muted);">Hromadná volba týdne:</span>
+                                <button class="btn-small" onclick="toggleSelectAllWeek([${weekRecordIds.join(',')}], event)">
+                                    ${allWeekChecked ? '☑ Odznačit vše' : '☐ Označit celý týden'}
+                                </button>
+                            </div>`;
+
+                            if (weekPdfs[weekKey] && weekPdfs[weekKey].length > 0) {
+                                branchHtml += `<div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Uložené výkazy v týdnu:</div>`;
+                                weekPdfs[weekKey].forEach(pdf => {
+                                    branchHtml += `
+                                    <div class="week-pdf-section">
+                                        <div style="font-size: 13px; font-weight: 500;">📑 ${pdf.name}</div>
+                                        <div style="display: flex; gap: 6px;">
+                                            <button class="btn-small" onclick="viewPdf('${pdf.name}', event)">Otevřít</button>
+                                            <button class="btn-danger" onclick="deletePdf('${weekKey}', ${pdf.id}, event)">Smazat</button>
+                                        </div>
+                                    </div>`;
+                                });
+                            }
+
+                            weekData.records.forEach(z => {
+                                const dateFormatted = new Date(z.datum).toLocaleDateString('cs-CZ');
+                                const pauzaText = z.pauzaOd ? ` | Pauza: ${z.pauzaOd} - ${z.pauzaDo}` : '';
+                                const isChecked = selectedRecordIds.includes(z.id);
+
+                                branchHtml += `
+                                <div class="card record-item" onclick="toggleRecordSelection(${z.id}, event)">
+                                    <div class="custom-checkbox ${isChecked ? 'checked' : ''}">
+                                        ${isChecked ? '✓' : ''}
+                                    </div>
+                                    <div class="record-info">
+                                        <div style="font-weight: bold; font-size: 14px;">📍 ${dateFormatted}</div>
+                                        <div class="record-time">🕒 ${z.od} - ${z.do} ${pauzaText}</div>
+                                        ${z.popis ? `<div class="record-desc">💬 ${z.popis}</div>` : ''}
+                                    </div>
+                                    <div class="record-right">
+                                        <div class="record-hours">${z.cisteHodiny.toFixed(2)} h</div>
+                                        <button class="btn-danger" onclick="deleteRecord(${z.id}, event)">Smazat</button>
+                                    </div>
+                                </div>
+                                `;
+                            });
+
+                            branchHtml += `</div>`;
+                        }
+
+                        branchHtml += `</div>`;
+                    }
+                    branchHtml += `</div>`;
+                }
+
+                branchHtml += `</div>`;
+                container.innerHTML += branchHtml;
+            }
         }
     </script>
 </body>
