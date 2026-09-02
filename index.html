@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stundenzettel - Výkaz hodin</title>
+    <title>Stundenzettel - ELEKTRO MICHÁLEK</title>
 
     <!-- PDF Knihovny (jsPDF + autoTable) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -11,446 +11,330 @@
 
     <style>
         :root {
-            --bg-main: #09090b;
-            --bg-card: #18181b;
-            --bg-card-sub: #1f1f22;
-            --bg-card-deep: #121215;
+            --bg-main: #050505;
+            --bg-container: #0f0f12;
+            --bg-card: #18181c;
+            --bg-card-sub: #202025;
             --primary-orange: #ff9500;
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
+            --border-visible: #2f2f36; /* Jasně viditelné ohraničení pro tmavý režim */
+            --border-highlight: #ff9500;
             --radius-large: 16px;
             --radius-medium: 12px;
             --radius-small: 8px;
             --danger: #ef4444;
             --info: #3b82f6;
             --success: #22c55e;
-            --border-color: #27272a;
-            --hierarchy-base: 3px;
-            --hierarchy-expanded: 10px; /* Rozšíření "půlměsíce" o cca 3-4mm */
+            --hierarchy-base: 4px;
+            --hierarchy-expanded: 12px; /* Zvětšení půlměsíce při rozbalení o ~4mm */
         }
 
         [data-theme="light"] {
-            --bg-main: #f4f4f5;
-            --bg-card: #ffffff;
-            --bg-card-sub: #fcfcfc;
-            --bg-card-deep: #fafafa;
+            --bg-main: #e4e4e7;
+            --bg-container: #ffffff;
+            --bg-card: #f4f4f5;
+            --bg-card-sub: #e4e4e7;
             --primary-orange: #f97316;
             --text-main: #18181b;
-            --text-muted: #52525b;
-            --border-color: #e4e4e7;
+            --text-muted: #71717a;
+            --border-visible: #d4d4d8;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         
-        html, body { 
+        body { 
             background-color: var(--bg-main); 
             color: var(--text-main); 
             min-height: 100vh;
+            padding: 20px 10px;
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* Top Navigace a Nastavení */
+        /* Hlavní kontejner aplikace s viditelným okrajem */
+        .app-wrapper {
+            max-width: 520px;
+            margin: 0 auto;
+            background-color: var(--bg-container);
+            border: 1px solid var(--border-visible);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
         .top-nav {
             display: flex;
             justify-content: flex-end;
-            padding: 15px 20px;
-            max-width: 600px;
-            margin: 0 auto;
+            margin-bottom: 15px;
         }
         .icon-btn {
-            background: transparent;
-            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            border: 1px solid var(--border-visible);
             color: var(--text-main);
-            width: 40px; height: 40px;
+            width: 38px; height: 38px;
             border-radius: 50%;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-            margin-left: 10px;
-            transition: 0.2s;
+            font-size: 16px;
+            margin-left: 8px;
         }
-        .icon-btn:hover { border-color: var(--primary-orange); color: var(--primary-orange); }
-
-        #main-app { max-width: 600px; margin: 0 auto; padding: 0 20px 80px 20px; }
-
-        /* Tlačítka */
-        .btn {
-            background-color: var(--primary-orange); color: #000; border: none;
-            border-radius: var(--radius-large); padding: 14px 20px; font-size: 15px; font-weight: 700;
-            cursor: pointer; width: 100%; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn:active { opacity: 0.8; }
-        .btn-outline { background-color: transparent; color: var(--text-main); border: 1px solid var(--border-color); margin-top: 15px; border-radius: 30px;}
-        
-        .pdf-actions { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-pdf-blue { background-color: #60a5fa; color: #000; flex: 1; padding: 10px; border-radius: var(--radius-medium); font-weight: 600; font-size: 13px; border: none; cursor: pointer; }
-        .btn-pdf-orange { background-color: var(--primary-orange); color: #000; flex: 1; padding: 10px; border-radius: var(--radius-medium); font-weight: 600; font-size: 13px; border: none; cursor: pointer; }
-        .btn-pdf-red { background-color: #f87171; color: #000; flex: 1; padding: 10px; border-radius: var(--radius-medium); font-weight: 600; font-size: 13px; border: none; cursor: pointer; }
-
-        .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; }
-        .btn-blue-small { background-color: var(--info); color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; }
-        .btn-small-outline { background-color: transparent; color: var(--info); padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: 1px solid var(--info); cursor: pointer; font-weight: 600; }
 
         /* Píchačky */
-        .pichačky-card {
-            background-color: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: var(--radius-large); padding: 20px; margin-bottom: 20px; text-align: center;
+        .pichacky-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-visible);
+            border-radius: var(--radius-large);
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
         }
-        .summary-title { color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .stopwatch-display { font-size: 38px; font-weight: 800; color: var(--primary-orange); margin: 10px 0; font-family: monospace; }
+        .summary-title { color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+        .stopwatch-display { font-size: 42px; font-weight: 800; color: var(--primary-orange); margin: 8px 0; font-family: monospace; }
 
-        /* Karty s animací půlměsíce */
-        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-large); padding: 16px; margin-bottom: 12px; }
+        /* PDF Tlačítka */
+        .pdf-actions { display: flex; gap: 8px; margin-bottom: 20px; }
+        .btn-pdf {
+            flex: 1; padding: 12px 8px; border-radius: var(--radius-medium);
+            font-weight: 700; font-size: 13px; border: 1px solid var(--border-visible);
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+            color: #000; transition: transform 0.1s;
+        }
+        .btn-pdf:active { transform: scale(0.98); }
+        .btn-pdf-blue { background-color: #60a5fa; }
+        .btn-pdf-orange { background-color: var(--primary-orange); }
+        .btn-pdf-red { background-color: #f87171; }
+
+        /* Karty s animovaným půlměsícem */
+        .card { 
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border-visible); 
+            border-radius: var(--radius-large); 
+            padding: 16px; 
+            margin-bottom: 12px; 
+        }
         
         .month-card {
             border-left: var(--hierarchy-base) solid var(--primary-orange);
             cursor: pointer;
-            transition: border-left-width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: border-left-width 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        /* Zvětšení půlměsíce/lišty po kliknutí */
         .month-card.open { border-left-width: var(--hierarchy-expanded); }
-        
+
         .week-card {
-            background-color: var(--bg-card-sub); border: 1px solid var(--border-color);
-            border-left: var(--hierarchy-base) solid var(--primary-orange); cursor: pointer;
-            transition: border-left-width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background-color: var(--bg-card-sub);
+            border: 1px solid var(--border-visible);
+            border-left: var(--hierarchy-base) solid var(--primary-orange);
+            cursor: pointer;
+            transition: border-left-width 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            margin-top: 10px;
         }
         .week-card.open { border-left-width: var(--hierarchy-expanded); }
 
-        .month-content, .week-content { margin-top: 12px; padding-left: 10px; border-left: 1px solid var(--border-color); }
+        .month-content, .week-content { margin-top: 12px; padding-left: 8px; border-left: 1px solid var(--border-visible); }
 
-        /* Záznam dne */
+        /* Záznam dnu */
         .record-item {
-            background-color: var(--bg-card-deep); border: 1px solid var(--border-color);
-            display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 12px; border-radius: var(--radius-medium);
+            background-color: var(--bg-container);
+            border: 1px solid var(--border-visible);
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 12px; border-radius: var(--radius-medium);
         }
         .custom-checkbox {
-            width: 24px; height: 24px; background-color: var(--bg-main); border: 2px solid var(--primary-orange);
+            width: 22px; height: 22px; background-color: var(--bg-card); border: 2px solid var(--primary-orange);
             border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
         }
-        .custom-checkbox.checked::after { content: '✓'; color: var(--primary-orange); font-weight: bold; }
-        .custom-checkbox.checked { background-color: rgba(255, 149, 0, 0.1); }
+        .custom-checkbox.checked::after { content: '✓'; color: var(--primary-orange); font-weight: bold; font-size: 14px; }
 
-        .record-info { flex: 1; }
-        .record-time { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
-        .record-hours { color: var(--primary-orange); font-weight: 700; font-size: 14px; margin-bottom: 6px;}
+        .record-hours { color: var(--primary-orange); font-weight: 700; font-size: 14px; }
+        .btn-danger { background-color: var(--danger); color: #fff; padding: 5px 10px; font-size: 11px; border-radius: 16px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-blue-small { background-color: var(--info); color: #fff; padding: 5px 10px; font-size: 11px; border-radius: 16px; border: none; cursor: pointer; font-weight: 600; }
+        
+        .btn-main {
+            background-color: var(--primary-orange); color: #000; border: none;
+            border-radius: var(--radius-large); padding: 14px; font-size: 15px; font-weight: 700;
+            cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-outline { background-color: transparent; color: var(--text-main); border: 1px solid var(--border-visible); margin-top: 15px; }
 
-        /* Uložené výkazy (stará verze) */
-        .saved-reports { background-color: var(--bg-card-deep); padding: 10px; border-radius: var(--radius-medium); margin-bottom: 15px; border: 1px dashed var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-
-        /* Původní Modální okno */
+        /* Modál */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center;
-            padding: 15px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center;
+            padding: 15px; z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s;
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-content {
-            background-color: var(--bg-card); width: 100%; max-width: 450px;
-            border-radius: var(--radius-large); padding: 25px; border: 1px solid var(--border-color);
-            max-height: 90vh; overflow-y: auto;
+            background-color: var(--bg-card); width: 100%; max-width: 440px;
+            border-radius: var(--radius-large); padding: 20px; border: 1px solid var(--border-visible);
         }
-
-        .modal-header { color: var(--text-main); font-size: 20px; font-weight: 700; margin-bottom: 20px; }
-        .section-title { color: var(--primary-orange); font-size: 11px; font-weight: 700; text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.5px; }
-        
-        .form-row { display: flex; gap: 15px; margin-bottom: 10px; }
-        .form-group { flex: 1; }
-        .form-group label { display: block; color: var(--text-muted); margin-bottom: 6px; font-size: 13px; }
-        .form-group input, .form-group select {
-            width: 100%; background-color: var(--bg-main); border: 1px solid var(--border-color);
-            color: var(--text-main); padding: 12px; border-radius: var(--radius-small); font-size: 15px; outline: none;
-        }
-        .form-group input:focus, .form-group select:focus { border-color: var(--primary-orange); }
-
-        .modal-actions { margin-top: 30px; display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="top-nav">
-        <button class="icon-btn" onclick="toggleTheme()" title="Přepnout režim">🌓</button>
-        <button class="icon-btn" onclick="alert('Zde bude nastavení firmy a fakturace')" title="Nastavení">⚙️</button>
-    </div>
+    <div class="app-wrapper">
+        <div class="top-nav">
+            <button class="icon-btn" onclick="toggleTheme()" title="Přepnout režim">🌓</button>
+            <button class="icon-btn" onclick="alert('Nastavení firmy')" title="Nastavení">⚙️</button>
+        </div>
 
-    <div id="main-app">
         <!-- Píchačky -->
-        <div class="pichačky-card">
+        <div class="pichacky-card">
             <div class="summary-title">RYCHLÉ PÍCHAČKY</div>
-            <div id="stopwatch" class="stopwatch-display">00:00:00</div>
-            <button id="pichacky-btn" class="btn" style="background-color: var(--success); color: #000;">
+            <div class="stopwatch-display">00:00:00</div>
+            <button class="btn-main" style="background-color: var(--success);">
                 🟢 Zahájit práci (Příchod)
             </button>
         </div>
 
-        <div class="summary-title" style="margin-bottom: 10px;">VYGENEROVAT PDF Z OZNAČENÝCH DNŮ:</div>
+        <div class="summary-title" style="margin-bottom: 8px;">VYGENEROVAT PDF Z OZNAČENÝCH DNŮ:</div>
         <div class="pdf-actions">
-            <button class="btn-pdf-blue" onclick="generatePDF('standard')">📄 Standard PDF</button>
-            <button class="btn-pdf-orange" onclick="generatePDF('abnahme')">📄 Abnahme PDF</button>
-            <button class="btn-pdf-red" onclick="generatePDF('faktura')">💶 Faktura PDF</button>
+            <button class="btn-pdf btn-pdf-blue" onclick="generatePDF('standard')">📄 Standard PDF</button>
+            <button class="btn-pdf btn-pdf-orange" onclick="generatePDF('abnahme')">📋 Abnahme PDF</button>
+            <button class="btn-pdf btn-pdf-red" onclick="generatePDF('faktura')">🧾 Faktura PDF</button>
         </div>
 
-        <!-- Dynamický strom -->
+        <!-- Strom zápisů -->
         <div id="tree-container"></div>
 
-        <button class="btn btn-outline" onclick="openManualModal()">+ Zapsat hodiny ručně</button>
-    </div>
-
-    <!-- Původní Modální okno -->
-    <div id="manual-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">Ruční záznam hodin</div>
-            
-            <div class="form-group">
-                <label>Datum</label>
-                <input type="date" id="m-datum">
-            </div>
-
-            <div class="section-title">PRACOVNÍ DOBA</div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Od</label>
-                    <input type="time" id="m-od" value="07:00">
-                </div>
-                <div class="form-group">
-                    <label>Do</label>
-                    <input type="time" id="m-do" value="16:00">
-                </div>
-            </div>
-
-            <div class="section-title">PŘESTÁVKA</div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Pauza Od</label>
-                    <input type="time" id="m-pauza-od" value="12:00">
-                </div>
-                <div class="form-group">
-                    <label>Pauza Do</label>
-                    <input type="time" id="m-pauza-do" value="12:30">
-                </div>
-            </div>
-
-            <div class="section-title">FINANCE</div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Hodinová sazba</label>
-                    <input type="number" id="m-sazba" value="25">
-                </div>
-                <div class="form-group">
-                    <label>Měna</label>
-                    <select id="m-mena">
-                        <option value="EUR">€ (EUR)</option>
-                        <option value="CZK">Kč (CZK)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Popis práce</label>
-                <input type="text" id="m-popis" placeholder="Např. tahání kabelů...">
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn" onclick="saveManualRecord()">Uložit záznam</button>
-                <button class="btn btn-outline" style="margin:0;" onclick="closeManualModal()">Zrušit</button>
-            </div>
-        </div>
+        <button class="btn-main btn-outline" onclick="openModal()">+ Zapsat hodiny ručně</button>
     </div>
 
     <script>
-        // Data
-        let zaznamy = JSON.parse(localStorage.getItem('stz_data')) || [
-            { id: 1, datum: '2026-09-01', od: '07:00', do: '16:00', pauzaOd: '12:00', pauzaDo: '12:30', cisteHodiny: 8.5, popis: 'Elektroinstalace, zapojení', sazba: 25, mena: 'EUR' },
-            { id: 2, datum: '2026-09-02', od: '07:00', do: '16:00', pauzaOd: '12:00', pauzaDo: '12:30', cisteHodiny: 8.5, popis: 'Tahání kabelů', sazba: 25, mena: 'EUR' }
+        let zaznamy = [
+            { id: 1, datum: '2026-09-01', od: '07:00', do: '16:00', pauzaOd: '12:00', pauzaDo: '12:30', hodiny: 8.5, popis: 'Elektroinstalace, zapojení', sazba: 25 },
+            { id: 2, datum: '2026-09-02', od: '07:00', do: '16:00', pauzaOd: '12:00', pauzaDo: '12:30', hodiny: 8.5, popis: 'Tahání kabelů', sazba: 25 }
         ];
         let selectedIds = [1, 2];
-        let openMonths = {};
-        let openWeeks = {};
+        let openMonths = { '2026-8': true };
+        let openWeeks = { '2026-8-W36': true };
 
         function toggleTheme() {
             const html = document.documentElement;
-            const isDark = html.getAttribute('data-theme') === 'dark';
-            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         }
 
         function toggleMonth(key) {
             openMonths[key] = !openMonths[key];
-            renderApp();
+            render();
         }
 
         function toggleWeek(key, e) {
             e.stopPropagation();
             openWeeks[key] = !openWeeks[key];
-            renderApp();
+            render();
         }
 
-        function toggleCheckbox(id, e) {
+        function toggleCheck(id, e) {
             e.stopPropagation();
             if(selectedIds.includes(id)) selectedIds = selectedIds.filter(i => i !== id);
             else selectedIds.push(id);
-            renderApp();
+            render();
         }
 
-        function deleteRecord(id, e) {
-            e.stopPropagation();
-            zaznamy = zaznamy.filter(z => z.id !== id);
-            renderApp();
-        }
+        function render() {
+            const container = document.getElementById('tree-container');
+            container.innerHTML = '';
 
-        function getWeek(d) {
-            let date = new Date(d);
-            date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
-            let yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-            return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
-        }
+            // Měsíc Září 2026
+            let mOpen = openMonths['2026-8'];
+            let wOpen = openWeeks['2026-8-W36'];
 
-        function renderApp() {
-            const cont = document.getElementById('tree-container');
-            cont.innerHTML = '';
-            
-            let tree = {};
-            const mesiceCZ = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
+            let html = `
+            <div class="card month-card ${mOpen ? 'open' : ''}" onclick="toggleMonth('2026-8')">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div class="summary-title">MĚSÍČNÍ SOUHRN ${mOpen ? '▼' : '▶'}</div>
+                        <div style="font-weight:700; font-size:16px;">📅 Září 2026</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:var(--primary-orange); font-weight:800; font-size:15px;">425.00 €</div>
+                        <div style="color:var(--text-muted); font-size:12px;">17.00 h celkem</div>
+                    </div>
+                </div>`;
 
-            zaznamy.forEach(z => {
-                let d = new Date(z.datum);
-                let mKey = `${d.getFullYear()}-${d.getMonth()}`;
-                let wKey = `${mKey}-W${getWeek(d)}`;
-                
-                if(!tree[mKey]) tree[mKey] = { title: `${mesiceCZ[d.getMonth()]} ${d.getFullYear()}`, eur: 0, hrs: 0, weeks: {} };
-                if(!tree[mKey].weeks[wKey]) tree[mKey].weeks[wKey] = { title: `${getWeek(d)}. týden`, eur: 0, hrs: 0, recs: [] };
-                
-                tree[mKey].hrs += z.cisteHodiny; tree[mKey].eur += (z.cisteHodiny * z.sazba);
-                tree[mKey].weeks[wKey].hrs += z.cisteHodiny; tree[mKey].weeks[wKey].eur += (z.cisteHodiny * z.sazba);
-                tree[mKey].weeks[wKey].recs.push(z);
-            });
+            if(mOpen) {
+                html += `<div class="month-content">
+                    <div class="card week-card ${wOpen ? 'open' : ''}" onclick="toggleWeek('2026-8-W36', event)">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div class="summary-title" style="color:var(--primary-orange);">▼ PODROBNOSTI TÝDNE</div>
+                                <div style="font-weight:700; font-size:14px;">📌 36. týden</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="color:var(--primary-orange); font-weight:700;">425.00 €</div>
+                                <div style="color:var(--text-muted); font-size:12px;">17.00 h</div>
+                            </div>
+                        </div>`;
 
-            for (const [mKey, mData] of Object.entries(tree)) {
-                let mOpen = openMonths[mKey] !== false;
-                // Přidání třídy 'open' pro animaci vytažení měsíce
-                let html = `
-                <div class="card month-card ${mOpen ? 'open' : ''}" onclick="toggleMonth('${mKey}')">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div class="summary-title">MĚSÍČNÍ SOUHRN ${mOpen ? '▼' : '▶'}</div>
-                            <div style="font-size:16px; font-weight:700;">📅 ${mData.title}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="color:var(--primary-orange); font-weight:800; font-size:15px;">${mData.eur.toFixed(2)} €</div>
-                            <div style="color:var(--text-muted); font-size:12px;">${mData.hrs.toFixed(2)} h celkem</div>
-                        </div>
-                    </div>`;
+                if(wOpen) {
+                    html += `<div class="week-content">
+                        <div class="summary-title" style="margin-top:10px;">ULOŽENÉ VÝKAZY V TÝDNU:</div>
+                        <div style="background-color:var(--bg-container); padding:10px; border-radius:8px; border:1px solid var(--border-visible); display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <span style="font-size:12px; font-weight:600;">📄 Standard výkaz (${zaznamy.length} dnů)</span>
+                            <div>
+                                <button class="btn-blue-small">Otevřít</button>
+                                <button class="btn-danger">Smazat</button>
+                            </div>
+                        </div>`;
 
-                if(mOpen) {
-                    html += `<div class="month-content">`;
-                    for (const [wKey, wData] of Object.entries(mData.weeks)) {
-                        let wOpen = openWeeks[wKey] !== false;
-                        // Přidání třídy 'open' pro animaci vytažení týdne
+                    zaznamy.forEach(z => {
+                        let isChecked = selectedIds.includes(z.id);
                         html += `
-                        <div class="card week-card ${wOpen ? 'open' : ''}" onclick="toggleWeek('${wKey}', event)">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <div class="summary-title" style="color:var(--primary-orange);">▼ PODROBNOSTI TÝDNE</div>
-                                    <div style="font-size:14px; font-weight:700;">📌 ${wData.title}</div>
-                                </div>
-                                <div style="text-align:right;">
-                                    <div style="color:var(--primary-orange); font-weight:700;">${wData.eur.toFixed(2)} €</div>
-                                    <div style="color:var(--text-muted); font-size:12px;">${wData.hrs.toFixed(2)} h</div>
-                                </div>
-                            </div>`;
-                        
-                        if(wOpen) {
-                            html += `<div class="week-content">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                                    <span style="font-size:12px; color:var(--text-muted);">Hromadná volba týdne:</span>
-                                    <button class="btn-small-outline" onclick="event.stopPropagation()">☑ Odznačit vše</button>
-                                </div>
-                                <div class="summary-title">ULOŽENÉ VÝKAZY V TÝDNU:</div>
-                                <div class="saved-reports">
-                                    <div style="font-size:13px; font-weight:600;">📄 Standard výkaz (${wData.recs.length} dnů)</div>
-                                    <div>
-                                        <button class="btn-blue-small">Otevřít</button>
-                                        <button class="btn-danger">Smazat</button>
-                                    </div>
-                                </div>`;
-
-                            wData.recs.forEach(z => {
-                                let d = new Date(z.datum);
-                                let isSel = selectedIds.includes(z.id);
-                                html += `
-                                <div class="record-item" onclick="toggleCheckbox(${z.id}, event)">
-                                    <div class="custom-checkbox ${isSel ? 'checked' : ''}"></div>
-                                    <div class="record-info">
-                                        <div style="font-weight:700; font-size:14px;">📍 ${d.getDate()}. ${d.getMonth()+1}. ${d.getFullYear()}</div>
-                                        <div class="record-time">🕒 ${z.od} - ${z.do} | Pauza: ${z.pauzaOd}-${z.pauzaDo}</div>
-                                    </div>
-                                    <div style="text-align:right;">
-                                        <div class="record-hours">${z.cisteHodiny.toFixed(2)} h</div>
-                                        <button class="btn-danger" onclick="deleteRecord(${z.id}, event)">Smazat</button>
-                                    </div>
-                                </div>`;
-                            });
-                            html += `</div>`;
-                        }
-                        html += `</div>`;
-                    }
+                        <div class="record-item" onclick="toggleCheck(${z.id}, event)">
+                            <div class="custom-checkbox ${isChecked ? 'checked' : ''}"></div>
+                            <div style="flex:1;">
+                                <div style="font-weight:700; font-size:13px;">📍 ${z.datum}</div>
+                                <div style="color:var(--text-muted); font-size:11px;">🕒 ${z.od} - ${z.do} | Pauza: ${z.pauzaOd}-${z.pauzaDo}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div class="record-hours">${z.hodiny.toFixed(2)} h</div>
+                                <button class="btn-danger" style="margin-top:4px;">Smazat</button>
+                            </div>
+                        </div>`;
+                    });
                     html += `</div>`;
                 }
-                html += `</div>`;
-                cont.innerHTML += html;
+                html += `</div></div>`;
             }
+            html += `</div>`;
+            container.innerHTML = html;
         }
 
-        /* --- PDF GENERÁTOR (Základ pro jsPDF) --- */
+        /* Generování PDF podle německé šablony Tätigkeitsnachweis */
         function generatePDF(type) {
-            if(selectedIds.length === 0) { alert('Vyber alespoň jeden den.'); return; }
-            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+
+            doc.setFontSize(16);
+            doc.text("TÄTIGKEITSNACHWEIS", 14, 20);
             
-            // Nastavení fontu a hlavičky
-            doc.setFontSize(22);
-            
-            if (type === 'standard') {
-                doc.text("Tätigkeitsnachweis (Stundenzettel)", 14, 20);
-                doc.setFontSize(12);
-                doc.text("Firma: ELEKTRO MICHÁLEK", 14, 30);
-                doc.text("IČO: 64837530", 14, 36);
+            doc.setFontSize(10);
+            doc.text("Firma: ELEKTRO MICHÁLEK (IČO: 64837530)", 14, 28);
+            doc.text("Kundenanschrift: ___________________________", 14, 34);
 
-                let dataToPrint = zaznamy.filter(z => selectedIds.includes(z.id)).map(z => {
-                    let d = new Date(z.datum);
-                    return [`${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`, z.od, z.do, `${z.pauzaOd}-${z.pauzaDo}`, z.cisteHodiny, z.popis];
-                });
+            let tableRows = zaznamy.filter(z => selectedIds.includes(z.id)).map(z => [
+                z.datum, z.od, z.do, `${z.pauzaOd}-${z.pauzaDo}`, `${z.hodiny} h`, z.popis
+            ]);
 
-                doc.autoTable({
-                    startY: 45,
-                    head: [['Datum', 'Od', 'Do', 'Pauza', 'Hodiny', 'Popis']],
-                    body: dataToPrint,
-                    theme: 'grid',
-                    headStyles: { fillColor: [255, 149, 0] }
-                });
+            doc.autoTable({
+                startY: 42,
+                head: [['Datum', 'von', 'bis', 'Pause', 'Gesamt', 'Tätigkeit / Popis']],
+                body: tableRows,
+                theme: 'grid',
+                headStyles: { fillColor: [255, 149, 0], textColor: [0,0,0] }
+            });
 
-                doc.save('Stundenzettel.pdf');
-            } else if (type === 'faktura') {
-                doc.text("Rechnung (Faktura)", 14, 20);
-                doc.setFontSize(12);
-                doc.text("Zde bude logika pro fakturu...", 14, 30);
-                // Příprava dat pro fakturu
-                doc.save('Faktura.pdf');
-            } else {
-                doc.text("Abnahmeprotokoll", 14, 20);
-                doc.save('Abnahme.pdf');
-            }
+            let finalY = doc.lastAutoTable.finalY + 30;
+            doc.line(14, finalY, 90, finalY);
+            doc.text("Unterschrift und Stempel des Kunden", 14, finalY + 5);
+
+            doc.line(120, finalY, 196, finalY);
+            doc.text("Datum / Unterschrift Mitarbeiter", 120, finalY + 5);
+
+            doc.save(`Stundenzettel_${type}.pdf`);
         }
 
-        /* Modál */
-        function openManualModal() { document.getElementById('manual-modal').classList.add('active'); }
-        function closeManualModal() { document.getElementById('manual-modal').classList.remove('active'); }
-        function saveManualRecord() {
-            // Logika ukládání
-            closeManualModal();
-            renderApp();
-        }
-
-        renderApp();
+        render();
     </script>
 </body>
 </html>
