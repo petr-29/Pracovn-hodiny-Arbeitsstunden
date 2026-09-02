@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stundenzettel App</title>
     <style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
         :root {
             --bg-main: #121212;
             --bg-card: #1e1e1e;
             --bg-card-sub: #161616;
-            --bg-card-deep: #101010;
+            --bg-card-deep: #101010;<!-- Horní navigace pro generování PDF z vybraných záznamů -->
             --primary-orange: #FF8C00;
             --primary-orange-hover: #FFA500;
             --text-main: #ffffff;
@@ -300,13 +302,11 @@
         </div>
 
         <!-- Horní navigace pro generování PDF z vybraných záznamů -->
-        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Vygenerovat PDF z označených dnů:</div>
-        <div class="pdf-nav">
-            <button class="pdf-btn blue" onclick="generatePdf('Standard')">📄 Standard PDF</button>
-            <button class="pdf-btn orange" onclick="generatePdf('Abnahme')">📑 Abnahme PDF</button>
-            <button class="pdf-btn red" onclick="generatePdf('Faktura')">💰 Faktura PDF</button>
+       <div style="margin-bottom: 20px;">
+            <button class="btn" style="background-color: var(--info); color: #fff; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);" onclick="generateRealPdf('Standard')">
+                📄 Vygenerovat PDF (Tätigkeitsnachweis)
+            </button>
         </div>
-
         <!-- STROMOVÝ SEZNAM ZÁZNAMŮ -->
         <div id="tree-container">
             <!-- Dynamický stromeček -->
