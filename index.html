@@ -562,42 +562,52 @@
         }
 
         /* --- VYGENEROVÁNÍ PDF Z OZNAČENÝCH --- */
-        function generatePdf(pdfType) {
+/* --- VYGENEROVÁNÍ PDF Z OZNAČENÝCH (PŘÍPRAVA DAT) --- */
+        function generateRealPdf(pdfType) {
             if (selectedRecordIds.length === 0) {
-                alert('Nejprve zaškrtni alespoň jeden den/záznam, pro který chceš PDF vytvořit.');
+                alert('Nejprve zaškrtni alespoň jeden den, pro který chceš PDF vytvořit.');
                 return;
             }
 
-            const nowStr = new Date().toLocaleDateString('cs-CZ');
-            const pdfName = `${pdfType} výkaz (${selectedRecordIds.length} dnů, ${nowStr})`;
+            // 1. Filtrace: Vytáhneme jen ty záznamy, které uživatel zaškrtl
+            let vybraneZaznamy = zaznamy.filter(z => selectedRecordIds.includes(z.id));
 
-            // Zjistíme, do kterých týdnů označené záznamy patří, a uložíme PDF do nich
-            zaznamy.forEach(z => {
-                if (selectedRecordIds.includes(z.id)) {
-                    const dateObj = new Date(z.datum);
-                    const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth()).padStart(2, '0')}`;
-                    const weekNum = getWeekNumber(dateObj);
-                    const weekKey = `${monthKey}-W${weekNum}`;
+            // 2. Třídění: Seřadíme je chronologicky (od nejstaršího po nejnovější)
+            vybraneZaznamy.sort((a, b) => new Date(a.datum) - new Date(b.datum));
 
-                    if (!weekPdfs[weekKey]) weekPdfs[weekKey] = [];
-                    
-                    // Zabráníme duplicitnímu uložení stejného PDF do stejného týdne v jednom kliku
-                    const alreadyExists = weekPdfs[weekKey].some(p => p.name === pdfName);
-                    if (!alreadyExists) {
-                        weekPdfs[weekKey].push({
-                            id: Date.now() + Math.random(),
-                            name: pdfName,
-                            date: nowStr
-                        });
-                    }
-                }
+            // 3. Agregace: Spočítáme celkové hodiny
+            let celkemHodin = 0;
+            vybraneZaznamy.forEach(z => {
+                celkemHodin += z.cisteHodiny;
             });
 
-            localStorage.setItem('stundenzettel_week_pdfs', JSON.stringify(weekPdfs));
-            alert(`Úspěšně vygenerováno: ${pdfName}!\nDokument byl uložen do příslušných týdnů v seznamu.`);
-            renderApp();
-        }
+            // 4. Transformace: Příprava pole pro jsPDF (německý formát datumu)
+            let dataProTabulku = vybraneZaznamy.map(z => {
+                let d = new Date(z.datum);
+                let datumFormat = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+                
+                let pauza = (z.pauzaOd && z.pauzaDo) ? `${z.pauzaOd} - ${z.pauzaDo}` : '-';
 
+                return [
+                    datumFormat,               // Datum
+                    z.od,                      // Od
+                    z.do,                      // Do
+                    pauza,                     // Pauza
+                    z.cisteHodiny.toFixed(2),  // Hodiny celkem
+                    z.popis || ''              // Popis práce
+                ];
+            });
+
+            // ZATÍM POUZE KONTROLNÍ VÝSTUP (než napojíme jsPDF)
+            console.log("--- DATA PRO PDF PŘIPRAVENA ---");
+            console.table(dataProTabulku);
+            console.log("Celkem hodin:", celkemHodin);
+
+            alert(`Data pro výkaz úspěšně připravena!\nPočet dnů: ${vybraneZaznamy.length}\nCelkem hodin: ${celkemHodin.toFixed(2)}\n\n(Pro detailní náhled pole stiskni v prohlížeči F12 a mrkni do Konzole.)`);
+            
+            // Zde později zavoláme např.:
+            // renderPdfDocument(dataProTabulku, celkemHodin, pdfType);
+        }
         function viewPdf(pdfName, event) {
             event.stopPropagation();
             alert(`Otevírám náhled dokumentu: ${pdfName}\n(Zde se zobrazí tisková náhledová šablona k přeposlání).`);
