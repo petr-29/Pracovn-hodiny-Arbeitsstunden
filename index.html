@@ -70,7 +70,6 @@
         .summary-title { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 3px; }
         .summary-value { color: var(--primary-orange); font-size: 18px; font-weight: bold; text-align: right; }
         
-        /* Oranžová přerušovaná čára */
         .month-content, .week-content { margin-left: 12px; padding-left: 10px; border-left: 2px dashed var(--primary-orange); animation: fadeIn 0.3s ease; }
 
         .record-item { background-color: var(--bg-card-deep); border: 1px solid #2c2c2e; display: flex; align-items: center; gap: 12px; }
@@ -134,7 +133,6 @@
             </div>
         </div>
 
-        <!-- IOS KALENDÁŘ -->
         <div id="calendar-widget">
             <div class="cal-header">
                 <div id="cal-title-left" style="font-size: 22px;">Dnes</div>
@@ -220,7 +218,7 @@
         </div>
     </div>
 
-    <!-- MODAL: SPRÁVCE FAKTUR (ZÁLOHY A ÚHRADY) -->
+    <!-- MODAL: SPRÁVCE FAKTUR -->
     <div class="modal-overlay" id="faktury-manager-modal">
         <div class="modal-content" style="max-width: 600px;">
             <h2 style="margin-bottom: 20px;">Správa faktur a záloh</h2>
@@ -371,15 +369,61 @@
         let clientBook = JSON.parse(localStorage.getItem('stundenzettel_clientbook')) || [];
         let invConfig = JSON.parse(localStorage.getItem('stundenzettel_invconfig')) || { year: new Date().getFullYear(), month: new Date().getMonth() + 1, counter: 1 };
         let workers = JSON.parse(localStorage.getItem('stundenzettel_workers')) || ["Petr Michálek", "Jan Novák"];
-        let currentWorker = localStorage.getItem('stundenzettel_current_worker') || workers[0];
+        
+        // OPRAVA CHYBY S UVOZOVKAMI: Bezpečné načtení aktuálního pracovníka
+        let rawWorker = localStorage.getItem('stundenzettel_current_worker');
+        let currentWorker = workers[0];
+        if (rawWorker) {
+            currentWorker = (rawWorker.startsWith('"') && rawWorker.endsWith('"')) ? JSON.parse(rawWorker) : rawWorker;
+        }
+
+        // ZÁCHRANNÝ SKRIPT: Vrátí do UI data, která kvůli chybnému názvu s uvozovkami "zmizela"
         let zaznamy = JSON.parse(localStorage.getItem('stundenzettel_zaznamy')) || {};
+        let migratedZaz = false;
+        for (let key in zaznamy) {
+            if (key.startsWith('"') && key.endsWith('"')) {
+                let cleanKey = JSON.parse(key);
+                if (!zaznamy[cleanKey]) zaznamy[cleanKey] = [];
+                zaznamy[cleanKey] = zaznamy[cleanKey].concat(zaznamy[key]);
+                delete zaznamy[key];
+                migratedZaz = true;
+            }
+        }
+        if (migratedZaz) safeSetStorage('stundenzettel_zaznamy', zaznamy);
+
         let savedPdfs = JSON.parse(localStorage.getItem('stundenzettel_saved_pdfs')) || [];
+        let migratedPdfs = false;
+        savedPdfs.forEach(p => {
+            if (p.worker && p.worker.startsWith('"') && p.worker.endsWith('"')) {
+                p.worker = JSON.parse(p.worker); migratedPdfs = true;
+            }
+        });
+        if (migratedPdfs) safeSetStorage('stundenzettel_saved_pdfs', savedPdfs);
+
         let faktury = JSON.parse(localStorage.getItem('stundenzettel_faktury_db')) || [];
+        let migratedFaktury = false;
+        faktury.forEach(f => {
+            if (f.worker && f.worker.startsWith('"') && f.worker.endsWith('"')) {
+                f.worker = JSON.parse(f.worker); migratedFaktury = true;
+            }
+        });
+        if (migratedFaktury) safeSetStorage('stundenzettel_faktury_db', faktury);
+
+        let activeSession = null;
+        let sessionStr = localStorage.getItem('stundenzettel_active_session_' + currentWorker);
+        if (!sessionStr) {
+            sessionStr = localStorage.getItem('stundenzettel_active_session_"' + currentWorker + '"');
+            if (sessionStr) {
+                localStorage.setItem('stundenzettel_active_session_' + currentWorker, sessionStr);
+                localStorage.removeItem('stundenzettel_active_session_"' + currentWorker + '"');
+            }
+        }
+        if (sessionStr) activeSession = JSON.parse(sessionStr);
+
         let selectedRecordIds = JSON.parse(localStorage.getItem('stundenzettel_selected')) || [];
         let openMonths = JSON.parse(localStorage.getItem('st_open_months')) || {};
         let openWeeks = JSON.parse(localStorage.getItem('st_open_weeks')) || {};
         
-        let activeSession = JSON.parse(localStorage.getItem('stundenzettel_active_session_' + currentWorker)) || null;
         let stopwatchInterval = null;
         let pendingPdfType = null;
         let editingRecordId = null;
@@ -392,7 +436,6 @@
         let tempLogo = companySettings.logoBase64;
         let tempStamp = companySettings.stampBase64;
 
-        // Externí dokument
         let tempExtDocBase64 = null;
         let tempExtDocType = null;
         let tempExtDocName = null;
@@ -407,7 +450,6 @@
             initWorkersDropdown(); initStopwatch(); renderApp(); setupImageUploads();
         }
 
-        // Export / Import (JSON)
         function exportJsonData() {
             const data = {};
             for (let i = 0; i < localStorage.length; i++) {
@@ -427,22 +469,27 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     for (const key in data) localStorage.setItem(key, data[key]);
-                    alert('Data nahrána! Aplikace se obnoví.');
+                    alert('Data nahrána! Aplikace se obnoví. Zkontrolujte prosím své záznamy.');
                     location.reload();
                 } catch (err) { alert('Chyba při čtení souboru.'); }
             };
             reader.readAsText(file);
         }
 
-        // Pracovníci a roletky
         function initWorkersDropdown() {
             const sel = document.getElementById('worker-select'); sel.innerHTML = '';
-            workers.forEach(w => { const opt = document.createElement('option'); opt.value = w; opt.innerText = w; if (w === currentWorker) opt.selected = true; sel.appendChild(opt); });
+            workers.forEach(w => { 
+                const opt = document.createElement('option'); 
+                opt.value = w; opt.innerText = w; 
+                if (w === currentWorker) opt.selected = true; 
+                sel.appendChild(opt); 
+            });
             document.getElementById('pichačky-worker-title').innerText = `Práce: ${currentWorker}`;
         }
         function changeWorker() {
             currentWorker = document.getElementById('worker-select').value;
-            safeSetStorage('stundenzettel_current_worker', currentWorker);
+            // OPRAVA: Ukládáme jako čistý string, ne přes stringify
+            localStorage.setItem('stundenzettel_current_worker', currentWorker);
             if (!zaznamy[currentWorker]) zaznamy[currentWorker] = [];
             activeSession = JSON.parse(localStorage.getItem('stundenzettel_active_session_' + currentWorker)) || null;
             document.getElementById('pichačky-worker-title').innerText = `Práce: ${currentWorker}`;
@@ -452,12 +499,12 @@
             const name = prompt("Zadejte jméno osoby:");
             if (name && name.trim() !== "" && !workers.includes(name.trim())) {
                 workers.push(name.trim()); safeSetStorage('stundenzettel_workers', workers);
-                currentWorker = name.trim(); safeSetStorage('stundenzettel_current_worker', currentWorker);
+                currentWorker = name.trim(); 
+                localStorage.setItem('stundenzettel_current_worker', currentWorker); // OPRAVA
                 initWorkersDropdown(); renderApp();
             }
         }
 
-        /* --- STOPKY A PRŮBĚŽNÉ UKLÁDÁNÍ --- */
         function initStopwatch() {
             if (stopwatchInterval) clearInterval(stopwatchInterval);
             if (activeSession) {
@@ -505,7 +552,6 @@
             initStopwatch(); renderApp();
         }
 
-        /* --- KALENDÁŘ IOS STYL --- */
         function changeCalendarMonth(dir) {
             calCurrentMonth += dir;
             if(calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
@@ -546,7 +592,6 @@
             document.getElementById('manual-modal-title').innerText = "Nový záznam (" + dateStr.split('-').reverse().join('.') + ")";
         }
 
-        /* --- EXTERNÍ DOKUMENT MODAL --- */
         document.getElementById('ext-doc-file').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -611,7 +656,6 @@
             }
         }
 
-        /* --- NASTAVENÍ A FIRMY --- */
         function quietSaveSettings() {
             invConfig.year = parseInt(document.getElementById('set-invYear').value)||new Date().getFullYear(); 
             invConfig.month = parseInt(document.getElementById('set-invMonth').value)||(new Date().getMonth()+1); 
@@ -665,7 +709,6 @@
         }
         function getInvoiceNumberString() { checkInvoiceNumberLogic(); return `${invConfig.year}/${String(invConfig.month).padStart(2,'0')}-${String(invConfig.counter).padStart(3,'0')}`; }
 
-        /* --- RUČNÍ HODINY A ZÁLOHA FORMULÁŘE --- */
         function saveManualDraft() {
             if(editingRecordId) return; 
             let d = { datum: document.getElementById('input-datum').value, od: document.getElementById('input-od').value, do: document.getElementById('input-do').value, pod: document.getElementById('input-pauza-od').value, pdo: document.getElementById('input-pauza-do').value, sazba: document.getElementById('input-sazba').value, mena: document.getElementById('input-mena').value, popis: document.getElementById('input-popis').value };
@@ -702,7 +745,6 @@
         function editRecord(id, e) { e.stopPropagation(); editingRecordId = id; const r = zaznamy[currentWorker].find(z=>z.id===id); if(!r)return; document.getElementById('manual-modal-title').innerText = "Úprava"; document.getElementById('input-datum').value=r.datum; document.getElementById('input-od').value=r.od; document.getElementById('input-do').value=r.do; document.getElementById('input-pauza-od').value=r.pauzaOd||''; document.getElementById('input-pauza-do').value=r.pauzaDo||''; document.getElementById('input-sazba').value=r.sazba||40; document.getElementById('input-mena').value=r.mena||'EUR'; document.getElementById('input-popis').value=r.popis||''; document.getElementById('add-modal').classList.add('active'); }
         function deleteRecord(id, e) { e.stopPropagation(); if(confirm("Smazat záznam?")) { zaznamy[currentWorker] = zaznamy[currentWorker].filter(z=>z.id!==id); selectedRecordIds=selectedRecordIds.filter(i=>i!==id); safeSetStorage('stundenzettel_zaznamy', zaznamy); renderApp(); } }
 
-        /* --- FAKTURY --- */
         function openInvoiceModal() {
             if (selectedRecordIds.length === 0) return alert('Nejprve vyberte alespoň jeden záznam ve stromečku.');
             const records = (zaznamy[currentWorker] || []).filter(z => selectedRecordIds.includes(z.id));
@@ -727,7 +769,6 @@
             closeInvoiceModal(); preparePdf('Faktura');
         }
 
-        /* --- SPRÁVCE FAKTUR A ZÁLOHY --- */
         function openFakturyManager() {
             const list = document.getElementById('faktury-list'); list.innerHTML = '';
             const myInvoices = faktury.filter(f => f.worker === currentWorker).reverse();
@@ -792,7 +833,6 @@
             if(f) generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id);
         }
 
-        /* --- PDF A MODRÉ PODPISY (DVA CANVASY PRO VÝKAZY) --- */
         let canvasW, ctxW, canvasM, ctxM;
         function preparePdf(type) { 
             if (type !== 'Faktura' && selectedRecordIds.length === 0) return alert('Vyberte záznamy ve stromečku.'); 
@@ -887,7 +927,6 @@
                         { table: { headerRows: 1, widths: ['*', 60, 80, 80], body: body }, margin: [0, 0, 0, 15] },
                         { text: `Zu zahlen: € ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 10] },
                         
-                        // Upozornění přesunuto dolů s opravenou gramatikou
                         { text: 'Gemäß §13b Absatz 2 Nr.4 UStG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer.', fontSize: 10, color: '#555', margin: [0, 15, 0, 20] },
                         
                         { columns: [
@@ -924,7 +963,6 @@
             pdfMake.createPdf(doc).download(`${type}_${invoiceId ? faktury.find(f=>f.id===invoiceId).invNumber.replace('/','-') : workerName}.pdf`);
         }
 
-        /* --- HISTORIE VÝKAZŮ (OBYČEJNÉ) --- */
         function openSavedPdfsModal() {
             const list = document.getElementById('saved-pdfs-list'); list.innerHTML = '';
             const workerPdfs = savedPdfs.filter(p => p.worker === currentWorker).reverse();
@@ -952,7 +990,6 @@
         }
         function deleteSavedPdf(id) { if(confirm('Smazat tento výkaz?')) { savedPdfs = savedPdfs.filter(x => x.id !== id); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); openSavedPdfsModal(); } }
 
-        /* --- STROMOVÉ ZOBRAZENÍ A VÝBĚRY --- */
         function toggleRecordSelection(id, e) { e.stopPropagation(); const idx = selectedRecordIds.indexOf(id); if (idx > -1) selectedRecordIds.splice(idx, 1); else selectedRecordIds.push(id); safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
         function toggleSelectAllWeek(ids, e) { e.stopPropagation(); const all = ids.every(id => selectedRecordIds.includes(id)); if (all) { selectedRecordIds = selectedRecordIds.filter(id => !ids.includes(id)); } else { ids.forEach(id => { if (!selectedRecordIds.includes(id)) selectedRecordIds.push(id); }); } safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
         function getWeekNum(dObj) { const d = new Date(Date.UTC(dObj.getFullYear(), dObj.getMonth(), dObj.getDate())); const dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum); const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return Math.ceil((((d - yearStart) / 86400000) + 1) / 7); }
