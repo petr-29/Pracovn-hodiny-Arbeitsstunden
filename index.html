@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- PWA meta tagy pro instalaci na plochu a zamezení ztráty dat -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Stundenzettel App</title>
@@ -36,7 +35,7 @@
         .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; font-weight: bold; }
         .btn-success { background-color: var(--success); color: #000; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; font-weight: bold; }
         .btn-edit { background-color: #f39c12; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; }
-        .btn-small { background-color: #333; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; font-weight: 600; }
+        .btn-small { background-color: #333; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; font-weight: 600; cursor: pointer;}
         
         .btn-pichačky-start { background-color: var(--success); color: #000; font-size: 18px; padding: 16px; border-radius: var(--radius-large); font-weight: bold; border: none; width: 100%; box-shadow: 0 4px 15px rgba(50, 215, 75, 0.2); }
         .btn-pichačky-stop { background-color: var(--danger); color: #fff; font-size: 18px; padding: 16px; border-radius: var(--radius-large); font-weight: bold; border: none; width: 100%; box-shadow: 0 4px 15px rgba(255, 69, 58, 0.2); }
@@ -56,7 +55,7 @@
         .cal-day.recorded.today { background-color: var(--danger); color: #fff; border: 2px solid var(--primary-orange); }
 
         .pdf-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-        .pdf-btn { flex: 1 1 calc(33% - 8px); background-color: #2c2c2e; color: #fff; border: none; padding: 12px 8px; border-radius: var(--radius-medium); font-size: 12px; font-weight: bold; text-align: center; }
+        .pdf-btn { flex: 1 1 calc(33% - 8px); background-color: #2c2c2e; color: #fff; border: none; padding: 12px 8px; border-radius: var(--radius-medium); font-size: 12px; font-weight: bold; text-align: center; cursor: pointer; }
         .pdf-btn.orange { background-color: var(--primary-orange); color: #000; }
         .pdf-btn.blue { background-color: var(--info); }
         .pdf-btn.red { background-color: var(--danger); }
@@ -68,7 +67,7 @@
         
         .summary-title { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 3px; }
         .summary-value { color: var(--primary-orange); font-size: 18px; font-weight: bold; text-align: right; }
-        .month-content, .week-content { margin-left: 12px; padding-left: 10px; border-left: 2px dashed #333; animation: fadeIn 0.3s ease; }
+        .month-content, .week-content { margin-left: 12px; padding-left: 10px; border-left: 2px dashed var(--primary-orange); animation: fadeIn 0.3s ease; }
 
         .record-item { background-color: var(--bg-card-deep); border: 1px solid #2c2c2e; display: flex; align-items: center; gap: 12px; }
         .custom-checkbox { width: 24px; height: 24px; background-color: #121212; border: 2px solid #444; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
@@ -92,7 +91,7 @@
         .form-group input:focus { border-color: var(--primary-orange); }
         .section-title { font-size: 13px; color: var(--primary-orange); margin-bottom: 10px; margin-top: 20px; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; font-weight: bold; }
 
-        canvas.signature-pad { background: #fff; border-radius: var(--radius-small); width: 100%; height: 150px; touch-action: none; cursor: crosshair; }
+        canvas.signature-pad { background: #fff; border-radius: var(--radius-small); width: 100%; height: 120px; touch-action: none; cursor: crosshair; }
         .pdf-history-item { background: #121212; padding: 16px; border: 1px solid #2c2c2e; border-radius: var(--radius-medium); margin-bottom: 10px; }
         .extra-item-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
         
@@ -178,7 +177,7 @@
             <div class="section-title">Vzhled a podpis</div>
             <label style="display:flex; align-items:center; gap:10px; margin-bottom:10px; cursor:pointer;">
                 <input type="checkbox" id="inv-use-stamp" checked style="width:20px; height:20px; accent-color:var(--primary-orange);">
-                <span>Vložit uložené razítko firmy do PDF</span>
+                <span style="font-size:14px;">Vložit uložené razítko firmy do PDF</span>
             </label>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -201,23 +200,23 @@
     <div class="modal-overlay" id="add-modal">
         <div class="modal-content">
             <h2 id="manual-modal-title">Záznam hodin</h2>
-            <div class="form-group"><label>Datum</label><input type="date" id="input-datum"></div>
+            <div class="form-group"><label>Datum</label><input type="date" id="input-datum" oninput="saveManualDraft()"></div>
             <div class="form-row">
-                <div class="form-group"><label>Od</label><input type="time" id="input-od" value="07:00"></div>
-                <div class="form-group"><label>Do</label><input type="time" id="input-do" value="16:00"></div>
+                <div class="form-group"><label>Od</label><input type="time" id="input-od" value="07:00" oninput="saveManualDraft()"></div>
+                <div class="form-group"><label>Do</label><input type="time" id="input-do" value="16:00" oninput="saveManualDraft()"></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Pauza Od</label><input type="time" id="input-pauza-od" value="12:00"></div>
-                <div class="form-group"><label>Pauza Do</label><input type="time" id="input-pauza-do" value="12:30"></div>
+                <div class="form-group"><label>Pauza Od</label><input type="time" id="input-pauza-od" value="12:00" oninput="saveManualDraft()"></div>
+                <div class="form-group"><label>Pauza Do</label><input type="time" id="input-pauza-do" value="12:30" oninput="saveManualDraft()"></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Sazba</label><input type="number" id="input-sazba" value="40"></div>
+                <div class="form-group"><label>Sazba</label><input type="number" id="input-sazba" value="40" oninput="saveManualDraft()"></div>
                 <div class="form-group">
                     <label>Měna</label>
-                    <select id="input-mena"><option value="EUR">€ (EUR)</option><option value="CZK">Kč (CZK)</option></select>
+                    <select id="input-mena" onchange="saveManualDraft()"><option value="EUR">€ (EUR)</option><option value="CZK">Kč (CZK)</option></select>
                 </div>
             </div>
-            <div class="form-group"><label>Popis</label><input type="text" id="input-popis" placeholder="Popis práce..."></div>
+            <div class="form-group"><label>Popis</label><input type="text" id="input-popis" placeholder="Popis práce..." oninput="saveManualDraft()"></div>
             <button class="btn" onclick="saveManualRecord()">Uložit</button>
             <button class="btn btn-outline" onclick="closeManualModal()">Zrušit</button>
         </div>
@@ -228,40 +227,52 @@
         <div class="modal-content">
             <h2>Nastavení a Data</h2>
             
+            <div class="section-title" style="margin-top:0;">Záloha a obnova dat (JSON)</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-small" style="flex: 1; padding: 10px; font-size: 14px;" onclick="exportJsonData()">⬇️ Stáhnout data</button>
+                <div style="flex: 1; position: relative;">
+                    <button class="btn-small" style="width: 100%; padding: 10px; font-size: 14px; background: #E67E22; pointer-events: none;">⬆️ Nahrát data</button>
+                    <input type="file" accept=".json" onchange="importJsonData(event)" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+                </div>
+            </div>
+
             <div class="section-title">Číslování faktur</div>
             <div class="form-row">
-                <div class="form-group"><label>Rok (např. 2026)</label><input type="number" id="set-invYear"></div>
-                <div class="form-group"><label>Měsíc (např. 9)</label><input type="number" id="set-invMonth"></div>
-                <div class="form-group"><label>Další číslo (např. 1)</label><input type="number" id="set-invCounter"></div>
+                <div class="form-group"><label>Rok (např. 2026)</label><input type="number" id="set-invYear" oninput="quietSaveSettings()"></div>
+                <div class="form-group"><label>Měsíc (např. 9)</label><input type="number" id="set-invMonth" oninput="quietSaveSettings()"></div>
+                <div class="form-group"><label>Další číslo (např. 1)</label><input type="number" id="set-invCounter" oninput="quietSaveSettings()"></div>
             </div>
 
             <div class="section-title">1. Dodavatel (Moje firma)</div>
-            <div class="form-group"><label>Firma</label><input type="text" id="set-firma"></div>
-            <div class="form-group"><label>Majitel / Zastoupení</label><input type="text" id="set-jmeno"></div>
-            <div class="form-group"><label>IČO</label><input type="text" id="set-ico"></div>
-            <div class="form-group"><label>Adresa</label><input type="text" id="set-adresa"></div>
+            <div class="form-group"><label>Firma</label><input type="text" id="set-firma" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Majitel / Zastoupení</label><input type="text" id="set-jmeno" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>IČO</label><input type="text" id="set-ico" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Adresa</label><input type="text" id="set-adresa" oninput="quietSaveSettings()"></div>
             <div class="form-row">
-                <div class="form-group"><label>Telefon</label><input type="text" id="set-tel"></div>
-                <div class="form-group"><label>E-mail</label><input type="text" id="set-email"></div>
+                <div class="form-group"><label>Telefon</label><input type="text" id="set-tel" oninput="quietSaveSettings()"></div>
+                <div class="form-group"><label>E-mail</label><input type="text" id="set-email" oninput="quietSaveSettings()"></div>
             </div>
-            <div class="form-group"><label>Bankovní spojení (IBAN)</label><input type="text" id="set-bank"></div>
-            <div class="form-group"><label>SWIFT / BIC</label><input type="text" id="set-swift"></div>
+            <div class="form-group"><label>Bankovní spojení (IBAN)</label><input type="text" id="set-bank" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>SWIFT / BIC</label><input type="text" id="set-swift" oninput="quietSaveSettings()"></div>
 
-            <div class="section-title">2. Odběratel (Adresář klientů)</div>
+            <div class="section-title">2. Pověřený vedoucí / Schvalovatel</div>
+            <div class="form-group"><label>Jméno a Příjmení vedoucího</label><input type="text" id="set-vedouci" placeholder="Jan Novák..." oninput="quietSaveSettings()"></div>
+
+            <div class="section-title">3. Odběratel (Adresář klientů)</div>
             <div class="form-group">
                 <label>Vybrat uloženou firmu</label>
                 <select id="client-select" onchange="loadSelectedClient()"></select>
             </div>
-            <div class="form-group"><label>Název firmy odběratele</label><input type="text" id="set-clientName"></div>
-            <div class="form-group"><label>Geschäftsführer</label><input type="text" id="set-clientRep"></div>
-            <div class="form-group"><label>Adresa odběratele</label><input type="text" id="set-clientAddress"></div>
-            <div class="form-group"><label>Ust-IdNr. / IČO</label><input type="text" id="set-clientUst"></div>
+            <div class="form-group"><label>Název firmy odběratele</label><input type="text" id="set-clientName" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Geschäftsführer</label><input type="text" id="set-clientRep" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Adresa odběratele</label><input type="text" id="set-clientAddress" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Ust-IdNr. / IČO</label><input type="text" id="set-clientUst" oninput="quietSaveSettings()"></div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn-success" style="flex: 1;" onclick="saveClientToBook()">💾 Uložit odběratele</button>
                 <button class="btn-danger" onclick="deleteClientFromBook()">🗑️ Smazat</button>
             </div>
 
-            <div class="section-title">3. Vizuály dokumentů (PNG)</div>
+            <div class="section-title">4. Vizuály dokumentů (PNG)</div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Logo firmy (Hlavička)</label>
@@ -275,19 +286,28 @@
                 </div>
             </div>
 
-            <button class="btn" onclick="saveSettings()">Uložit nastavení</button>
-            <button class="btn btn-outline" onclick="closeSettingsModal()">Zavřít</button>
+            <button class="btn" onclick="saveSettings()">Zavřít nastavení</button>
         </div>
     </div>
 
     <!-- MODAL: PODPIS -->
     <div class="modal-overlay" id="signature-modal">
         <div class="modal-content">
-            <h2 id="signature-title" style="color:var(--primary-orange);">Podpis dokumentu</h2>
-            <canvas id="sig-canvas" class="signature-pad"></canvas>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <h2 id="signature-title" style="color:var(--primary-orange); margin-bottom: 15px;">Podpis dokumentu</h2>
+            
+            <div id="sig-worker-container">
+                <label style="color:var(--text-muted); font-size:13px; margin-bottom:5px; display:block; font-weight:bold;">Podpis pracovníka (<span id="sig-worker-name"></span>)</label>
+                <canvas id="sig-canvas-worker" class="signature-pad"></canvas>
+            </div>
+            
+            <div id="sig-manager-container" style="margin-top: 15px;">
+                <label style="color:var(--text-muted); font-size:13px; margin-bottom:5px; display:block; font-weight:bold;">Podpis vedoucího (<span id="sig-manager-name"></span>)</label>
+                <canvas id="sig-canvas-manager" class="signature-pad"></canvas>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn btn-outline" style="margin:0;" onclick="clearSignature()">Vymazat</button>
-                <button class="btn" style="margin:0; flex:2;" onclick="confirmSignature()">Vytvořit PDF</button>
+                <button class="btn" style="margin:0; flex:2;" onclick="confirmSignature()">Uložit a PDF</button>
             </div>
             <button class="btn btn-outline" onclick="closeSignatureModal()">Zrušit</button>
         </div>
@@ -295,24 +315,23 @@
 
     <!-- MODAL: HISTORIE PDF -->
     <div class="modal-overlay" id="saved-pdfs-modal">
-        <div class="modal-content">
-            <h2>Uložené výkazy</h2>
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 style="margin-bottom: 20px;">Uložené podepsané výkazy</h2>
             <div id="saved-pdfs-list"></div>
             <button class="btn btn-outline" onclick="closeSavedPdfsModal()">Zavřít</button>
         </div>
     </div>
 
     <script>
-        // Detekce PWA (Stand-alone režimu) - pokud není na ploše, ukáže hlášku
+        // Detekce PWA
         if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
             document.getElementById('pwa-prompt').style.display = 'block';
         }
 
-        // Spolehlivé ukládání i při zavření appky
         function safeSetStorage(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 
-        // Načtení dat
-        let companySettings = JSON.parse(localStorage.getItem('stundenzettel_company')) || { firma: "ELEKTRO MICHÁLEK", jmeno: "Petr Michálek", ico: "64837530", adresa: "Nám. Prokopa Holého 11, 350 02 Cheb", tel: "606880162", email: "michalek_p@centrum.cz", bank: "LT163250076086088383", swift: "REVOLT21", clientName: "", clientRep: "", clientAddress: "", clientUst: "", logoBase64: null, stampBase64: null };
+        // Načtení dat a objektů
+        let companySettings = JSON.parse(localStorage.getItem('stundenzettel_company')) || { firma: "ELEKTRO MICHÁLEK", jmeno: "Petr Michálek", ico: "64837530", adresa: "Nám. Prokopa Holého 11, 350 02 Cheb", tel: "606880162", email: "michalek_p@centrum.cz", bank: "LT163250076086088383", swift: "REVOLT21", clientName: "", clientRep: "", clientAddress: "", clientUst: "", vedouci: "", logoBase64: null, stampBase64: null };
         let clientBook = JSON.parse(localStorage.getItem('stundenzettel_clientbook')) || [];
         let invConfig = JSON.parse(localStorage.getItem('stundenzettel_invconfig')) || { year: new Date().getFullYear(), month: new Date().getMonth() + 1, counter: 1 };
         let workers = JSON.parse(localStorage.getItem('stundenzettel_workers')) || ["Petr Michálek", "Jan Novák"];
@@ -343,7 +362,35 @@
             document.getElementById('splash-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('input-datum').valueAsDate = new Date();
+            loadManualDraft();
             initWorkersDropdown(); initStopwatch(); renderApp(); setupImageUploads();
+        }
+
+        // Export / Import (JSON)
+        function exportJsonData() {
+            const data = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('st_') || key.startsWith('stundenzettel_')) data[key] = localStorage.getItem(key);
+            }
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url;
+            a.download = `stundenzettel_zaloha_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+        function importJsonData(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    for (const key in data) localStorage.setItem(key, data[key]);
+                    alert('Data nahrána! Aplikace se obnoví.');
+                    location.reload();
+                } catch (err) { alert('Chyba při čtení souboru.'); }
+            };
+            reader.readAsText(file);
         }
 
         // Pracovníci a roletky
@@ -431,7 +478,7 @@
             
             const daysInMonth = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
             const firstDay = new Date(calCurrentYear, calCurrentMonth, 1).getDay();
-            let startDay = firstDay === 0 ? 6 : firstDay - 1; // Od pondělí
+            let startDay = firstDay === 0 ? 6 : firstDay - 1;
 
             for(let i=0; i<startDay; i++) { calGrid.innerHTML += `<div></div>`; }
 
@@ -459,46 +506,51 @@
         }
 
         /* --- NASTAVENÍ A FIRMY --- */
+        function quietSaveSettings() {
+            invConfig.year = parseInt(document.getElementById('set-invYear').value)||new Date().getFullYear(); 
+            invConfig.month = parseInt(document.getElementById('set-invMonth').value)||(new Date().getMonth()+1); 
+            invConfig.counter = parseInt(document.getElementById('set-invCounter').value)||1;
+            safeSetStorage('stundenzettel_invconfig', invConfig);
+            
+            let nSet = { logoBase64: tempLogo, stampBase64: tempStamp };
+            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst','vedouci'].forEach(k => { if(document.getElementById(`set-${k}`)) nSet[k] = document.getElementById(`set-${k}`).value; });
+            companySettings = nSet; safeSetStorage('stundenzettel_company', companySettings);
+        }
+
         function setupImageUploads() {
             const getB64 = (f) => new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(f); r.onload = ()=>res(r.result); r.onerror = e=>rej(e); });
-            document.getElementById('set-logo').onchange = async(e) => { if (e.target.files[0]) { tempLogo = await getB64(e.target.files[0]); document.getElementById('logo-preview').innerHTML = `<img src="${tempLogo}" style="max-height:40px;">`; }};
-            document.getElementById('set-stamp').onchange = async(e) => { if (e.target.files[0]) { tempStamp = await getB64(e.target.files[0]); document.getElementById('stamp-preview').innerHTML = `<img src="${tempStamp}" style="max-height:40px;">`; }};
+            document.getElementById('set-logo').onchange = async(e) => { if (e.target.files[0]) { tempLogo = await getB64(e.target.files[0]); document.getElementById('logo-preview').innerHTML = `<img src="${tempLogo}" style="max-height:40px;">`; quietSaveSettings(); }};
+            document.getElementById('set-stamp').onchange = async(e) => { if (e.target.files[0]) { tempStamp = await getB64(e.target.files[0]); document.getElementById('stamp-preview').innerHTML = `<img src="${tempStamp}" style="max-height:40px;">`; quietSaveSettings(); }};
         }
         
         function populateClientSelect() {
-            const sel = document.getElementById('client-select'); sel.innerHTML = '<option value="">-- Vyberte nebo napište novou --</option>';
+            const sel = document.getElementById('client-select'); sel.innerHTML = '<option value="">-- Vyberte uloženou firmu --</option>';
             clientBook.forEach((c, idx) => { sel.innerHTML += `<option value="${idx}">${c.name}</option>`; });
         }
         function loadSelectedClient() {
             const idx = document.getElementById('client-select').value;
-            if (idx !== "") { const c = clientBook[idx]; document.getElementById('set-clientName').value = c.name; document.getElementById('set-clientRep').value = c.rep; document.getElementById('set-clientAddress').value = c.address; document.getElementById('set-clientUst').value = c.ust; }
+            if (idx !== "") { const c = clientBook[idx]; document.getElementById('set-clientName').value = c.name; document.getElementById('set-clientRep').value = c.rep; document.getElementById('set-clientAddress').value = c.address; document.getElementById('set-clientUst').value = c.ust; quietSaveSettings(); }
         }
         function saveClientToBook() {
             const name = document.getElementById('set-clientName').value; if(!name) return;
             const cData = { name, rep: document.getElementById('set-clientRep').value, address: document.getElementById('set-clientAddress').value, ust: document.getElementById('set-clientUst').value };
             const exIdx = clientBook.findIndex(c => c.name === name);
             if (exIdx >= 0) clientBook[exIdx] = cData; else clientBook.push(cData);
-            safeSetStorage('stundenzettel_clientbook', clientBook); populateClientSelect(); document.getElementById('client-select').value = clientBook.findIndex(c => c.name === name); alert('Uloženo.');
+            safeSetStorage('stundenzettel_clientbook', clientBook); populateClientSelect(); document.getElementById('client-select').value = clientBook.findIndex(c => c.name === name); alert('Odběratel uložen do adresáře.');
         }
         function deleteClientFromBook() {
             const idx = document.getElementById('client-select').value;
-            if (idx !== "") { clientBook.splice(idx, 1); safeSetStorage('stundenzettel_clientbook', clientBook); ['Name','Rep','Address','Ust'].forEach(k=>document.getElementById('set-client'+k).value=""); populateClientSelect(); }
+            if (idx !== "") { clientBook.splice(idx, 1); safeSetStorage('stundenzettel_clientbook', clientBook); ['Name','Rep','Address','Ust'].forEach(k=>document.getElementById('set-client'+k).value=""); quietSaveSettings(); populateClientSelect(); }
         }
 
         function openSettingsModal() {
             document.getElementById('set-invYear').value = invConfig.year; document.getElementById('set-invMonth').value = invConfig.month; document.getElementById('set-invCounter').value = invConfig.counter;
-            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst'].forEach(k => { if(document.getElementById(`set-${k}`)) document.getElementById(`set-${k}`).value = companySettings[k] || ""; });
+            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst','vedouci'].forEach(k => { if(document.getElementById(`set-${k}`)) document.getElementById(`set-${k}`).value = companySettings[k] || ""; });
             populateClientSelect(); tempLogo = companySettings.logoBase64; tempStamp = companySettings.stampBase64;
             document.getElementById('logo-preview').innerHTML = tempLogo ? `<img src="${tempLogo}" style="max-height:40px;">` : ''; document.getElementById('stamp-preview').innerHTML = tempStamp ? `<img src="${tempStamp}" style="max-height:40px;">` : '';
             document.getElementById('settings-modal').classList.add('active');
         }
-        function saveSettings() {
-            invConfig.year = parseInt(document.getElementById('set-invYear').value)||new Date().getFullYear(); invConfig.month = parseInt(document.getElementById('set-invMonth').value)||(new Date().getMonth()+1); invConfig.counter = parseInt(document.getElementById('set-invCounter').value)||1;
-            safeSetStorage('stundenzettel_invconfig', invConfig);
-            let nSet = { logoBase64: tempLogo, stampBase64: tempStamp };
-            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst'].forEach(k => { if(document.getElementById(`set-${k}`)) nSet[k] = document.getElementById(`set-${k}`).value; });
-            companySettings = nSet; safeSetStorage('stundenzettel_company', companySettings); document.getElementById('settings-modal').classList.remove('active');
-        }
+        function saveSettings() { quietSaveSettings(); document.getElementById('settings-modal').classList.remove('active'); }
         function closeSettingsModal() { document.getElementById('settings-modal').classList.remove('active'); }
 
         function checkInvoiceNumberLogic() {
@@ -507,9 +559,28 @@
         }
         function getInvoiceNumberString() { checkInvoiceNumberLogic(); return `${invConfig.year}/${String(invConfig.month).padStart(2,'0')}-${String(invConfig.counter).padStart(3,'0')}`; }
 
-        /* --- RUČNÍ HODINY --- */
-        function openManualModal() { editingRecordId = null; document.getElementById('manual-modal-title').innerText = "Záznam hodin"; document.getElementById('add-modal').classList.add('active'); }
+        /* --- RUČNÍ HODINY A ZÁLOHA FORMULÁŘE --- */
+        function saveManualDraft() {
+            if(editingRecordId) return; // při editaci koncept neukládáme
+            let d = { datum: document.getElementById('input-datum').value, od: document.getElementById('input-od').value, do: document.getElementById('input-do').value, pod: document.getElementById('input-pauza-od').value, pdo: document.getElementById('input-pauza-do').value, sazba: document.getElementById('input-sazba').value, mena: document.getElementById('input-mena').value, popis: document.getElementById('input-popis').value };
+            safeSetStorage('stundenzettel_manual_draft', d);
+        }
+        function loadManualDraft() {
+            let d = JSON.parse(localStorage.getItem('stundenzettel_manual_draft'));
+            if(d) {
+                if(d.datum) document.getElementById('input-datum').value = d.datum;
+                if(d.od) document.getElementById('input-od').value = d.od;
+                if(d.do) document.getElementById('input-do').value = d.do;
+                if(d.pod) document.getElementById('input-pauza-od').value = d.pod;
+                if(d.pdo) document.getElementById('input-pauza-do').value = d.pdo;
+                if(d.sazba) document.getElementById('input-sazba').value = d.sazba;
+                if(d.mena) document.getElementById('input-mena').value = d.mena;
+                if(d.popis) document.getElementById('input-popis').value = d.popis;
+            }
+        }
+        function openManualModal() { editingRecordId = null; loadManualDraft(); document.getElementById('manual-modal-title').innerText = "Záznam hodin"; document.getElementById('add-modal').classList.add('active'); }
         function closeManualModal() { document.getElementById('add-modal').classList.remove('active'); }
+        
         function saveManualRecord() {
             if (!zaznamy[currentWorker]) zaznamy[currentWorker] = [];
             const od = document.getElementById('input-od').value, doC = document.getElementById('input-do').value, pod = document.getElementById('input-pauza-od').value, pdo = document.getElementById('input-pauza-do').value;
@@ -518,7 +589,9 @@
             if (mins < 0) mins += 1440;
             const rec = { id: editingRecordId || Date.now(), datum: document.getElementById('input-datum').value, od, do: doC, pauzaOd: pod, pauzaDo: pdo, cisteHodiny: Math.round((mins/60)*100)/100, sazba: parseFloat(document.getElementById('input-sazba').value), mena: document.getElementById('input-mena').value, popis: document.getElementById('input-popis').value };
             if(editingRecordId) zaznamy[currentWorker] = zaznamy[currentWorker].map(z => z.id === editingRecordId ? rec : z); else zaznamy[currentWorker].push(rec);
-            safeSetStorage('stundenzettel_zaznamy', zaznamy); closeManualModal(); renderApp();
+            safeSetStorage('stundenzettel_zaznamy', zaznamy); 
+            localStorage.removeItem('stundenzettel_manual_draft'); // vyčištění konceptu po úspěšném uložení
+            closeManualModal(); renderApp();
         }
         function editRecord(id, e) { e.stopPropagation(); editingRecordId = id; const r = zaznamy[currentWorker].find(z=>z.id===id); if(!r)return; document.getElementById('manual-modal-title').innerText = "Úprava"; document.getElementById('input-datum').value=r.datum; document.getElementById('input-od').value=r.od; document.getElementById('input-do').value=r.do; document.getElementById('input-pauza-od').value=r.pauzaOd||''; document.getElementById('input-pauza-do').value=r.pauzaDo||''; document.getElementById('input-sazba').value=r.sazba||40; document.getElementById('input-mena').value=r.mena||'EUR'; document.getElementById('input-popis').value=r.popis||''; document.getElementById('add-modal').classList.add('active'); }
         function deleteRecord(id, e) { e.stopPropagation(); if(confirm("Smazat záznam?")) { zaznamy[currentWorker] = zaznamy[currentWorker].filter(z=>z.id!==id); selectedRecordIds=selectedRecordIds.filter(i=>i!==id); safeSetStorage('stundenzettel_zaznamy', zaznamy); renderApp(); } }
@@ -536,7 +609,7 @@
         function closeInvoiceModal() { document.getElementById('invoice-items-modal').classList.remove('active'); }
         function renderInvoiceItemsUI() {
             const container = document.getElementById('invoice-items-container'); container.innerHTML = '';
-            customInvoiceItems.forEach((it, i) => { container.innerHTML += `<div class="extra-item-row"><input type="text" value="${it.desc}" onchange="customInvoiceItems[${i}].desc=this.value" style="flex:2;"><input type="number" value="${it.qty}" step="0.5" onchange="customInvoiceItems[${i}].qty=parseFloat(this.value)||0" style="flex:0.8;"><input type="number" value="${it.price}" step="1" onchange="customInvoiceItems[${i}].price=parseFloat(this.value)||0" style="flex:1;"></div>`; });
+            customInvoiceItems.forEach((it, i) => { container.innerHTML += `<div class="extra-item-row"><input type="text" value="${it.desc}" onchange="customInvoiceItems[${i}].desc=this.value" style="flex:2; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.qty}" step="0.5" onchange="customInvoiceItems[${i}].qty=parseFloat(this.value)||0" style="flex:0.8; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.price}" step="1" onchange="customInvoiceItems[${i}].price=parseFloat(this.value)||0" style="flex:1; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"></div>`; });
         }
         function addExtraInvoiceItemRow() { customInvoiceItems.push({ desc: 'Materiál / Cesta', qty: 1, price: 0, isHours: false }); renderInvoiceItemsUI(); }
 
@@ -550,7 +623,7 @@
         function openFakturyManager() {
             const list = document.getElementById('faktury-list'); list.innerHTML = '';
             const myInvoices = faktury.filter(f => f.worker === currentWorker).reverse();
-            if (myInvoices.length === 0) { list.innerHTML = '<p style="color:#aaa;">Zatím žádné faktury.</p>'; }
+            if (myInvoices.length === 0) { list.innerHTML = '<p style="color:#aaa; text-align:center;">Zatím žádné faktury.</p>'; }
             
             const dz = new Date(); dz.setHours(0,0,0,0);
             myInvoices.forEach(f => {
@@ -573,8 +646,8 @@
                         </div>
                     </div>
                     <div style="display:flex; gap:8px;">
-                        ${f.remaining > 0 ? `<button class="btn-success" onclick="addZaloha(${f.id})">+ Přidat úhradu (zálohu)</button>` : `<button class="btn-outline" style="margin:0; padding:6px; flex:1;" onclick="resetZaloha(${f.id})">Zrušit platbu</button>`}
-                        <button class="btn-small" style="flex:1;" onclick="generateRealPdf('Faktura', '${f.sigImage}', [${f.recordIds.join(',')}], '${f.worker}', ${f.id})">⬇ Stáhnout PDF</button>
+                        ${f.remaining > 0 ? `<button class="btn-success" onclick="addZaloha(${f.id})">+ Přidat úhradu</button>` : `<button class="btn-outline" style="margin:0; padding:6px; flex:1;" onclick="resetZaloha(${f.id})">Zrušit platbu</button>`}
+                        <button class="btn-small" style="flex:1;" onclick="downloadInvoice(${f.id})">⬇ Stáhnout PDF</button>
                         <button class="btn-danger" onclick="deleteFaktura(${f.id})">Smazat</button>
                     </div>
                 </div>`;
@@ -589,33 +662,78 @@
         }
         function resetZaloha(id) { let f = faktury.find(x => x.id === id); if(f) { f.zaloha = 0; f.remaining = f.total; safeSetStorage('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
         function deleteFaktura(id) { if(confirm('Smazat fakturu z evidence? (Nenávratně)')) { faktury = faktury.filter(x => x.id !== id); safeSetStorage('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
-
-        /* --- PDF A PODPIS --- */
-        function preparePdf(type) { if (type !== 'Faktura' && selectedRecordIds.length === 0) return alert('Vyberte záznamy.'); pendingPdfType = type; document.getElementById('signature-modal').classList.add('active'); initCanvas(); }
-        let canvas, ctx;
-        function initCanvas() {
-            canvas = document.getElementById('sig-canvas'); ctx = canvas.getContext('2d'); canvas.width = canvas.offsetWidth; canvas.height = 150; 
-            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.strokeStyle = "#000000"; ctx.lineWidth = 2;
-            let isD = false; canvas.onmousedown=e=>{isD=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY);}; canvas.onmousemove=e=>{if(isD){ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke();}}; canvas.onmouseup=()=>isD=false;
-            canvas.ontouchstart=e=>{isD=true; let r=canvas.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); e.preventDefault();}; canvas.ontouchmove=e=>{if(isD){let r=canvas.getBoundingClientRect(); ctx.lineTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); ctx.stroke();} e.preventDefault();}; canvas.ontouchend=()=>isD=false;
+        function downloadInvoice(id) {
+            let f = faktury.find(x => x.id === id);
+            if(f) generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id);
         }
-        function clearSignature() { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+
+        /* --- PDF A MODRÉ PODPISY (DVA CANVASY PRO VÝKAZY) --- */
+        let canvasW, ctxW, canvasM, ctxM;
+        function preparePdf(type) { 
+            if (type !== 'Faktura' && selectedRecordIds.length === 0) return alert('Vyberte záznamy ve stromečku.'); 
+            pendingPdfType = type; 
+            
+            if (type === 'Faktura') {
+                document.getElementById('sig-manager-container').classList.add('hidden');
+                document.getElementById('sig-worker-name').innerText = companySettings.jmeno || "Firma";
+            } else {
+                document.getElementById('sig-manager-container').classList.remove('hidden');
+                document.getElementById('sig-worker-name').innerText = currentWorker;
+                document.getElementById('sig-manager-name').innerText = companySettings.vedouci || "Vedoucí";
+            }
+
+            document.getElementById('signature-modal').classList.add('active'); 
+            setTimeout(initCanvas, 50); 
+        }
+
+        function setupCanvas(c, ctx) {
+            c.width = c.offsetWidth; c.height = 120; 
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height); 
+            ctx.strokeStyle = "#0000FF"; // MODRÁ PROPISKA
+            ctx.lineWidth = 2.5;
+            let isD = false; 
+            c.onmousedown=e=>{isD=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY);}; c.onmousemove=e=>{if(isD){ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke();}}; c.onmouseup=()=>isD=false;
+            c.ontouchstart=e=>{isD=true; let r=c.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); e.preventDefault();}; c.ontouchmove=e=>{if(isD){let r=c.getBoundingClientRect(); ctx.lineTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); ctx.stroke();} e.preventDefault();}; c.ontouchend=()=>isD=false;
+        }
+
+        function initCanvas() {
+            canvasW = document.getElementById('sig-canvas-worker'); ctxW = canvasW.getContext('2d');
+            setupCanvas(canvasW, ctxW);
+            
+            if (pendingPdfType !== 'Faktura') {
+                canvasM = document.getElementById('sig-canvas-manager'); ctxM = canvasM.getContext('2d');
+                setupCanvas(canvasM, ctxM);
+            }
+        }
+
+        function clearSignature() { 
+            ctxW.fillStyle = "#ffffff"; ctxW.fillRect(0, 0, canvasW.width, canvasW.height); 
+            if (pendingPdfType !== 'Faktura') {
+                ctxM.fillStyle = "#ffffff"; ctxM.fillRect(0, 0, canvasM.width, canvasM.height); 
+            }
+        }
         function closeSignatureModal() { document.getElementById('signature-modal').classList.remove('active'); }
 
         function confirmSignature() {
-            const sig = canvas.toDataURL("image/png"); closeSignatureModal();
+            const sigW = canvasW.toDataURL("image/png"); 
+            let sigM = null;
+            if (pendingPdfType !== 'Faktura') sigM = canvasM.toDataURL("image/png");
+
+            closeSignatureModal();
+
             if (pendingPdfType === 'Faktura') {
                 const invNumber = getInvoiceNumberString(); invConfig.counter++; safeSetStorage('stundenzettel_invconfig', invConfig);
                 let totalSum = customInvoiceItems.reduce((s, i) => s + (i.qty * i.price), 0);
                 let issueDate = new Date(); let dueDateObj = new Date(); dueDateObj.setDate(issueDate.getDate() + currentInvoiceSetup.dueDays);
-                let fObj = { id: Date.now(), invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sig, useStamp: currentInvoiceSetup.useStamp };
-                faktury.push(fObj); safeSetStorage('stundenzettel_faktury_db', faktury); generateRealPdf('Faktura', sig, selectedRecordIds, currentWorker, fObj.id);
+                let fObj = { id: Date.now(), invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sigW, useStamp: currentInvoiceSetup.useStamp };
+                faktury.push(fObj); safeSetStorage('stundenzettel_faktury_db', faktury); generateRealPdf('Faktura', sigW, selectedRecordIds, currentWorker, fObj.id);
             } else {
-                savedPdfs.push({ id: Date.now(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigImage: sig }); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); generateRealPdf(pendingPdfType, sig, selectedRecordIds, currentWorker);
+                let pObj = { id: Date.now(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM };
+                savedPdfs.push(pObj); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM);
             }
         }
 
-        function generateRealPdf(type, sigImage, recordIds, workerName, invoiceId = null) {
+        function generateRealPdf(type, sigWorker, recordIds, workerName, invoiceId = null, sigManager = null) {
             const workerRecords = (zaznamy[workerName] || []).filter(z => recordIds.includes(z.id));
             let doc = {};
 
@@ -624,26 +742,16 @@
                 let body = [[ {text:'Beschreibung', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Menge', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'center'}, {text:'Preis/Einheit', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:'Gesamt', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'} ]];
                 fData.items.forEach(i => { body.push([ i.desc, {text:`${i.qty} ${i.isHours?'St':'ks'}`, alignment:'center'}, {text:`€ ${i.price.toFixed(2)}`, alignment:'right'}, {text:`€ ${(i.qty * i.price).toFixed(2)}`, alignment:'right'} ]); });
                 
-                // Unikátní vzhled hlavičky (Bílý text s černou konturou vytvořený přes SVG v PDFMake)
-                let headerBlock = {
-                    margin: [0, 0, 0, 15],
-                    table: { widths: ['*'], body: [[ {
-                        fillColor: '#FF8C00', margin: [5, 10, 5, 10], layout: 'noBorders',
-                        columns: [
-                            { width: '*', stack: [
-                                // Trikový stín/kontura pomocí SVG pro luxusní vzhled faktury
-                                { svg: `<svg width="400" height="35"><text x="0" y="28" font-family="sans-serif" font-size="28" font-weight="bold" fill="white" stroke="black" stroke-width="1.2">FAKTURA č. ${fData.invNumber}</text></svg>`, margin: [0,0,0,5] },
-                                { text: 'Lieferant', fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] },
-                                { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 9, color: '#ffffff', lineHeight: 1.2 }
-                            ]},
-                            companySettings.logoBase64 ? { image: companySettings.logoBase64, width: 80, alignment: 'right' } : { text: '', width: 80 }
-                        ]
-                    }]]}, layout: 'noBorders'
-                };
-
                 doc = {
                     content: [
-                        headerBlock,
+                        { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [
+                            { width: '*', stack: [
+                                { text: `FAKTURA č. ${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] },
+                                { text: 'Lieferant', fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] },
+                                { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 }
+                            ]},
+                            companySettings.logoBase64 ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 }
+                        ] }]]}, layout: 'noBorders' },
                         { table: { widths: ['*', '*', '*'], body: [
                             [{ text:'KONTONUMMER', bold:true, fontSize:8, color:'#666' }, { text:'VARIABLES SYMBOL', bold:true, fontSize:8, color:'#666' }, { text:'GESAMTZAHLUNGSBETRAG', bold:true, fontSize:8, color:'#666' }],
                             [{ text: companySettings.bank, fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `€ ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }],
@@ -653,36 +761,70 @@
                         { text: 'Wir sind kein Mehrwertsteuerzahler.', fontSize: 10, color: '#555', margin: [0, 0, 0, 15] },
                         { stack: [{ text:'Abnehmer', bold:true, fontSize:11, color:'#FF8C00' }, { text: `${companySettings.clientName}\nGeschäftsführer: ${companySettings.clientRep}\n${companySettings.clientAddress}\nUst-IdNr.: ${companySettings.clientUst}`, fontSize:10 }], margin: [0, 0, 0, 20] },
                         { table: { headerRows: 1, widths: ['*', 60, 80, 80], body: body }, margin: [0, 0, 0, 15] },
-                        { text: `Zu zahlen: € ${fData.total.toFixed(2)}`, bold: true, fontSize: 13, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 20] },
+                        { text: `Zu zahlen: € ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 20] },
                         { columns: [
-                            { width: 200, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 8, color: '#666' }] },
+                            { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] },
                             { width: '*', alignment: 'right', stack: [
                                 { text: 'Unterschrift & Stempel', fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
-                                (fData.useStamp && companySettings.stampBase64) ? { image: companySettings.stampBase64, width: 90, margin: [0,0,0,5] } : null,
-                                { image: sigImage, width: 130 }
+                                (fData.useStamp && companySettings.stampBase64) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null,
+                                { image: sigWorker, width: 140 }
                             ].filter(Boolean)}
                         ]}
                     ].filter(Boolean), defaultStyle: { font: 'Roboto' }
                 };
             } else {
-                let daysRows = [[{ text:'Tag', bold:true, fillColor:'#eee' }, { text:'Datum', bold:true, fillColor:'#eee' }, { text:'Arbeitsstunden (Std.)', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Pause', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Ausgeführte Leistungen', bold:true, fillColor:'#eee' }]];
+                let daysRows = [[{ text:'Tag', bold:true, fillColor:'#eee' }, { text:'Datum', bold:true, fillColor:'#eee' }, { text:'Arbeitsstunden', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Pause', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Ausgeführte Leistungen', bold:true, fillColor:'#eee' }]];
                 const dayNames = { 'Mo': 'Montag', 'Di': 'Dienstag', 'Mi': 'Mittwoch', 'Do': 'Donnerstag', 'Fr': 'Freitag', 'Sa': 'Samstag', 'So': 'Sonntag' };
                 let tH = 0;
                 workerRecords.forEach(r => { tH += r.cisteHodiny; let d = new Date(r.datum); let dow = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]; daysRows.push([ dayNames[dow] || dow, r.datum.split('-').reverse().join('.'), { text: `${r.cisteHodiny} st`, alignment: 'center', bold: true }, { text: r.pauzaOd ? `${r.pauzaOd}-${r.pauzaDo}` : '-', alignment: 'center' }, r.popis || 'Abrechnung' ]); });
+                
                 doc = {
                     content: [
                         { text: 'Montagenachweis', fontSize: 22, bold: true, color: '#333', margin: [0, 0, 0, 15] },
                         { table: { widths: ['*', '*'], body: [[ { text: `Monteur (Name, Vorname):\n${workerName}`, bold: true, fontSize: 10, fillColor: '#f9f9f9', padding: 8 }, { text: `Kalenderwoche:\nKW ${getWeekNum(new Date())}`, bold: true, fontSize: 10, fillColor: '#f9f9f9', padding: 8 } ], [ { text: `Kunde:\n${companySettings.clientName}`, fontSize: 10, padding: 8 }, { text: `Einsatzort:\n${companySettings.clientAddress}`, fontSize: 10, padding: 8 } ]] }, margin: [0, 0, 0, 15] },
-                        { table: { headerRows: 1, widths: [80, 80, 80, 60, '*'], body: daysRows }, margin: [0, 0, 0, 10] },
+                        { table: { headerRows: 1, widths: [75, 75, 75, 55, '*'], body: daysRows }, margin: [0, 0, 0, 10] },
                         { text: `Summe: ${tH.toFixed(2)} st`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 20] },
-                        { table: { widths: ['*'], body: [[ { stack: [ { text: '☑ Die Leistungen sind abgenommen', fontSize: 10, margin: [0, 0, 0, 8] }, { columns: [ { text: 'Datum: ' + new Date().toLocaleDateString('cs-CZ'), fontSize: 10 }, { stack: [{ text: 'Unterschrift Monteur:\n', fontSize: 10 }, { image: sigImage, width: 120 }] } ] } ], padding: 10 } ]] } }
+                        { text: '☑ Die Leistungen sind abgenommen', fontSize: 10, margin: [0, 0, 0, 15] },
+                        { columns: [
+                            { text: 'Datum: ' + new Date().toLocaleDateString('cs-CZ'), fontSize: 10, width: 100 },
+                            { stack: [{ text: 'Unterschrift Monteur:\n', fontSize: 10, margin: [0,0,0,5] }, { image: sigWorker, width: 140 }], width: '*' },
+                            { stack: [{ text: `Unterschrift Bauleiter / Kunde (${companySettings.vedouci}):\n`, fontSize: 10, margin: [0,0,0,5] }, sigManager ? { image: sigManager, width: 140 } : { text: '' }], width: '*' }
+                        ]}
                     ], defaultStyle: { font: 'Roboto' }
                 };
             }
-            pdfMake.createPdf(doc).download(`${type}_${faktury.find(f=>f.id===invoiceId)?.invNumber || workerName}.pdf`);
+            pdfMake.createPdf(doc).download(`${type}_${invoiceId ? faktury.find(f=>f.id===invoiceId).invNumber.replace('/','-') : workerName}.pdf`);
         }
 
-        /* --- STROMOVÉ ZOBRAZENÍ A VÝBĚRY (ZŮSTALO STEJNÉ) --- */
+        /* --- HISTORIE VÝKAZŮ (OBYČEJNÉ) --- */
+        function openSavedPdfsModal() {
+            const list = document.getElementById('saved-pdfs-list'); list.innerHTML = '';
+            const workerPdfs = savedPdfs.filter(p => p.worker === currentWorker).reverse();
+            if (workerPdfs.length === 0) { list.innerHTML = '<p style="color:#aaa; text-align:center;">Zatím žádné uložené výkazy.</p>'; }
+
+            workerPdfs.forEach(p => {
+                list.innerHTML += `
+                <div class="pdf-history-item" style="display:flex; flex-direction:column; gap:10px;">
+                    <div>
+                        <strong style="color:var(--primary-orange); font-size:16px;">${p.type.toUpperCase()} VÝKAZ</strong><br>
+                        <span style="font-size:12px; color:#aaa;">Vytvořeno: ${p.timestamp} | Záznamů: ${p.recordIds.length}</span>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-small" style="flex:1;" onclick="downloadSavedPdf(${p.id})">⬇ Stáhnout PDF</button>
+                        <button class="btn-danger" onclick="deleteSavedPdf(${p.id})">Smazat</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('saved-pdfs-modal').classList.add('active');
+        }
+        function closeSavedPdfsModal() { document.getElementById('saved-pdfs-modal').classList.remove('active'); }
+        function downloadSavedPdf(id) {
+            const p = savedPdfs.find(x => x.id === id);
+            if(p) generateRealPdf(p.type, p.sigWorker, p.recordIds, p.worker, null, p.sigManager);
+        }
+        function deleteSavedPdf(id) { if(confirm('Smazat tento výkaz?')) { savedPdfs = savedPdfs.filter(x => x.id !== id); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); openSavedPdfsModal(); } }
+
+        /* --- STROMOVÉ ZOBRAZENÍ A VÝBĚRY --- */
         function toggleRecordSelection(id, e) { e.stopPropagation(); const idx = selectedRecordIds.indexOf(id); if (idx > -1) selectedRecordIds.splice(idx, 1); else selectedRecordIds.push(id); safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
         function toggleSelectAllWeek(ids, e) { e.stopPropagation(); const all = ids.every(id => selectedRecordIds.includes(id)); if (all) { selectedRecordIds = selectedRecordIds.filter(id => !ids.includes(id)); } else { ids.forEach(id => { if (!selectedRecordIds.includes(id)) selectedRecordIds.push(id); }); } safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
         function getWeekNum(dObj) { const d = new Date(Date.UTC(dObj.getFullYear(), dObj.getMonth(), dObj.getDate())); const dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum); const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return Math.ceil((((d - yearStart) / 86400000) + 1) / 7); }
@@ -690,7 +832,7 @@
         function toggleWeek(wKey, e) { e.stopPropagation(); openWeeks[wKey] = !openWeeks[wKey]; safeSetStorage('st_open_weeks', openWeeks); renderApp(); }
 
         function renderApp() {
-            renderCalendar(); // Obnova iOS Kalendáře
+            renderCalendar(); 
             
             const container = document.getElementById('tree-container'); container.innerHTML = '';
             const workerRecords = zaznamy[currentWorker] || [];
@@ -733,10 +875,6 @@
                 }
             }
         }
-
-        // Zbytek modulů (Exporty)
-        function openSavedPdfsModal() { /* zkráceno - zachováno, viz kód níže... */ document.getElementById('saved-pdfs-modal').classList.add('active'); }
-        function closeSavedPdfsModal() { document.getElementById('saved-pdfs-modal').classList.remove('active'); }
 
         pdfMake.fonts = { Roboto: { normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf' } };
         window.onload = () => { if (activeSession) { document.getElementById('splash-screen').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); initWorkersDropdown(); initStopwatch(); renderApp(); setupImageUploads(); } };
