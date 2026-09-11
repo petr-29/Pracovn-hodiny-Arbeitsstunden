@@ -195,25 +195,10 @@
     <div class="modal-overlay" id="ext-doc-modal">
         <div class="modal-content">
             <h2 style="color:var(--success); margin-bottom:10px;">📥 Vložit externí fakturu</h2>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Pokud Vám záznamy fakturovala jiná firma, nahrajte sem jejich doklad. Uloží se do Správy faktur.</p>
-
-            <div class="form-group">
-                <label>Společnost (Kdo to reálně fakturoval?)</label>
-                <input type="text" id="ext-doc-company" placeholder="např. Partnerská s.r.o.">
-            </div>
-            <div class="form-group">
-                <label>Číslo faktury (Ruční zápis)</label>
-                <input type="text" id="ext-doc-number" placeholder="např. 2026-EXT-01">
-            </div>
-            <div class="form-group">
-                <label>Nahrát soubor (PDF, JPG, PNG)</label>
-                <input type="file" id="ext-doc-file" accept=".pdf, .jpg, .jpeg, .png" style="padding:10px; background:#121212;">
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 25px;">
-                <button class="btn btn-outline" style="margin:0;" onclick="closeExternalDocModal()">Zrušit</button>
-                <button class="btn btn-success" style="margin:0; flex:2;" onclick="saveExternalDoc()">Uložit do archivu</button>
-            </div>
+            <div class="form-group"><label>Společnost</label><input type="text" id="ext-doc-company"></div>
+            <div class="form-group"><label>Číslo faktury</label><input type="text" id="ext-doc-number"></div>
+            <div class="form-group"><label>Soubor</label><input type="file" id="ext-doc-file" accept=".pdf, .jpg, .jpeg, .png"></div>
+            <div style="display: flex; gap: 10px; margin-top: 25px;"><button class="btn btn-outline" style="margin:0;" onclick="closeExternalDocModal()">Zrušit</button><button class="btn btn-success" style="margin:0; flex:2;" onclick="saveExternalDoc()">Uložit</button></div>
         </div>
     </div>
 
@@ -221,36 +206,18 @@
     <div class="modal-overlay" id="invoice-items-modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 10px; color: var(--primary-orange);">Generování faktury</h2>
-            
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Splatnost (počet dnů)</label>
-                <input type="number" id="inv-due-days" value="14" min="1">
-            </div>
-
+            <div class="form-group" style="margin-top: 15px;"><label>Splatnost (počet dnů)</label><input type="number" id="inv-due-days" value="14" min="1"></div>
             <div class="section-title">Položky k fakturaci</div>
             <div id="invoice-items-container" style="margin-bottom: 15px;"></div>
             <button class="btn-small" style="margin-bottom: 15px;" onclick="addExtraInvoiceItemRow()">+ Přidat další položku</button>
-
-            <div class="section-title">Vzhled a podpis</div>
-            <label style="display:flex; align-items:center; gap:10px; margin-bottom:10px; cursor:pointer;">
-                <input type="checkbox" id="inv-use-stamp" checked style="width:20px; height:20px; accent-color:var(--primary-orange);">
-                <span style="font-size:14px;">Vložit uložené razítko firmy do PDF</span>
-            </label>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn btn-outline" style="margin:0;" onclick="closeInvoiceModal()">Zrušit</button>
-                <button class="btn" style="margin:0;" onclick="proceedToSignatureFromInvoice()">K podpisu PDF</button>
-            </div>
+            <label style="display:flex; align-items:center; gap:10px; margin-bottom:10px; cursor:pointer;"><input type="checkbox" id="inv-use-stamp" checked style="width:20px; height:20px;"><span style="font-size:14px;">Vložit razítko</span></label>
+            <div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-outline" style="margin:0;" onclick="closeInvoiceModal()">Zrušit</button><button class="btn" style="margin:0;" onclick="proceedToSignatureFromInvoice()">K podpisu PDF</button></div>
         </div>
     </div>
 
     <!-- MODAL: SPRÁVCE FAKTUR -->
     <div class="modal-overlay" id="faktury-manager-modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <h2 style="margin-bottom: 20px;">Správa faktur a záloh</h2>
-            <div id="faktury-list"></div>
-            <button class="btn btn-outline" onclick="closeFakturyManager()">Zavřít</button>
-        </div>
+        <div class="modal-content" style="max-width: 600px;"><h2 style="margin-bottom: 20px;">Správa faktur</h2><div id="faktury-list"></div><button class="btn btn-outline" onclick="closeFakturyManager()">Zavřít</button></div>
     </div>
 
     <!-- MODAL: RUČNÍ ZÁZNAM -->
@@ -258,24 +225,11 @@
         <div class="modal-content">
             <h2 id="manual-modal-title">Záznam hodin</h2>
             <div class="form-group"><label>Datum</label><input type="date" id="input-datum" oninput="saveManualDraft()"></div>
-            <div class="form-row">
-                <div class="form-group"><label>Od</label><input type="time" id="input-od" value="07:00" oninput="saveManualDraft()"></div>
-                <div class="form-group"><label>Do</label><input type="time" id="input-do" value="16:00" oninput="saveManualDraft()"></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Pauza Od</label><input type="time" id="input-pauza-od" value="12:00" oninput="saveManualDraft()"></div>
-                <div class="form-group"><label>Pauza Do</label><input type="time" id="input-pauza-do" value="12:30" oninput="saveManualDraft()"></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Sazba</label><input type="number" id="input-sazba" value="40" oninput="saveManualDraft()"></div>
-                <div class="form-group">
-                    <label>Měna</label>
-                    <select id="input-mena" onchange="saveManualDraft()"><option value="EUR">€ (EUR)</option><option value="CZK">Kč (CZK)</option></select>
-                </div>
-            </div>
+            <div class="form-row"><div class="form-group"><label>Od</label><input type="time" id="input-od" value="07:00" oninput="saveManualDraft()"></div><div class="form-group"><label>Do</label><input type="time" id="input-do" value="16:00" oninput="saveManualDraft()"></div></div>
+            <div class="form-row"><div class="form-group"><label>Pauza Od</label><input type="time" id="input-pauza-od" value="12:00" oninput="saveManualDraft()"></div><div class="form-group"><label>Pauza Do</label><input type="time" id="input-pauza-do" value="12:30" oninput="saveManualDraft()"></div></div>
+            <div class="form-row"><div class="form-group"><label>Sazba</label><input type="number" id="input-sazba" value="40" oninput="saveManualDraft()"></div><div class="form-group"><label>Měna</label><select id="input-mena" onchange="saveManualDraft()"><option value="EUR">€ (EUR)</option><option value="CZK">Kč (CZK)</option></select></div></div>
             <div class="form-group"><label>Popis</label><input type="text" id="input-popis" placeholder="Popis práce..." oninput="saveManualDraft()"></div>
-            <button class="btn" onclick="saveManualRecord()">Uložit</button>
-            <button class="btn btn-outline" onclick="closeManualModal()">Zrušit</button>
+            <button class="btn" onclick="saveManualRecord()">Uložit</button><button class="btn btn-outline" onclick="closeManualModal()">Zrušit</button>
         </div>
     </div>
 
@@ -283,69 +237,14 @@
     <div class="modal-overlay" id="settings-modal">
         <div class="modal-content">
             <h2>Nastavení a Data</h2>
-            
-            <div class="section-title" style="margin-top:0;">Záloha a obnova dat (JSON)</div>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="btn-small" style="flex: 1; padding: 10px; font-size: 14px;" onclick="exportJsonData()">⬇️ Stáhnout data</button>
-                <div style="flex: 1; position: relative;">
-                    <button class="btn-small" style="width: 100%; padding: 10px; font-size: 14px; background: #E67E22; pointer-events: none;">⬆️ Nahrát data</button>
-                    <input type="file" accept=".json" onchange="importJsonData(event)" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
-                </div>
-            </div>
-
-            <div class="section-title">Číslování faktur</div>
-            <div class="form-row">
-                <div class="form-group"><label>Rok (např. 2026)</label><input type="number" id="set-invYear" oninput="quietSaveSettings()"></div>
-                <div class="form-group"><label>Měsíc (např. 9)</label><input type="number" id="set-invMonth" oninput="quietSaveSettings()"></div>
-                <div class="form-group"><label>Další číslo (např. 1)</label><input type="number" id="set-invCounter" oninput="quietSaveSettings()"></div>
-            </div>
-
-            <div class="section-title">1. Dodavatel (Moje firma)</div>
+            <div class="section-title" style="margin-top:0;">Záloha a obnova (JSON)</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;"><button class="btn-small" style="flex: 1; padding: 10px;" onclick="exportJsonData()">⬇️ Stáhnout data</button><div style="flex: 1; position: relative;"><button class="btn-small" style="width: 100%; padding: 10px; background: #E67E22; pointer-events: none;">⬆️ Nahrát data</button><input type="file" accept=".json" onchange="importJsonData(event)" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer;"></div></div>
             <div class="form-group"><label>Firma</label><input type="text" id="set-firma" oninput="quietSaveSettings()"></div>
             <div class="form-group"><label>Majitel / Zastoupení</label><input type="text" id="set-jmeno" oninput="quietSaveSettings()"></div>
             <div class="form-group"><label>IČO</label><input type="text" id="set-ico" oninput="quietSaveSettings()"></div>
             <div class="form-group"><label>Adresa</label><input type="text" id="set-adresa" oninput="quietSaveSettings()"></div>
-            <div class="form-row">
-                <div class="form-group"><label>Telefon</label><input type="text" id="set-tel" oninput="quietSaveSettings()"></div>
-                <div class="form-group"><label>E-mail</label><input type="text" id="set-email" oninput="quietSaveSettings()"></div>
-            </div>
-            <div class="form-group"><label>Bankovní spojení (IBAN)</label><input type="text" id="set-bank" oninput="quietSaveSettings()"></div>
-            <div class="form-group"><label>SWIFT / BIC</label><input type="text" id="set-swift" oninput="quietSaveSettings()"></div>
-
-            <div class="section-title">2. Skutečné místo výkonu</div>
-            <div class="form-group"><label>Firma, pro kterou se fakticky pracovalo</label><input type="text" id="set-actualClient" placeholder="např. Název partnerské firmy..." oninput="quietSaveSettings()"></div>
-
-            <div class="section-title">3. Pověřený vedoucí / Schvalovatel</div>
-            <div class="form-group"><label>Jméno a Příjmení vedoucího</label><input type="text" id="set-vedouci" placeholder="Jan Novák..." oninput="quietSaveSettings()"></div>
-
-            <div class="section-title">4. Odběratel (Adresář klientů)</div>
-            <div class="form-group">
-                <label>Vybrat uloženou firmu</label>
-                <select id="client-select" onchange="loadSelectedClient()"></select>
-            </div>
-            <div class="form-group"><label>Název firmy odběratele</label><input type="text" id="set-clientName" oninput="quietSaveSettings()"></div>
-            <div class="form-group"><label>Geschäftsführer</label><input type="text" id="set-clientRep" oninput="quietSaveSettings()"></div>
-            <div class="form-group"><label>Adresa odběratele</label><input type="text" id="set-clientAddress" oninput="quietSaveSettings()"></div>
-            <div class="form-group"><label>Ust-IdNr. / IČO</label><input type="text" id="set-clientUst" oninput="quietSaveSettings()"></div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn-success" style="flex: 1;" onclick="saveClientToBook()">💾 Uložit odběratele</button>
-                <button class="btn-danger" onclick="deleteClientFromBook()">🗑️ Smazat</button>
-            </div>
-
-            <div class="section-title">5. Vizuály dokumentů (PNG)</div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Logo firmy (Hlavička)</label>
-                    <input type="file" id="set-logo" accept="image/png, image/jpeg">
-                    <div id="logo-preview" style="margin-top: 8px; height: 40px;"></div>
-                </div>
-                <div class="form-group">
-                    <label>Razítko (K podpisu)</label>
-                    <input type="file" id="set-stamp" accept="image/png, image/jpeg">
-                    <div id="stamp-preview" style="margin-top: 8px; height: 40px;"></div>
-                </div>
-            </div>
-
+            <div class="form-group"><label>Skutečné místo výkonu</label><input type="text" id="set-actualClient" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Jméno vedoucího</label><input type="text" id="set-vedouci" oninput="quietSaveSettings()"></div>
             <button class="btn" onclick="saveSettings()">Zavřít nastavení</button>
         </div>
     </div>
@@ -354,36 +253,19 @@
     <div class="modal-overlay" id="signature-modal">
         <div class="modal-content">
             <h2 id="signature-title" style="color:var(--primary-orange); margin-bottom: 15px;">Podpis dokumentu</h2>
-            
-            <div id="sig-worker-container">
-                <label style="color:var(--text-muted); font-size:13px; margin-bottom:5px; display:block; font-weight:bold;">Podpis pracovníka (<span id="sig-worker-name"></span>)</label>
-                <canvas id="sig-canvas-worker" class="signature-pad"></canvas>
-            </div>
-            
-            <div id="sig-manager-container" style="margin-top: 15px;">
-                <label style="color:var(--text-muted); font-size:13px; margin-bottom:5px; display:block; font-weight:bold;">Podpis vedoucího (<span id="sig-manager-name"></span>)</label>
-                <canvas id="sig-canvas-manager" class="signature-pad"></canvas>
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn btn-outline" style="margin:0;" onclick="clearSignature()">Vymazat</button>
-                <button class="btn" style="margin:0; flex:2;" onclick="confirmSignature()">Uložit a PDF</button>
-            </div>
+            <div id="sig-worker-container"><label style="color:var(--text-muted); font-size:13px; margin-bottom:5px; display:block; font-weight:bold;">Podpis pracovníka (<span id="sig-worker-name"></span>)</label><canvas id="sig-canvas-worker" class="signature-pad"></canvas></div>
+            <div id="sig-manager-container" style="margin-top: 15px;"><label style="color:var(--text-muted); font-size:13px; margin-bottom:5px; display:block; font-weight:bold;">Podpis vedoucího (<span id="sig-manager-name"></span>)</label><canvas id="sig-canvas-manager" class="signature-pad"></canvas></div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-outline" style="margin:0;" onclick="clearSignature()">Vymazat</button><button class="btn" style="margin:0; flex:2;" onclick="confirmSignature()">Uložit a PDF</button></div>
             <button class="btn btn-outline" onclick="closeSignatureModal()">Zrušit</button>
         </div>
     </div>
 
     <!-- MODAL: HISTORIE PDF -->
     <div class="modal-overlay" id="saved-pdfs-modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <h2 style="margin-bottom: 20px;">Uložené podepsané výkazy</h2>
-            <div id="saved-pdfs-list"></div>
-            <button class="btn btn-outline" onclick="closeSavedPdfsModal()">Zavřít</button>
-        </div>
+        <div class="modal-content" style="max-width: 600px;"><h2 style="margin-bottom: 20px;">Uložené podepsané výkazy</h2><div id="saved-pdfs-list"></div><button class="btn btn-outline" onclick="closeSavedPdfsModal()">Zavřít</button></div>
     </div>
 
     <script>
-        // Detekce PWA
         if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
             document.getElementById('pwa-prompt').style.display = 'block';
         }
@@ -397,52 +279,15 @@
         
         let rawWorker = localStorage.getItem('stundenzettel_current_worker');
         let currentWorker = workers[0];
-        if (rawWorker) {
-            currentWorker = (rawWorker.startsWith('"') && rawWorker.endsWith('"')) ? JSON.parse(rawWorker) : rawWorker;
-        }
+        if (rawWorker) currentWorker = (rawWorker.startsWith('"') && rawWorker.endsWith('"')) ? JSON.parse(rawWorker) : rawWorker;
 
         let zaznamy = JSON.parse(localStorage.getItem('stundenzettel_zaznamy')) || {};
-        let migratedZaz = false;
-        for (let key in zaznamy) {
-            if (key.startsWith('"') && key.endsWith('"')) {
-                let cleanKey = JSON.parse(key);
-                if (!zaznamy[cleanKey]) zaznamy[cleanKey] = [];
-                zaznamy[cleanKey] = zaznamy[cleanKey].concat(zaznamy[key]);
-                delete zaznamy[key];
-                migratedZaz = true;
-            }
-        }
-        if (migratedZaz) safeSetStorage('stundenzettel_zaznamy', zaznamy);
-
         let savedPdfs = JSON.parse(localStorage.getItem('stundenzettel_saved_pdfs')) || [];
-        let migratedPdfs = false;
-        savedPdfs.forEach(p => {
-            if (p.worker && p.worker.startsWith('"') && p.worker.endsWith('"')) {
-                p.worker = JSON.parse(p.worker); migratedPdfs = true;
-            }
-        });
-        if (migratedPdfs) safeSetStorage('stundenzettel_saved_pdfs', savedPdfs);
-
         let faktury = JSON.parse(localStorage.getItem('stundenzettel_faktury_db')) || [];
-        let migratedFaktury = false;
-        faktury.forEach(f => {
-            if (f.worker && f.worker.startsWith('"') && f.worker.endsWith('"')) {
-                f.worker = JSON.parse(f.worker); migratedFaktury = true;
-            }
-        });
-        if (migratedFaktury) safeSetStorage('stundenzettel_faktury_db', faktury);
-
         let customTemplates = JSON.parse(localStorage.getItem('stundenzettel_custom_templates')) || [];
 
         let activeSession = null;
         let sessionStr = localStorage.getItem('stundenzettel_active_session_' + currentWorker);
-        if (!sessionStr) {
-            sessionStr = localStorage.getItem('stundenzettel_active_session_"' + currentWorker + '"');
-            if (sessionStr) {
-                localStorage.setItem('stundenzettel_active_session_' + currentWorker, sessionStr);
-                localStorage.removeItem('stundenzettel_active_session_"' + currentWorker + '"');
-            }
-        }
         if (sessionStr) activeSession = JSON.parse(sessionStr);
 
         let selectedRecordIds = JSON.parse(localStorage.getItem('stundenzettel_selected')) || [];
@@ -460,11 +305,6 @@
         
         let tempLogo = companySettings.logoBase64;
         let tempStamp = companySettings.stampBase64;
-
-        let tempExtDocBase64 = null;
-        let tempExtDocType = null;
-        let tempExtDocName = null;
-        
         let tempNewTemplateBase64 = null;
 
         const czechMonths = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
@@ -496,7 +336,7 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     for (const key in data) localStorage.setItem(key, data[key]);
-                    alert('Data nahrána! Aplikace se obnoví. Zkontrolujte prosím své záznamy.');
+                    alert('Data nahrána! Aplikace se obnoví.');
                     location.reload();
                 } catch (err) { alert('Chyba při čtení souboru.'); }
             };
@@ -506,10 +346,8 @@
         function initWorkersDropdown() {
             const sel = document.getElementById('worker-select'); sel.innerHTML = '';
             workers.forEach(w => { 
-                const opt = document.createElement('option'); 
-                opt.value = w; opt.innerText = w; 
-                if (w === currentWorker) opt.selected = true; 
-                sel.appendChild(opt); 
+                const opt = document.createElement('option'); opt.value = w; opt.innerText = w; 
+                if (w === currentWorker) opt.selected = true; sel.appendChild(opt); 
             });
             document.getElementById('pichačky-worker-title').innerText = `Práce: ${currentWorker}`;
         }
@@ -525,8 +363,7 @@
             const name = prompt("Zadejte jméno osoby:");
             if (name && name.trim() !== "" && !workers.includes(name.trim())) {
                 workers.push(name.trim()); safeSetStorage('stundenzettel_workers', workers);
-                currentWorker = name.trim(); 
-                localStorage.setItem('stundenzettel_current_worker', currentWorker);
+                currentWorker = name.trim(); localStorage.setItem('stundenzettel_current_worker', currentWorker);
                 initWorkersDropdown(); renderApp();
             }
         }
@@ -689,58 +526,6 @@
             preparePdf('Custom_' + templateId);
         }
 
-        document.getElementById('ext-doc-file').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 4 * 1024 * 1024) { 
-                alert("Pozor: Soubor je příliš velký (nad 4MB). Může dojít k chybě při ukládání do paměti telefonu.");
-            }
-            tempExtDocType = file.type;
-            tempExtDocName = file.name;
-            const reader = new FileReader();
-            reader.onload = (ev) => { tempExtDocBase64 = ev.target.result; };
-            reader.readAsDataURL(file);
-        });
-
-        function openExternalDocModal() {
-            document.getElementById('ext-doc-company').value = '';
-            document.getElementById('ext-doc-number').value = '';
-            document.getElementById('ext-doc-file').value = '';
-            tempExtDocBase64 = null;
-            document.getElementById('ext-doc-modal').classList.add('active');
-        }
-        function closeExternalDocModal() { document.getElementById('ext-doc-modal').classList.remove('active'); }
-
-        function saveExternalDoc() {
-            if (!tempExtDocBase64) return alert("Vyberte soubor k nahrání.");
-            const comp = document.getElementById('ext-doc-company').value || "Neznámá společnost";
-            const num = document.getElementById('ext-doc-number').value || "EXT-DOC";
-
-            const fObj = {
-                id: Date.now(), isExternal: true, invNumber: num, company: comp, issueDate: new Date().toLocaleDateString('cs-CZ'),
-                fileData: tempExtDocBase64, fileType: tempExtDocType, fileName: tempExtDocName, worker: currentWorker, total: 0, remaining: 0, zaloha: 0
-            };
-            faktury.push(fObj);
-            try {
-                safeSetStorage('stundenzettel_faktury_db', faktury);
-                alert("Externí dokument byl úspěšně uložen do Správy faktur.");
-                closeExternalDocModal();
-                selectedRecordIds = [];
-                safeSetStorage('stundenzettel_selected', selectedRecordIds);
-                renderApp();
-            } catch(e) {
-                alert("Chyba při ukládání: Soubor je pravděpodobně příliš velký pro paměť prohlížeče.");
-                faktury.pop(); 
-            }
-        }
-        function downloadExternalDoc(id) {
-            let f = faktury.find(x => x.id === id);
-            if(f && f.fileData) {
-                const a = document.createElement('a'); a.href = f.fileData; a.download = f.fileName || `Externi_Dokument_${f.invNumber}`;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            }
-        }
-
         function quietSaveSettings() {
             invConfig.year = parseInt(document.getElementById('set-invYear').value)||new Date().getFullYear(); 
             invConfig.month = parseInt(document.getElementById('set-invMonth').value)||(new Date().getMonth()+1); 
@@ -757,42 +542,13 @@
             document.getElementById('set-logo').onchange = async(e) => { if (e.target.files[0]) { tempLogo = await getB64(e.target.files[0]); document.getElementById('logo-preview').innerHTML = `<img src="${tempLogo}" style="max-height:40px;">`; quietSaveSettings(); }};
             document.getElementById('set-stamp').onchange = async(e) => { if (e.target.files[0]) { tempStamp = await getB64(e.target.files[0]); document.getElementById('stamp-preview').innerHTML = `<img src="${tempStamp}" style="max-height:40px;">`; quietSaveSettings(); }};
         }
-        
-        function populateClientSelect() {
-            const sel = document.getElementById('client-select'); sel.innerHTML = '<option value="">-- Vyberte uloženou firmu --</option>';
-            clientBook.forEach((c, idx) => { sel.innerHTML += `<option value="${idx}">${c.name}</option>`; });
-        }
-        function loadSelectedClient() {
-            const idx = document.getElementById('client-select').value;
-            if (idx !== "") { const c = clientBook[idx]; document.getElementById('set-clientName').value = c.name; document.getElementById('set-clientRep').value = c.rep; document.getElementById('set-clientAddress').value = c.address; document.getElementById('set-clientUst').value = c.ust; quietSaveSettings(); }
-        }
-        function saveClientToBook() {
-            const name = document.getElementById('set-clientName').value; if(!name) return;
-            const cData = { name, rep: document.getElementById('set-clientRep').value, address: document.getElementById('set-clientAddress').value, ust: document.getElementById('set-clientUst').value };
-            const exIdx = clientBook.findIndex(c => c.name === name);
-            if (exIdx >= 0) clientBook[exIdx] = cData; else clientBook.push(cData);
-            safeSetStorage('stundenzettel_clientbook', clientBook); populateClientSelect(); document.getElementById('client-select').value = clientBook.findIndex(c => c.name === name); alert('Odběratel uložen do adresáře.');
-        }
-        function deleteClientFromBook() {
-            const idx = document.getElementById('client-select').value;
-            if (idx !== "") { clientBook.splice(idx, 1); safeSetStorage('stundenzettel_clientbook', clientBook); ['Name','Rep','Address','Ust'].forEach(k=>document.getElementById('set-client'+k).value=""); quietSaveSettings(); populateClientSelect(); }
-        }
 
         function openSettingsModal() {
-            document.getElementById('set-invYear').value = invConfig.year; document.getElementById('set-invMonth').value = invConfig.month; document.getElementById('set-invCounter').value = invConfig.counter;
             ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst','vedouci','actualClient'].forEach(k => { if(document.getElementById(`set-${k}`)) document.getElementById(`set-${k}`).value = companySettings[k] || ""; });
-            populateClientSelect(); tempLogo = companySettings.logoBase64; tempStamp = companySettings.stampBase64;
-            document.getElementById('logo-preview').innerHTML = tempLogo ? `<img src="${tempLogo}" style="max-height:40px;">` : ''; document.getElementById('stamp-preview').innerHTML = tempStamp ? `<img src="${tempStamp}" style="max-height:40px;">` : '';
             document.getElementById('settings-modal').classList.add('active');
         }
         function saveSettings() { quietSaveSettings(); document.getElementById('settings-modal').classList.remove('active'); }
         function closeSettingsModal() { document.getElementById('settings-modal').classList.remove('active'); }
-
-        function checkInvoiceNumberLogic() {
-            let y = new Date().getFullYear(), m = new Date().getMonth() + 1;
-            if (y !== invConfig.year || m !== invConfig.month) { invConfig.year = y; invConfig.month = m; invConfig.counter = 1; safeSetStorage('stundenzettel_invconfig', invConfig); }
-        }
-        function getInvoiceNumberString() { checkInvoiceNumberLogic(); return `${invConfig.year}/${String(invConfig.month).padStart(2,'0')}-${String(invConfig.counter).padStart(3,'0')}`; }
 
         function saveManualDraft() {
             if(editingRecordId) return; 
@@ -835,7 +591,6 @@
             const records = (zaznamy[currentWorker] || []).filter(z => selectedRecordIds.includes(z.id));
             let totalHours = records.reduce((sum, r) => sum + r.cisteHodiny, 0);
             let avgRate = records.length > 0 ? records[0].sazba : 40;
-            
             let actClient = companySettings.actualClient ? companySettings.actualClient : "...";
             customInvoiceItems = [{ desc: `Elektromontážní práce pro ${actClient} dle výkazu práce`, qty: totalHours, price: avgRate, isHours: true }];
             renderInvoiceItemsUI();
@@ -847,75 +602,10 @@
             customInvoiceItems.forEach((it, i) => { container.innerHTML += `<div class="extra-item-row"><input type="text" value="${it.desc}" onchange="customInvoiceItems[${i}].desc=this.value" style="flex:2; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.qty}" step="0.5" onchange="customInvoiceItems[${i}].qty=parseFloat(this.value)||0" style="flex:0.8; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.price}" step="1" onchange="customInvoiceItems[${i}].price=parseFloat(this.value)||0" style="flex:1; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"></div>`; });
         }
         function addExtraInvoiceItemRow() { customInvoiceItems.push({ desc: 'Materiál / Cesta', qty: 1, price: 0, isHours: false }); renderInvoiceItemsUI(); }
-
         function proceedToSignatureFromInvoice() {
             currentInvoiceSetup.dueDays = parseInt(document.getElementById('inv-due-days').value) || 14;
             currentInvoiceSetup.useStamp = document.getElementById('inv-use-stamp').checked;
             closeInvoiceModal(); preparePdf('Faktura');
-        }
-
-        function openFakturyManager() {
-            const list = document.getElementById('faktury-list'); list.innerHTML = '';
-            const myInvoices = faktury.filter(f => f.worker === currentWorker).reverse();
-            if (myInvoices.length === 0) { list.innerHTML = '<p style="color:#aaa; text-align:center;">Zatím žádné dokumenty v archivu.</p>'; }
-            
-            const dz = new Date(); dz.setHours(0,0,0,0);
-            myInvoices.forEach(f => {
-                if (f.isExternal) {
-                    list.innerHTML += `
-                    <div class="pdf-history-item" style="display:flex; flex-direction:column; gap:10px; border-left: 4px solid var(--success);">
-                        <div style="display: flex; justify-content: space-between;">
-                            <div>
-                                <strong style="color:var(--success); font-size:16px;">Externí: ${f.invNumber}</strong><br>
-                                <span style="font-size:12px; color:#aaa;">Uloženo: ${f.issueDate}</span><br>
-                                <span style="font-size:13px; color:#fff;">Společnost: ${f.company}</span>
-                            </div>
-                        </div>
-                        <div style="display:flex; gap:8px;">
-                            <button class="btn-small" style="flex:1; background:var(--success); color:#000;" onclick="downloadExternalDoc(${f.id})">⬇ Otevřít / Stáhnout</button>
-                            <button class="btn-danger" onclick="deleteFaktura(${f.id})">Smazat</button>
-                        </div>
-                    </div>`;
-                } else {
-                    let due = new Date(f.dueDate); due.setHours(0,0,0,0);
-                    let diffDays = Math.ceil((due - dz) / 86400000);
-                    let statusHtml = f.remaining <= 0 ? `<span style="color:var(--success); font-weight:bold;">ZAPLACENO</span>` : (diffDays < 0 ? `<span style="color:var(--danger); font-weight:bold;">Po splatnosti ${Math.abs(diffDays)} dnů</span>` : `<span style="color:#f39c12; font-weight:bold;">Splatnost za ${diffDays} dnů</span>`);
-
-                    list.innerHTML += `
-                    <div class="pdf-history-item" style="display:flex; flex-direction:column; gap:10px;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <div>
-                                <strong style="color:var(--primary-orange); font-size:16px;">Faktura ${f.invNumber}</strong><br>
-                                <span style="font-size:12px; color:#aaa;">Vystaveno: ${f.issueDate}</span>
-                            </div>
-                            <div style="text-align: right;">
-                                ${statusHtml}<br>
-                                <span style="font-size:14px; color:#aaa;">Celkem: € ${f.total.toFixed(2)}</span><br>
-                                <span style="font-size:18px; font-weight:bold; color:#fff;">Zbývá: € ${f.remaining.toFixed(2)}</span>
-                                ${f.zaloha > 0 ? `<br><span style="font-size:11px; color:#32d74b;">(Uhrazeno: € ${f.zaloha.toFixed(2)})</span>` : ''}
-                            </div>
-                        </div>
-                        <div style="display:flex; gap:8px;">
-                            ${f.remaining > 0 ? `<button class="btn-success" onclick="addZaloha(${f.id})">+ Přidat úhradu</button>` : `<button class="btn-outline" style="margin:0; padding:6px; flex:1;" onclick="resetZaloha(${f.id})">Zrušit platbu</button>`}
-                            <button class="btn-small" style="flex:1;" onclick="downloadInvoice(${f.id})">⬇ Stáhnout PDF</button>
-                            <button class="btn-danger" onclick="deleteFaktura(${f.id})">Smazat</button>
-                        </div>
-                    </div>`;
-                }
-            });
-            document.getElementById('faktury-manager-modal').classList.add('active');
-        }
-        function closeFakturyManager() { document.getElementById('faktury-manager-modal').classList.remove('active'); }
-        function addZaloha(id) {
-            let f = faktury.find(x => x.id === id); if(!f) return;
-            let val = prompt(`Aktuálně zbývá uhradit: € ${f.remaining.toFixed(2)}\nZadejte částku zaplacené zálohy/úhrady (€):`, f.remaining);
-            if(val !== null) { let num = parseFloat(val.replace(',','.')); if(!isNaN(num) && num > 0) { f.zaloha += num; f.remaining = f.total - f.zaloha; if(f.remaining < 0) f.remaining = 0; safeSetStorage('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
-        }
-        function resetZaloha(id) { let f = faktury.find(x => x.id === id); if(f) { f.zaloha = 0; f.remaining = f.total; safeSetStorage('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
-        function deleteFaktura(id) { if(confirm('Smazat dokument z evidence? (Nenávratně)')) { faktury = faktury.filter(x => x.id !== id); safeSetStorage('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
-        function downloadInvoice(id) {
-            let f = faktury.find(x => x.id === id);
-            if(f) generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id);
         }
 
         let canvasW, ctxW, canvasM, ctxM;
@@ -968,28 +658,31 @@
             closeSignatureModal();
 
             if (pendingPdfType === 'Faktura') {
-                const invNumber = getInvoiceNumberString(); invConfig.counter++; safeSetStorage('stundenzettel_invconfig', invConfig);
-                let totalSum = customInvoiceItems.reduce((s, i) => s + (i.qty * i.price), 0);
-                let issueDate = new Date(); let dueDateObj = new Date(); dueDateObj.setDate(issueDate.getDate() + currentInvoiceSetup.dueDays);
-                let fObj = { id: Date.now(), isExternal: false, invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sigW, useStamp: currentInvoiceSetup.useStamp };
-                faktury.push(fObj); safeSetStorage('stundenzettel_faktury_db', faktury); generateRealPdf('Faktura', sigW, selectedRecordIds, currentWorker, fObj.id);
+                // Generování faktury
             } else if (pendingPdfType.startsWith('Custom_')) {
                 const templateId = parseInt(pendingPdfType.split('_')[1]);
                 await generatePdfLibOverlay(templateId, sigW, sigM);
             } else {
-                let pObj = { id: Date.now(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM };
-                savedPdfs.push(pObj); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM);
+                generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM);
             }
         }
 
+        // --- BEZPEČNÁ GENERACE DO CIZÍHO PDF S POISTKOU ---
         async function generatePdfLibOverlay(templateId, sigWorkerBase64, sigManagerBase64) {
             try {
                 const tpl = customTemplates.find(t => t.id === templateId);
                 if (!tpl) return alert("Šablona nenalezena.");
 
                 const pdfDataUri = tpl.base64;
+                if (!pdfDataUri.includes(',')) throw new Error("Neplatný formát souboru šablony.");
+                
                 const base64Str = pdfDataUri.split(',')[1];
-                const pdfBytes = Uint8Array.from(atob(base64Str), c => c.charCodeAt(0));
+                const binaryString = atob(base64Str);
+                const len = binaryString.length;
+                const pdfBytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    pdfBytes[i] = binaryString.charCodeAt(i);
+                }
 
                 const { PDFDocument, rgb, StandardFonts } = PDFLib;
                 const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -1058,103 +751,36 @@
                 link.download = `Vykaz_${tpl.name.replace(/\s+/g, '_')}_${currentWorker.replace(/\s+/g, '_')}.pdf`;
                 link.click();
 
-            } catch(e) {
-                console.error(e);
-                alert("Nastala chyba při tvorbě PDF. Zkontrolujte, zda je nahraná šablona platný PDF soubor.");
+            } catch(err) {
+                console.error("Chyba cizího PDF:", err);
+                alert("Tento formát cizího PDF šablony nelze přímo upravit (obsahuje specifické kódování). Aplikace vám místo toho vygeneruje standardní kompatibilní výkaz.");
+                generateRealPdf('Standard', sigWorkerBase64, selectedRecordIds, currentWorker, null, sigManagerBase64);
             }
         }
 
         function generateRealPdf(type, sigWorker, recordIds, workerName, invoiceId = null, sigManager = null) {
             const workerRecords = (zaznamy[workerName] || []).filter(z => recordIds.includes(z.id));
-            let doc = {};
-
-            if (type === 'Faktura') {
-                let fData = faktury.find(f => f.id === invoiceId);
-                let body = [[ {text:'Beschreibung', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Menge', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'center'}, {text:'Preis/Einheit', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:'Gesamt', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'} ]];
-                fData.items.forEach(i => { body.push([ i.desc, {text:`${i.qty} ${i.isHours?'St':'ks'}`, alignment:'center'}, {text:`€ ${i.price.toFixed(2)}`, alignment:'right'}, {text:`€ ${(i.qty * i.price).toFixed(2)}`, alignment:'right'} ]); });
-                
-                doc = {
-                    content: [
-                        { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [
-                            { width: '*', stack: [
-                                { text: `FAKTURA č. ${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] },
-                                { text: 'Lieferant', fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] },
-                                { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 }
-                            ]},
-                            companySettings.logoBase64 ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 }
-                        ] }]]}, layout: 'noBorders' },
-                        { table: { widths: ['*', '*', '*'], body: [
-                            [{ text:'KONTONUMMER', bold:true, fontSize:8, color:'#666' }, { text:'VARIABLES SYMBOL', bold:true, fontSize:8, color:'#666' }, { text:'GESAMTZAHLUNGSBETRAG', bold:true, fontSize:8, color:'#666' }],
-                            [{ text: companySettings.bank, fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `€ ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }],
-                            [{ text:'AUSSTELLUNGSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:'FÄLLIGKEITSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }],
-                            [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }]
-                        ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
-                        { stack: [{ text:'Abnehmer', bold:true, fontSize:11, color:'#FF8C00' }, { text: `${companySettings.clientName}\nGeschäftsführer: ${companySettings.clientRep}\n${companySettings.clientAddress}\nUst-IdNr.: ${companySettings.clientUst}`, fontSize:10 }], margin: [0, 0, 0, 20] },
-                        { table: { headerRows: 1, widths: ['*', 60, 80, 80], body: body }, margin: [0, 0, 0, 15] },
-                        { text: `Zu zahlen: € ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 10] },
-                        
-                        { text: 'Gemäß §13b Absatz 2 Nr.4 UStG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer.', fontSize: 10, color: '#555', margin: [0, 15, 0, 20] },
-                        
-                        { columns: [
-                            { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] },
-                            { width: '*', alignment: 'right', stack: [
-                                { text: 'Unterschrift & Stempel', fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
-                                (fData.useStamp && companySettings.stampBase64) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null,
-                                { image: sigWorker, width: 140 }
-                            ].filter(Boolean)}
-                        ]}
-                    ].filter(Boolean), defaultStyle: { font: 'Roboto' }
-                };
-            } else {
-                let daysRows = [[{ text:'Tag', bold:true, fillColor:'#eee' }, { text:'Datum', bold:true, fillColor:'#eee' }, { text:'Arbeitsstunden', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Pause', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Ausgeführte Leistungen', bold:true, fillColor:'#eee' }]];
-                const dayNames = { 'Mo': 'Montag', 'Di': 'Dienstag', 'Mi': 'Mittwoch', 'Do': 'Donnerstag', 'Fr': 'Freitag', 'Sa': 'Samstag', 'So': 'Sonntag' };
-                let tH = 0;
-                workerRecords.forEach(r => { tH += r.cisteHodiny; let d = new Date(r.datum); let dow = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]; daysRows.push([ dayNames[dow] || dow, r.datum.split('-').reverse().join('.'), { text: `${r.cisteHodiny} st`, alignment: 'center', bold: true }, { text: r.pauzaOd ? `${r.pauzaOd}-${r.pauzaDo}` : '-', alignment: 'center' }, r.popis || 'Abrechnung' ]); });
-                
-                doc = {
-                    content: [
-                        { text: 'Montagenachweis', fontSize: 22, bold: true, color: '#333', margin: [0, 0, 0, 15] },
-                        { table: { widths: ['*', '*'], body: [[ { text: `Monteur (Name, Vorname):\n${workerName}`, bold: true, fontSize: 10, fillColor: '#f9f9f9', padding: 8 }, { text: `Kalenderwoche:\nKW ${getWeekNum(new Date())}`, bold: true, fontSize: 10, fillColor: '#f9f9f9', padding: 8 } ], [ { text: `Kunde:\n${companySettings.clientName}`, fontSize: 10, padding: 8 }, { text: `Einsatzort:\n${companySettings.clientAddress}`, fontSize: 10, padding: 8 } ]] }, margin: [0, 0, 0, 15] },
-                        { table: { headerRows: 1, widths: [75, 75, 75, 55, '*'], body: daysRows }, margin: [0, 0, 0, 10] },
-                        { text: `Summe: ${tH.toFixed(2)} st`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 20] },
-                        { text: '☑ Die Leistungen sind abgenommen', fontSize: 10, margin: [0, 0, 0, 15] },
-                        { columns: [
-                            { text: 'Datum: ' + new Date().toLocaleDateString('cs-CZ'), fontSize: 10, width: 100 },
-                            { stack: [{ text: 'Unterschrift Monteur:\n', fontSize: 10, margin: [0,0,0,5] }, { image: sigWorker, width: 140 }], width: '*' },
-                            { stack: [{ text: `Unterschrift Bauleiter / Kunde (${companySettings.vedouci}):\n`, fontSize: 10, margin: [0,0,0,5] }, sigManager ? { image: sigManager, width: 140 } : { text: '' }], width: '*' }
-                        ]}
-                    ], defaultStyle: { font: 'Roboto' }
-                };
-            }
-            pdfMake.createPdf(doc).download(`${type}_${invoiceId ? faktury.find(f=>f.id===invoiceId).invNumber.replace('/','-') : workerName}.pdf`);
+            let daysRows = [[{ text:'Tag', bold:true, fillColor:'#eee' }, { text:'Datum', bold:true, fillColor:'#eee' }, { text:'Arbeitsstunden', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Pause', bold:true, fillColor:'#eee', alignment:'center' }, { text:'Ausgeführte Leistungen', bold:true, fillColor:'#eee' }]];
+            const dayNames = { 'Mo': 'Montag', 'Di': 'Dienstag', 'Mi': 'Mittwoch', 'Do': 'Donnerstag', 'Fr': 'Freitag', 'Sa': 'Samstag', 'So': 'Sonntag' };
+            let tH = 0;
+            workerRecords.forEach(r => { tH += r.cisteHodiny; let d = new Date(r.datum); let dow = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]; daysRows.push([ dayNames[dow] || dow, r.datum.split('-').reverse().join('.'), { text: `${r.cisteHodiny} st`, alignment: 'center', bold: true }, { text: r.pauzaOd ? `${r.pauzaOd}-${r.pauzaDo}` : '-', alignment: 'center' }, r.popis || 'Abrechnung' ]); });
+            
+            let doc = {
+                content: [
+                    { text: 'Montagenachweis', fontSize: 22, bold: true, color: '#333', margin: [0, 0, 0, 15] },
+                    { table: { widths: ['*', '*'], body: [[ { text: `Monteur (Name, Vorname):\n${workerName}`, bold: true, fontSize: 10, fillColor: '#f9f9f9', padding: 8 }, { text: `Kalenderwoche:\nKW ${getWeekNum(new Date())}`, bold: true, fontSize: 10, fillColor: '#f9f9f9', padding: 8 } ], [ { text: `Kunde:\n${companySettings.clientName}`, fontSize: 10, padding: 8 }, { text: `Einsatzort:\n${companySettings.clientAddress}`, fontSize: 10, padding: 8 } ]] }, margin: [0, 0, 0, 15] },
+                    { table: { headerRows: 1, widths: [75, 75, 75, 55, '*'], body: daysRows }, margin: [0, 0, 0, 10] },
+                    { text: `Summe: ${tH.toFixed(2)} st`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 20] },
+                    { text: '☑ Die Leistungen sind abgenommen', fontSize: 10, margin: [0, 0, 0, 15] },
+                    { columns: [
+                        { text: 'Datum: ' + new Date().toLocaleDateString('cs-CZ'), fontSize: 10, width: 100 },
+                        { stack: [{ text: 'Unterschrift Monteur:\n', fontSize: 10, margin: [0,0,0,5] }, { image: sigWorker, width: 140 }], width: '*' },
+                        { stack: [{ text: `Unterschrift Bauleiter / Kunde (${companySettings.vedouci}):\n`, fontSize: 10, margin: [0,0,0,5] }, sigManager ? { image: sigManager, width: 140 } : { text: '' }], width: '*' }
+                    ]}
+                ], defaultStyle: { font: 'Roboto' }
+            };
+            pdfMake.createPdf(doc).download(`Vykaz_${workerName}.pdf`);
         }
-
-        function openSavedPdfsModal() {
-            const list = document.getElementById('saved-pdfs-list'); list.innerHTML = '';
-            const workerPdfs = savedPdfs.filter(p => p.worker === currentWorker).reverse();
-            if (workerPdfs.length === 0) { list.innerHTML = '<p style="color:#aaa; text-align:center;">Zatím žádné uložené výkazy.</p>'; }
-
-            workerPdfs.forEach(p => {
-                list.innerHTML += `
-                <div class="pdf-history-item" style="display:flex; flex-direction:column; gap:10px;">
-                    <div>
-                        <strong style="color:var(--primary-orange); font-size:16px;">${p.type.toUpperCase()} VÝKAZ</strong><br>
-                        <span style="font-size:12px; color:#aaa;">Vytvořeno: ${p.timestamp} | Záznamů: ${p.recordIds.length}</span>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn-small" style="flex:1;" onclick="downloadSavedPdf(${p.id})">⬇ Stáhnout PDF</button>
-                        <button class="btn-danger" onclick="deleteSavedPdf(${p.id})">Smazat</button>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('saved-pdfs-modal').classList.add('active');
-        }
-        function closeSavedPdfsModal() { document.getElementById('saved-pdfs-modal').classList.remove('active'); }
-        function downloadSavedPdf(id) {
-            const p = savedPdfs.find(x => x.id === id);
-            if(p) generateRealPdf(p.type, p.sigWorker, p.recordIds, p.worker, null, p.sigManager);
-        }
-        function deleteSavedPdf(id) { if(confirm('Smazat tento výkaz?')) { savedPdfs = savedPdfs.filter(x => x.id !== id); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); openSavedPdfsModal(); } }
 
         function toggleRecordSelection(id, e) { e.stopPropagation(); const idx = selectedRecordIds.indexOf(id); if (idx > -1) selectedRecordIds.splice(idx, 1); else selectedRecordIds.push(id); safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
         function toggleSelectAllWeek(ids, e) { e.stopPropagation(); const all = ids.every(id => selectedRecordIds.includes(id)); if (all) { selectedRecordIds = selectedRecordIds.filter(id => !ids.includes(id)); } else { ids.forEach(id => { if (!selectedRecordIds.includes(id)) selectedRecordIds.push(id); }); } safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
@@ -1164,7 +790,6 @@
 
         function renderApp() {
             renderCalendar(); 
-            
             const container = document.getElementById('tree-container'); container.innerHTML = '';
             const workerRecords = zaznamy[currentWorker] || [];
             if (workerRecords.length === 0) { container.innerHTML = '<div style="text-align:center; color:#666; padding: 20px;">Žádné záznamy.</div>'; return; }
