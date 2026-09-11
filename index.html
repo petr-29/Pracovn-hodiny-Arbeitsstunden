@@ -378,18 +378,32 @@
         }
 
         // ZÁCHRANNÝ SKRIPT: Vrátí do UI data, která kvůli chybnému názvu s uvozovkami "zmizela"
-        let zaznamy = JSON.parse(localStorage.getItem('stundenzettel_zaznamy')) || {};
-        let migratedZaz = false;
-        for (let key in zaznamy) {
-            if (key.startsWith('"') && key.endsWith('"')) {
-                let cleanKey = JSON.parse(key);
-                if (!zaznamy[cleanKey]) zaznamy[cleanKey] = [];
-                zaznamy[cleanKey] = zaznamy[cleanKey].concat(zaznamy[key]);
-                delete zaznamy[key];
-                migratedZaz = true;
-            }
-        }
-        if (migratedZaz) safeSetStorage('stundenzettel_zaznamy', zaznamy);
+// 1. BEZPEČNÉ NAČTENÍ ZÁZNAMŮ (OPRAVA CHYBY MAZÁNÍ DAT)
+let rawZaznamy = JSON.parse(localStorage.getItem('stundenzettel_zaznamy'));
+let zaznamy = {};
+
+if (Array.isArray(rawZaznamy)) {
+    // Pokud paměť obsahovala pole [], převedeme ho na správný objekt {}
+    if (rawZaznamy.length > 0) {
+        zaznamy[currentWorker] = rawZaznamy; // Zachrání případná stará data
+    }
+    safeSetStorage('stundenzettel_zaznamy', zaznamy); // Přepíšeme v paměti trvale na objekt
+} else if (rawZaznamy) {
+    zaznamy = rawZaznamy; // Už je to objekt, načteme ho normálně
+}
+
+// 2. ZÁCHRANNÝ SKRIPT PRO ŠPATNÉ UVOZOVKY
+let migratedZaz = false;
+for (let key in zaznamy) {
+    if (key.startsWith('"') && key.endsWith('"')) {
+        let cleanKey = JSON.parse(key);
+        if (!zaznamy[cleanKey]) zaznamy[cleanKey] = [];
+        zaznamy[cleanKey] = zaznamy[cleanKey].concat(zaznamy[key]);
+        delete zaznamy[key];
+        migratedZaz = true;
+    }
+}
+if (migratedZaz) safeSetStorage('stundenzettel_zaznamy', zaznamy);
 
         let savedPdfs = JSON.parse(localStorage.getItem('stundenzettel_saved_pdfs')) || [];
         let migratedPdfs = false;
