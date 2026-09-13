@@ -43,7 +43,7 @@
         .pichačky-card { background: var(--bg-card); border-radius: var(--radius-large); padding: 20px; margin-bottom: 20px; text-align: center; }
         .stopwatch-display { font-size: 42px; font-weight: 800; color: var(--primary-orange); margin: 10px 0; font-variant-numeric: tabular-nums; }
 
-        /* Kalendář UI z iOS */
+        /* Kalendář UI */
         #calendar-widget { background: var(--bg-card); border-radius: var(--radius-large); padding: 20px; margin-bottom: 20px; }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; }
         .cal-month-title { font-size: 20px; color: var(--danger); text-transform: uppercase; }
@@ -99,6 +99,7 @@
         .form-group label { display: block; color: var(--text-muted); margin-bottom: 6px; font-size: 13px; font-weight: bold; }
         .form-group input, .form-group select { width: 100%; background-color: #1c1c1e; border: 1px solid #3a3a3c; color: var(--text-main); padding: 14px; border-radius: var(--radius-small); font-size: 16px; outline: none; }
         .form-group input:focus { border-color: var(--primary-orange); }
+        .form-group input[type="date"] { font-size: 14px; padding: 12px; }
         .section-title { font-size: 13px; color: var(--primary-orange); margin-bottom: 10px; margin-top: 20px; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; font-weight: bold; }
 
         canvas.signature-pad { background: #fff; border-radius: var(--radius-small); width: 100%; height: 120px; touch-action: none; cursor: crosshair; }
@@ -182,6 +183,18 @@
                 <label>Společnost (Kdo to reálně fakturoval?)</label>
                 <input type="text" id="ext-doc-company" placeholder="např. Partnerská s.r.o.">
             </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Datum vystavení</label>
+                    <input type="date" id="ext-doc-issue-date">
+                </div>
+                <div class="form-group">
+                    <label>Datum splatnosti</label>
+                    <input type="date" id="ext-doc-due-date">
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>Číslo faktury (Ruční zápis)</label>
                 <input type="text" id="ext-doc-number" placeholder="např. 2026-EXT-01">
@@ -381,9 +394,7 @@
         
         let rawWorker = localStorage.getItem('stundenzettel_current_worker');
         let currentWorker = workers[0];
-        if (rawWorker) {
-            currentWorker = (rawWorker.startsWith('"') && rawWorker.endsWith('"')) ? JSON.parse(rawWorker) : rawWorker;
-        }
+        if (rawWorker) { currentWorker = (rawWorker.startsWith('"') && rawWorker.endsWith('"')) ? JSON.parse(rawWorker) : rawWorker; }
 
         let rawZaznamy = JSON.parse(localStorage.getItem('stundenzettel_zaznamy'));
         let zaznamy = {};
@@ -391,9 +402,7 @@
         if (Array.isArray(rawZaznamy)) {
             if (rawZaznamy.length > 0) { zaznamy[currentWorker] = rawZaznamy; }
             safeSetStorage('stundenzettel_zaznamy', zaznamy); 
-        } else if (rawZaznamy) {
-            zaznamy = rawZaznamy; 
-        }
+        } else if (rawZaznamy) { zaznamy = rawZaznamy; }
 
         let migratedZaz = false;
         for (let key in zaznamy) {
@@ -401,8 +410,7 @@
                 let cleanKey = JSON.parse(key);
                 if (!zaznamy[cleanKey]) zaznamy[cleanKey] = [];
                 zaznamy[cleanKey] = zaznamy[cleanKey].concat(zaznamy[key]);
-                delete zaznamy[key];
-                migratedZaz = true;
+                delete zaznamy[key]; migratedZaz = true;
             }
         }
         if (migratedZaz) safeSetStorage('stundenzettel_zaznamy', zaznamy);
@@ -410,18 +418,14 @@
         let savedPdfs = JSON.parse(localStorage.getItem('stundenzettel_saved_pdfs')) || [];
         let migratedPdfs = false;
         savedPdfs.forEach(p => {
-            if (p.worker && p.worker.startsWith('"') && p.worker.endsWith('"')) {
-                p.worker = JSON.parse(p.worker); migratedPdfs = true;
-            }
+            if (p.worker && p.worker.startsWith('"') && p.worker.endsWith('"')) { p.worker = JSON.parse(p.worker); migratedPdfs = true; }
         });
         if (migratedPdfs) safeSetStorage('stundenzettel_saved_pdfs', savedPdfs);
 
         let faktury = JSON.parse(localStorage.getItem('stundenzettel_faktury_db')) || [];
         let migratedFaktury = false;
         faktury.forEach(f => {
-            if (f.worker && f.worker.startsWith('"') && f.worker.endsWith('"')) {
-                f.worker = JSON.parse(f.worker); migratedFaktury = true;
-            }
+            if (f.worker && f.worker.startsWith('"') && f.worker.endsWith('"')) { f.worker = JSON.parse(f.worker); migratedFaktury = true; }
         });
         if (migratedFaktury) safeSetStorage('stundenzettel_faktury_db', faktury);
 
@@ -514,8 +518,7 @@
             const name = prompt("Zadejte jméno osoby:");
             if (name && name.trim() !== "" && !workers.includes(name.trim())) {
                 workers.push(name.trim()); safeSetStorage('stundenzettel_workers', workers);
-                currentWorker = name.trim(); 
-                localStorage.setItem('stundenzettel_current_worker', currentWorker);
+                currentWorker = name.trim(); localStorage.setItem('stundenzettel_current_worker', currentWorker);
                 initWorkersDropdown(); renderApp();
             }
         }
@@ -574,10 +577,8 @@
             renderCalendar();
         }
         function renderCalendar() {
-            const calGrid = document.getElementById('cal-grid-body');
-            calGrid.innerHTML = '';
+            const calGrid = document.getElementById('cal-grid-body'); calGrid.innerHTML = '';
             document.getElementById('cal-title-right').innerText = `${czechMonths[calCurrentMonth]} ${calCurrentYear}`;
-            
             const daysInMonth = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
             const firstDay = new Date(calCurrentYear, calCurrentMonth, 1).getDay();
             let startDay = firstDay === 0 ? 6 : firstDay - 1;
@@ -601,23 +602,16 @@
             }
         }
         function openManualModalWithDate(dateStr) {
-            editingRecordId = null;
-            document.getElementById('add-modal').classList.add('active');
+            editingRecordId = null; document.getElementById('add-modal').classList.add('active');
             document.getElementById('input-datum').value = dateStr;
             document.getElementById('manual-modal-title').innerText = "Nový záznam (" + dateStr.split('-').reverse().join('.') + ")";
         }
 
         document.getElementById('ext-doc-file').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 4 * 1024 * 1024) { 
-                alert("Pozor: Soubor je příliš velký (nad 4MB). Může dojít k chybě při ukládání do paměti telefonu.");
-            }
-            tempExtDocType = file.type;
-            tempExtDocName = file.name;
-            const reader = new FileReader();
-            reader.onload = (ev) => { tempExtDocBase64 = ev.target.result; };
-            reader.readAsDataURL(file);
+            const file = e.target.files[0]; if (!file) return;
+            if (file.size > 4 * 1024 * 1024) { alert("Pozor: Soubor je příliš velký (nad 4MB). Může dojít k chybě při ukládání do paměti telefonu."); }
+            tempExtDocType = file.type; tempExtDocName = file.name;
+            const reader = new FileReader(); reader.onload = (ev) => { tempExtDocBase64 = ev.target.result; }; reader.readAsDataURL(file);
         });
 
         function openExternalDocModal() {
@@ -625,6 +619,13 @@
             document.getElementById('ext-doc-number').value = '';
             document.getElementById('ext-doc-amount').value = '';
             document.getElementById('ext-doc-file').value = '';
+            
+            // Nastavení defaultních dat (dnes a splatnost za 14 dnů)
+            const today = new Date();
+            document.getElementById('ext-doc-issue-date').value = today.toISOString().split('T')[0];
+            const due = new Date(); due.setDate(due.getDate() + 14);
+            document.getElementById('ext-doc-due-date').value = due.toISOString().split('T')[0];
+            
             tempExtDocBase64 = null;
             document.getElementById('ext-doc-modal').classList.add('active');
         }
@@ -635,13 +636,17 @@
             const comp = document.getElementById('ext-doc-company').value || "Neznámá společnost";
             const num = document.getElementById('ext-doc-number').value || "EXT-DOC";
             const amt = parseFloat(document.getElementById('ext-doc-amount').value) || 0;
+            
+            const iDate = document.getElementById('ext-doc-issue-date').value;
+            const dDate = document.getElementById('ext-doc-due-date').value;
 
             const fObj = {
                 id: Date.now(), 
                 isExternal: true, 
                 invNumber: num, 
                 company: comp,
-                issueDate: new Date().toLocaleDateString('cs-CZ'),
+                issueDate: new Date(iDate).toLocaleDateString('cs-CZ'),
+                dueDate: new Date(dDate).toISOString(),
                 fileData: tempExtDocBase64, 
                 fileType: tempExtDocType, 
                 fileName: tempExtDocName,
@@ -653,25 +658,17 @@
             try {
                 safeSetStorage('stundenzettel_faktury_db', faktury);
                 alert("Externí dokument byl úspěšně uložen do Správy faktur.");
-                closeExternalDocModal();
-                selectedRecordIds = [];
-                safeSetStorage('stundenzettel_selected', selectedRecordIds);
-                renderApp();
+                closeExternalDocModal(); selectedRecordIds = []; safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp();
             } catch(e) {
-                alert("Chyba při ukládání: Soubor je pravděpodobně příliš velký pro paměť prohlížeče.");
-                faktury.pop(); 
+                alert("Chyba při ukládání: Soubor je pravděpodobně příliš velký pro paměť prohlížeče."); faktury.pop(); 
             }
         }
         
         function downloadExternalDoc(id) {
             let f = faktury.find(x => x.id === id);
             if(f && f.fileData) {
-                const a = document.createElement('a');
-                a.href = f.fileData;
-                a.download = f.fileName || `Externi_Dokument_${f.invNumber}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                const a = document.createElement('a'); a.href = f.fileData; a.download = f.fileName || `Externi_Dokument_${f.invNumber}`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
             }
         }
 
@@ -757,9 +754,7 @@
             if (mins < 0) mins += 1440;
             const rec = { id: editingRecordId || Date.now(), datum: document.getElementById('input-datum').value, od, do: doC, pauzaOd: pod, pauzaDo: pdo, cisteHodiny: Math.round((mins/60)*100)/100, sazba: parseFloat(document.getElementById('input-sazba').value), mena: document.getElementById('input-mena').value, popis: document.getElementById('input-popis').value };
             if(editingRecordId) zaznamy[currentWorker] = zaznamy[currentWorker].map(z => z.id === editingRecordId ? rec : z); else zaznamy[currentWorker].push(rec);
-            safeSetStorage('stundenzettel_zaznamy', zaznamy); 
-            localStorage.removeItem('stundenzettel_manual_draft'); 
-            closeManualModal(); renderApp();
+            safeSetStorage('stundenzettel_zaznamy', zaznamy); localStorage.removeItem('stundenzettel_manual_draft'); closeManualModal(); renderApp();
         }
         function editRecord(id, e) { e.stopPropagation(); editingRecordId = id; const r = zaznamy[currentWorker].find(z=>z.id===id); if(!r)return; document.getElementById('manual-modal-title').innerText = "Úprava"; document.getElementById('input-datum').value=r.datum; document.getElementById('input-od').value=r.od; document.getElementById('input-do').value=r.do; document.getElementById('input-pauza-od').value=r.pauzaOd||''; document.getElementById('input-pauza-do').value=r.pauzaDo||''; document.getElementById('input-sazba').value=r.sazba||40; document.getElementById('input-mena').value=r.mena||'EUR'; document.getElementById('input-popis').value=r.popis||''; document.getElementById('add-modal').classList.add('active'); }
         function deleteRecord(id, e) { e.stopPropagation(); if(confirm("Smazat záznam?")) { zaznamy[currentWorker] = zaznamy[currentWorker].filter(z=>z.id!==id); selectedRecordIds=selectedRecordIds.filter(i=>i!==id); safeSetStorage('stundenzettel_zaznamy', zaznamy); renderApp(); } }
@@ -790,12 +785,8 @@
 
         function toggleInvoiceDetails(id) {
             const details = document.getElementById(`inv-details-${id}`);
-            if (details.classList.contains('open')) {
-                details.classList.remove('open');
-            } else {
-                document.querySelectorAll('.inv-details').forEach(el => el.classList.remove('open'));
-                details.classList.add('open');
-            }
+            if (details.classList.contains('open')) { details.classList.remove('open'); } 
+            else { document.querySelectorAll('.inv-details').forEach(el => el.classList.remove('open')); details.classList.add('open'); }
         }
 
         function openFakturyManager() {
@@ -804,10 +795,18 @@
             if (myInvoices.length === 0) { list.innerHTML = '<p style="color:#aaa; text-align:center;">Zatím žádné dokumenty v archivu.</p>'; }
             
             const dz = new Date(); dz.setHours(0,0,0,0);
+            
             myInvoices.forEach(f => {
                 let isPaid = f.remaining <= 0;
-                let diffDays = f.isExternal ? 0 : Math.ceil((new Date(f.dueDate).setHours(0,0,0,0) - dz) / 86400000);
-                let statusText = f.isExternal ? "Externí záznam" : (isPaid ? "ZAPLACENO" : (diffDays < 0 ? `Po splatnosti ${Math.abs(diffDays)} dnů` : `Splatnost za ${diffDays} dnů`));
+                
+                // Fallback pro starší externí faktury, které neměly datum splatnosti
+                let dueDateObj = f.dueDate ? new Date(f.dueDate) : new Date(Date.now() + 14*86400000);
+                
+                // Sjednocený výpočet dnů do splatnosti pro interní i externí faktury
+                let diffDays = Math.ceil((dueDateObj.setHours(0,0,0,0) - dz) / 86400000);
+                if (isNaN(diffDays)) diffDays = 0;
+
+                let statusText = isPaid ? "ZAPLACENO" : (diffDays < 0 ? `Po splatnosti ${Math.abs(diffDays)} dnů` : `Splatnost za ${diffDays} dnů`);
                 let statusColor = isPaid ? "var(--success)" : (diffDays < 0 ? "var(--danger)" : "#f39c12");
 
                 list.innerHTML += `
@@ -829,16 +828,18 @@
                         <div style="display:flex; justify-content:space-between; margin-bottom: 12px; font-size: 13px;">
                             <div>
                                 <span style="color:${statusColor}; font-weight:bold;">${statusText}</span><br>
-                                ${f.isExternal ? `Společnost: <span style="color:#fff;">${f.company}</span>` : `Zbývá: <span style="color:#fff; font-weight:bold;">€ ${f.remaining.toFixed(2)}</span>`}
+                                Zbývá: <span style="color:#fff; font-weight:bold;">€ ${f.remaining.toFixed(2)}</span>
+                                ${f.isExternal ? `<br><span style="color:#aaa; display:block; margin-top:4px;">Společnost: ${f.company}</span>` : ''}
                             </div>
                             ${f.zaloha > 0 ? `<div style="text-align:right; color:var(--success);">Záloha: € ${f.zaloha.toFixed(2)}</div>` : ''}
                         </div>
                         <div style="display:flex; gap:8px;">
+                            ${f.remaining > 0 ? `<button class="btn-success" onclick="addZaloha(${f.id})">+ Přidat úhradu</button>` : `<button class="btn-outline" style="margin:0; padding:6px; flex:1;" onclick="resetZaloha(${f.id})">Zrušit platbu</button>`}
+                            
                             ${f.isExternal ? 
-                                `<button class="btn-small" style="flex:1; background:var(--success); color:#000;" onclick="downloadExternalDoc(${f.id})">⬇ Otevřít doklad</button>` : 
-                                (f.remaining > 0 ? `<button class="btn-success" onclick="addZaloha(${f.id})">+ Přidat úhradu</button>` : `<button class="btn-outline" style="margin:0; padding:6px; flex:1;" onclick="resetZaloha(${f.id})">Zrušit platbu</button>`)
+                                `<button class="btn-small" style="flex:1; background:var(--success); color:#000;" onclick="downloadExternalDoc(${f.id})">⬇ Doklad</button>` : 
+                                `<button class="btn-small" style="flex:1;" onclick="downloadInvoice(${f.id})">⬇ PDF</button>`
                             }
-                            ${!f.isExternal ? `<button class="btn-small" style="flex:1;" onclick="downloadInvoice(${f.id})">⬇ PDF</button>` : ''}
                             <button class="btn-danger" onclick="deleteFaktura(${f.id})">Smazat</button>
                         </div>
                     </div>
@@ -855,10 +856,7 @@
         }
         function resetZaloha(id) { let f = faktury.find(x => x.id === id); if(f) { f.zaloha = 0; f.remaining = f.total; safeSetStorage('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
         function deleteFaktura(id) { if(confirm('Smazat dokument z evidence? (Nenávratně)')) { faktury = faktury.filter(x => x.id !== id); safeSetStorage('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
-        function downloadInvoice(id) {
-            let f = faktury.find(x => x.id === id);
-            if(f) generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id);
-        }
+        function downloadInvoice(id) { let f = faktury.find(x => x.id === id); if(f) generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id); }
 
         let canvasW, ctxW, canvasM, ctxM;
         function preparePdf(type) { 
@@ -881,28 +879,19 @@
         function setupCanvas(c, ctx) {
             c.width = c.offsetWidth; c.height = 120; 
             ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height); 
-            ctx.strokeStyle = "#0000FF"; 
-            ctx.lineWidth = 2.5;
-            let isD = false; 
+            ctx.strokeStyle = "#0000FF"; ctx.lineWidth = 2.5; let isD = false; 
             c.onmousedown=e=>{isD=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY);}; c.onmousemove=e=>{if(isD){ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke();}}; c.onmouseup=()=>isD=false;
             c.ontouchstart=e=>{isD=true; let r=c.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); e.preventDefault();}; c.ontouchmove=e=>{if(isD){let r=c.getBoundingClientRect(); ctx.lineTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); ctx.stroke();} e.preventDefault();}; c.ontouchend=()=>isD=false;
         }
 
         function initCanvas() {
-            canvasW = document.getElementById('sig-canvas-worker'); ctxW = canvasW.getContext('2d');
-            setupCanvas(canvasW, ctxW);
-            
-            if (pendingPdfType !== 'Faktura') {
-                canvasM = document.getElementById('sig-canvas-manager'); ctxM = canvasM.getContext('2d');
-                setupCanvas(canvasM, ctxM);
-            }
+            canvasW = document.getElementById('sig-canvas-worker'); ctxW = canvasW.getContext('2d'); setupCanvas(canvasW, ctxW);
+            if (pendingPdfType !== 'Faktura') { canvasM = document.getElementById('sig-canvas-manager'); ctxM = canvasM.getContext('2d'); setupCanvas(canvasM, ctxM); }
         }
 
         function clearSignature() { 
             ctxW.fillStyle = "#ffffff"; ctxW.fillRect(0, 0, canvasW.width, canvasW.height); 
-            if (pendingPdfType !== 'Faktura') {
-                ctxM.fillStyle = "#ffffff"; ctxM.fillRect(0, 0, canvasM.width, canvasM.height); 
-            }
+            if (pendingPdfType !== 'Faktura') { ctxM.fillStyle = "#ffffff"; ctxM.fillRect(0, 0, canvasM.width, canvasM.height); }
         }
         function closeSignatureModal() { document.getElementById('signature-modal').classList.remove('active'); }
 
@@ -910,7 +899,6 @@
             const sigW = canvasW.toDataURL("image/png"); 
             let sigM = null;
             if (pendingPdfType !== 'Faktura') sigM = canvasM.toDataURL("image/png");
-
             closeSignatureModal();
 
             if (pendingPdfType === 'Faktura') {
@@ -926,185 +914,131 @@
         }
 
         function generateRealPdf(type, sigWorker, recordIds, workerName, invoiceId = null, sigManager = null) {
-            const workerRecords = (zaznamy[workerName] || []).filter(z => recordIds.includes(z.id));
-            let doc = {};
+            try {
+                const workerRecords = (zaznamy[workerName] || []).filter(z => recordIds.includes(z.id));
+                let doc = {};
 
-            if (type === 'Faktura') {
-                let fData = faktury.find(f => f.id === invoiceId);
-                let body = [[ {text:'Beschreibung', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Menge', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'center'}, {text:'Preis/Einheit', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:'Gesamt', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'} ]];
-                fData.items.forEach(i => { body.push([ i.desc, {text:`${i.qty} ${i.isHours?'St':'ks'}`, alignment:'center'}, {text:`€ ${i.price.toFixed(2)}`, alignment:'right'}, {text:`€ ${(i.qty * i.price).toFixed(2)}`, alignment:'right'} ]); });
-                
-                doc = {
-                    content: [
-                        { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [
-                            { width: '*', stack: [
-                                { text: `FAKTURA č. ${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] },
-                                { text: 'Lieferant', fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] },
-                                { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 }
-                            ]},
-                            companySettings.logoBase64 ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 }
-                        ] }]]}, layout: 'noBorders' },
-                        { table: { widths: ['*', '*', '*'], body: [
-                            [{ text:'KONTONUMMER', bold:true, fontSize:8, color:'#666' }, { text:'VARIABLES SYMBOL', bold:true, fontSize:8, color:'#666' }, { text:'GESAMTZAHLUNGSBETRAG', bold:true, fontSize:8, color:'#666' }],
-                            [{ text: companySettings.bank, fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `€ ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }],
-                            [{ text:'AUSSTELLUNGSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:'FÄLLIGKEITSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }],
-                            [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }]
-                        ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
-                        { stack: [{ text:'Abnehmer', bold:true, fontSize:11, color:'#FF8C00' }, { text: `${companySettings.clientName}\nGeschäftsführer: ${companySettings.clientRep}\n${companySettings.clientAddress}\nUst-IdNr.: ${companySettings.clientUst}`, fontSize:10 }], margin: [0, 0, 0, 20] },
-                        { table: { headerRows: 1, widths: ['*', 60, 80, 80], body: body }, margin: [0, 0, 0, 15] },
-                        { text: `Zu zahlen: € ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 10] },
-                        
-                        { text: 'Gemäß §13b Absatz 2 Nr.4 UStG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer.', fontSize: 10, color: '#555', margin: [0, 15, 0, 20] },
-                        
-                        { columns: [
-                            { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] },
-                            { width: '*', alignment: 'right', stack: [
-                                { text: 'Unterschrift & Stempel', fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
-                                (fData.useStamp && companySettings.stampBase64) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null,
-                                { image: sigWorker, width: 140 }
-                            ].filter(Boolean)}
-                        ]}
-                    ].filter(Boolean), defaultStyle: { font: 'Roboto' }
-                };
-                pdfMake.createPdf(doc).download(`${type}_${fData.invNumber.replace('/','-')}.pdf`);
-
-            } else {
-                let tH = 0;
-                workerRecords.forEach(r => { tH += r.cisteHodiny; });
-                
-                const recordDates = workerRecords.map(r => new Date(r.datum));
-                let minDate = recordDates.length ? new Date(Math.min(...recordDates)).toLocaleDateString('cs-CZ') : '';
-                let maxDate = recordDates.length ? new Date(Math.max(...recordDates)).toLocaleDateString('cs-CZ') : '';
-                let dateRange = minDate === maxDate ? minDate : `${minDate} - ${maxDate}`;
-
-                if (type === 'Standard') {
-                    // ----- ZCELA PŘEPRACOVANÝ MSW MONTAGENACHWEIS (Kopírování 1:1) -----
-                    let daysRows = [[
-                        { text:'Tag', bold:true, fillColor:'#f0f0f0', fontSize:10, margin:[0,4,0,4] },
-                        { text:'Datum', bold:true, fillColor:'#f0f0f0', fontSize:10, margin:[0,4,0,4] },
-                        { text:'Arbeitszeit\nvon', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
-                        { text:'Arbeitszeit\nbis', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
-                        { text:'Arbeitsstunden\n(ohne Pause)', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
-                        { text:'Pause\n(Std.)', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
-                        { text:'Ausgeführte Leistungen', bold:true, fillColor:'#f0f0f0', fontSize:10, margin:[0,4,0,4] }
-                    ]];
+                if (type === 'Faktura') {
+                    let fData = faktury.find(f => f.id === invoiceId);
+                    let body = [[ {text:'Beschreibung', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Menge', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'center'}, {text:'Preis/Einheit', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:'Gesamt', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'} ]];
+                    fData.items.forEach(i => { body.push([ i.desc, {text:`${i.qty} ${i.isHours?'St':'ks'}`, alignment:'center'}, {text:`€ ${i.price.toFixed(2)}`, alignment:'right'}, {text:`€ ${(i.qty * i.price).toFixed(2)}`, alignment:'right'} ]); });
                     
-                    const dayNames = { 'Mo': 'Montag', 'Di': 'Dienstag', 'Mi': 'Mittwoch', 'Do': 'Donnerstag', 'Fr': 'Freitag', 'Sa': 'Samstag', 'So': 'Sonntag' };
-                    workerRecords.forEach(r => { 
-                        let d = new Date(r.datum); 
-                        let dow = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]; 
-                        daysRows.push([ 
-                            { text: dayNames[dow] || dow, fontSize: 10, margin:[0,3,0,3] }, 
-                            { text: r.datum.split('-').reverse().join('.'), fontSize: 10, margin:[0,3,0,3] },
-                            { text: r.od, alignment: 'center', fontSize: 10, margin:[0,3,0,3] },
-                            { text: r.do, alignment: 'center', fontSize: 10, margin:[0,3,0,3] },
-                            { text: `${r.cisteHodiny} st`, alignment: 'center', bold: true, fontSize: 10, margin:[0,3,0,3] }, 
-                            { text: r.pauzaOd ? `${r.pauzaOd}-${r.pauzaDo}` : '-', alignment: 'center', fontSize: 10, margin:[0,3,0,3] }, 
-                            { text: r.popis || 'Montagearbeiten', fontSize: 10, margin:[0,3,0,3] } 
-                        ]); 
-                    });
-
                     doc = {
-                        pageMargins: [ 40, 40, 40, 40 ],
                         content: [
-                            { text: 'Montagenachweis', fontSize: 18, bold: true, color: '#000', margin: [0, 0, 0, 15] },
-                            {
-                                table: { 
-                                    widths: ['*', '*'], 
-                                    body: [
-                                        [ 
-                                            { text: [{ text: 'Monteur:\n(Name, Vorname)\n', fontSize: 8, color: '#333' }, { text: workerName, fontSize: 11, bold: true }], margin: [4, 4, 4, 4] }, 
-                                            { text: [{ text: 'Kalenderwoche:\n', fontSize: 8, color: '#333' }, { text: `KW ${getWeekNum(new Date())}`, fontSize: 11, bold: true }], margin: [4, 4, 4, 4] } 
-                                        ],
-                                        [ 
-                                            { text: [{ text: 'Kunde:\n', fontSize: 8, color: '#333' }, { text: companySettings.clientName || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] }, 
-                                            { text: [{ text: 'Einsatzort:\n', fontSize: 8, color: '#333' }, { text: companySettings.actualClient || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] } 
-                                        ],
-                                        [
-                                            { text: [{ text: 'MSW Auftragsnummer:\n', fontSize: 8, color: '#333' }, { text: ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4], colSpan: 2 },
-                                            {}
-                                        ]
-                                    ] 
-                                }, 
-                                margin: [0, 0, 0, 15] 
-                            },
-                            { text: 'Bitte alle Felder ausfüllen und wöchentlich zusenden', fontSize: 9, alignment: 'center', italics: true, margin: [0, 0, 0, 10] },
-                            { table: { headerRows: 1, widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', '*'], body: daysRows }, margin: [0, 0, 0, 10] },
-                            { text: `Summe: ${tH.toFixed(2)} st`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 5, 0, 20] },
-                            { text: '☑ Die Leistungen sind mit / ohne Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 0, 0, 5] },
-                            { text: '☐ Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:', fontSize: 10, margin: [0, 0, 0, 25] },
+                            { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [
+                                { width: '*', stack: [
+                                    { text: `FAKTURA č. ${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] },
+                                    { text: 'Lieferant', fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] },
+                                    { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 }
+                                ]},
+                                companySettings.logoBase64 ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 }
+                            ] }]]}, layout: 'noBorders' },
+                            { table: { widths: ['*', '*', '*'], body: [
+                                [{ text:'KONTONUMMER', bold:true, fontSize:8, color:'#666' }, { text:'VARIABLES SYMBOL', bold:true, fontSize:8, color:'#666' }, { text:'GESAMTZAHLUNGSBETRAG', bold:true, fontSize:8, color:'#666' }],
+                                [{ text: companySettings.bank, fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `€ ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }],
+                                [{ text:'AUSSTELLUNGSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:'FÄLLIGKEITSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }],
+                                [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }]
+                            ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
+                            { stack: [{ text:'Abnehmer', bold:true, fontSize:11, color:'#FF8C00' }, { text: `${companySettings.clientName}\nGeschäftsführer: ${companySettings.clientRep}\n${companySettings.clientAddress}\nUst-IdNr.: ${companySettings.clientUst}`, fontSize:10 }], margin: [0, 0, 0, 20] },
+                            { table: { headerRows: 1, widths: ['*', 60, 80, 80], body: body }, margin: [0, 0, 0, 15] },
+                            { text: `Zu zahlen: € ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 10] },
+                            { text: 'Gemäß §13b Absatz 2 Nr.4 UStG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer.', fontSize: 10, color: '#555', margin: [0, 15, 0, 20] },
                             { columns: [
-                                { stack: [
-                                    { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, 
-                                    { image: sigWorker, width: 120, margin: [0, 0, 0, 5] },
-                                    { text: 'Unterschrift Monteur', fontSize: 9, decoration: 'overline' }
-                                ], width: '*' },
-                                { stack: [
-                                    { text: 'Mängel werden bis spätestens __________________ behoben.', fontSize: 10, margin: [0, 0, 0, 10] }, 
-                                    { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, 
-                                    sigManager ? { image: sigManager, width: 120, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n\n' },
-                                    { text: `Unterschrift Kunde (${companySettings.vedouci || ''})`, fontSize: 9, decoration: 'overline' }
-                                ], width: '*' }
+                                { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] },
+                                { width: '*', alignment: 'right', stack: [
+                                    { text: 'Unterschrift & Stempel', fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
+                                    (fData.useStamp && companySettings.stampBase64) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null,
+                                    { image: sigWorker, width: 140 }
+                                ].filter(Boolean)}
                             ]}
-                        ], defaultStyle: { font: 'Roboto' }
+                        ].filter(Boolean), defaultStyle: { font: 'Roboto' }
                     };
+                    pdfMake.createPdf(doc).download(`${type}_${fData.invNumber.replace('/','-')}.pdf`);
 
-                } else if (type === 'Abnahme') {
-                    let abnahmeRows = [[
-                        { text:'Leistungsbeschreibung / Tätigkeitsbeschreibung\nGewerkname (Nr.) | Tätigkeit', bold:true, fillColor:'#f0f0f0', fontSize: 10 },
-                        { text:'Dauer [h]', bold:true, fillColor:'#f0f0f0', fontSize: 10, alignment:'center' }
-                    ]];
-                    
-                    workerRecords.forEach(r => {
-                        abnahmeRows.push([
-                            { text: `${r.datum.split('-').reverse().join('.')} - ${r.popis || 'Tätigkeit'}`, fontSize: 10 },
-                            { text: r.cisteHodiny.toString(), alignment: 'center', fontSize: 10 }
-                        ]);
-                    });
-                    
-                    abnahmeRows.push([
-                        { text: 'Gesamt', bold: true, alignment: 'right', fontSize: 10, fillColor: '#f9f9f9' },
-                        { text: tH.toFixed(2), bold: true, alignment: 'center', fontSize: 10, fillColor: '#f9f9f9' }
-                    ]);
+                } else {
+                    let tH = 0; workerRecords.forEach(r => { tH += r.cisteHodiny; });
+                    const recordDates = workerRecords.map(r => new Date(r.datum));
+                    let minDate = recordDates.length ? new Date(Math.min(...recordDates)).toLocaleDateString('cs-CZ') : '';
+                    let maxDate = recordDates.length ? new Date(Math.max(...recordDates)).toLocaleDateString('cs-CZ') : '';
+                    let dateRange = minDate === maxDate ? minDate : `${minDate} - ${maxDate}`;
 
-                    doc = {
-                        content: [
-                            { text: 'ABNAHME- & FORTSCHRITTSPROTOKOLL', fontSize: 18, bold: true, color: '#333', alignment: 'center', margin: [0, 0, 0, 20] },
-                            { table: {
-                                widths: ['*', '*'],
-                                body: [
+                    if (type === 'Standard') {
+                        let daysRows = [[
+                            { text:'Tag', bold:true, fillColor:'#f0f0f0', fontSize:10, margin:[0,4,0,4] },
+                            { text:'Datum', bold:true, fillColor:'#f0f0f0', fontSize:10, margin:[0,4,0,4] },
+                            { text:'Arbeitszeit\nvon', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
+                            { text:'Arbeitszeit\nbis', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
+                            { text:'Arbeitsstunden\n(ohne Pause)', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
+                            { text:'Pause\n(Std.)', bold:true, fillColor:'#f0f0f0', fontSize:9, alignment:'center', margin:[0,4,0,4] },
+                            { text:'Ausgeführte Leistungen', bold:true, fillColor:'#f0f0f0', fontSize:10, margin:[0,4,0,4] }
+                        ]];
+                        
+                        const dayNames = { 'Mo': 'Montag', 'Di': 'Dienstag', 'Mi': 'Mittwoch', 'Do': 'Donnerstag', 'Fr': 'Freitag', 'Sa': 'Samstag', 'So': 'Sonntag' };
+                        workerRecords.forEach(r => { 
+                            let d = new Date(r.datum); let dow = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]; 
+                            daysRows.push([ 
+                                { text: dayNames[dow] || dow, fontSize: 10, margin:[0,3,0,3] }, 
+                                { text: r.datum.split('-').reverse().join('.'), fontSize: 10, margin:[0,3,0,3] },
+                                { text: r.od, alignment: 'center', fontSize: 10, margin:[0,3,0,3] },
+                                { text: r.do, alignment: 'center', fontSize: 10, margin:[0,3,0,3] },
+                                { text: `${r.cisteHodiny} st`, alignment: 'center', bold: true, fontSize: 10, margin:[0,3,0,3] }, 
+                                { text: r.pauzaOd ? `${r.pauzaOd}-${r.pauzaDo}` : '-', alignment: 'center', fontSize: 10, margin:[0,3,0,3] }, 
+                                { text: r.popis || 'Montagearbeiten', fontSize: 10, margin:[0,3,0,3] } 
+                            ]); 
+                        });
+
+                        doc = {
+                            pageMargins: [ 40, 40, 40, 40 ],
+                            content: [
+                                { text: 'Montagenachweis', fontSize: 18, bold: true, color: '#000', margin: [0, 0, 0, 15] },
+                                { table: { widths: ['*', '*'], body: [
+                                    [ { text: [{ text: 'Monteur:\n(Name, Vorname)\n', fontSize: 8, color: '#333' }, { text: workerName || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] }, { text: [{ text: 'Kalenderwoche:\n', fontSize: 8, color: '#333' }, { text: `KW ${getWeekNum(new Date()) || ''}`, fontSize: 11, bold: true }], margin: [4, 4, 4, 4] } ],
+                                    [ { text: [{ text: 'Kunde:\n', fontSize: 8, color: '#333' }, { text: companySettings.clientName || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] }, { text: [{ text: 'Einsatzort:\n', fontSize: 8, color: '#333' }, { text: companySettings.actualClient || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] } ],
+                                    [ { text: [{ text: 'MSW Auftragsnummer:\n', fontSize: 8, color: '#333' }, { text: ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4], colSpan: 2 }, {} ]
+                                ] }, margin: [0, 0, 0, 15] },
+                                { text: 'Bitte alle Felder ausfüllen und wöchentlich zusenden', fontSize: 9, alignment: 'center', italics: true, margin: [0, 0, 0, 10] },
+                                { table: { headerRows: 1, widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', '*'], body: daysRows }, margin: [0, 0, 0, 10] },
+                                { text: `Summe: ${tH.toFixed(2)} st`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 5, 0, 20] },
+                                { text: '☑ Die Leistungen sind mit / ohne Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 0, 0, 5] },
+                                { text: '☐ Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:', fontSize: 10, margin: [0, 0, 0, 25] },
+                                { columns: [
+                                    { stack: [ { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, { image: sigWorker, width: 120, margin: [0, 0, 0, 5] }, { text: 'Unterschrift Monteur', fontSize: 9, decoration: 'overline' } ], width: '*' },
+                                    { stack: [ { text: 'Mängel werden bis spätestens __________________ behoben.', fontSize: 10, margin: [0, 0, 0, 10] }, { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, sigManager ? { image: sigManager, width: 120, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n\n' }, { text: `Unterschrift Kunde (${companySettings.vedouci || ''})`, fontSize: 9, decoration: 'overline' } ], width: '*' }
+                                ]}
+                            ], defaultStyle: { font: 'Roboto' }
+                        };
+                    } else if (type === 'Abnahme') {
+                        let abnahmeRows = [[ { text:'Leistungsbeschreibung / Tätigkeitsbeschreibung\nGewerkname (Nr.) | Tätigkeit', bold:true, fillColor:'#f0f0f0', fontSize: 10 }, { text:'Dauer [h]', bold:true, fillColor:'#f0f0f0', fontSize: 10, alignment:'center' } ]];
+                        workerRecords.forEach(r => { abnahmeRows.push([ { text: `${r.datum.split('-').reverse().join('.')} - ${r.popis || 'Tätigkeit'}`, fontSize: 10 }, { text: r.cisteHodiny.toString(), alignment: 'center', fontSize: 10 } ]); });
+                        abnahmeRows.push([ { text: 'Gesamt', bold: true, alignment: 'right', fontSize: 10, fillColor: '#f9f9f9' }, { text: tH.toFixed(2), bold: true, alignment: 'center', fontSize: 10, fillColor: '#f9f9f9' } ]);
+
+                        doc = {
+                            content: [
+                                { text: 'ABNAHME- & FORTSCHRITTSPROTOKOLL', fontSize: 18, bold: true, color: '#333', alignment: 'center', margin: [0, 0, 0, 20] },
+                                { table: { widths: ['*', '*'], body: [
                                     [ { text: `Vorname, Name: ${workerName}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Kunde: ${companySettings.clientName}`, fontSize: 10, margin:[0,2,0,2] } ],
                                     [ { text: `Projekt-Nr.: ${companySettings.actualClient || '........................'}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Anschrift: ${companySettings.clientAddress}`, fontSize: 10, margin:[0,2,0,2] } ],
                                     [ { text: `Leistungszeitraum: ${dateRange}`, fontSize: 10, margin:[0,2,0,2] }, { text: `PLZ, Ort: ${companySettings.clientAddress ? companySettings.clientAddress.split(',').pop() : '........................'}`, fontSize: 10, margin:[0,2,0,2] } ]
-                                ]
-                            }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 20] },
-                            
-                            { table: { headerRows: 1, widths: ['*', 80], body: abnahmeRows }, margin: [0, 0, 0, 20] },
-                            
-                            { text: 'Bei der Abnahme wurde festgestellt', bold: true, fontSize: 11, margin: [0, 0, 0, 10] },
-                            { text: '☐ die Leistung/en sind ohne Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
-                            { text: '☑ die Leistung/en sind mit Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
-                            { text: '☐ bis auf folgende Mängel bzw. Schäden befindet sich die Leistung/en in vertragsgemäßen Zustand', fontSize: 10, margin: [0, 2, 0, 2] },
-                            { text: 'Mängel werden bis spätestens .................................................... behoben.', fontSize: 10, margin: [0, 15, 0, 25] },
-                            
-                            { text: `Tag der Abnahme: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 20] },
-                            { columns: [
-                                { stack: [
-                                    { text: `Name in Druckbuchstaben AG: ${companySettings.vedouci || ''}`, fontSize: 9 },
-                                    { image: sigManager || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', width: 140, margin: [0,5,0,5] }, 
-                                    { text: '*Unterschrift Auftraggeber', fontSize: 9, decoration: 'overline' }
-                                ], width: '*' },
-                                { stack: [
-                                    { text: `Name in Druckbuchstaben AN: ${workerName}`, fontSize: 9 },
-                                    { image: sigWorker, width: 140, margin: [0,5,0,5] },
-                                    { text: 'Unterschrift Auftragnehmer', fontSize: 9, decoration: 'overline' }
-                                ], width: '*' }
-                            ]},
-                            { text: '* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.', fontSize: 8, color: '#666', margin: [0, 25, 0, 0] }
-                        ], defaultStyle: { font: 'Roboto' }
-                    };
+                                ] }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 20] },
+                                { table: { headerRows: 1, widths: ['*', 80], body: abnahmeRows }, margin: [0, 0, 0, 20] },
+                                { text: 'Bei der Abnahme wurde festgestellt', bold: true, fontSize: 11, margin: [0, 0, 0, 10] },
+                                { text: '☐ die Leistung/en sind ohne Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
+                                { text: '☑ die Leistung/en sind mit Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
+                                { text: '☐ bis auf folgende Mängel bzw. Schäden befindet sich die Leistung/en in vertragsgemäßen Zustand', fontSize: 10, margin: [0, 2, 0, 2] },
+                                { text: 'Mängel werden bis spätestens .................................................... behoben.', fontSize: 10, margin: [0, 15, 0, 25] },
+                                { text: `Tag der Abnahme: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 20] },
+                                { columns: [
+                                    { stack: [ { text: `Name in Druckbuchstaben AG: ${companySettings.vedouci || ''}`, fontSize: 9 }, { image: sigManager || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', width: 140, margin: [0,5,0,5] }, { text: '*Unterschrift Auftraggeber', fontSize: 9, decoration: 'overline' } ], width: '*' },
+                                    { stack: [ { text: `Name in Druckbuchstaben AN: ${workerName}`, fontSize: 9 }, { image: sigWorker, width: 140, margin: [0,5,0,5] }, { text: 'Unterschrift Auftragnehmer', fontSize: 9, decoration: 'overline' } ], width: '*' }
+                                ]},
+                                { text: '* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.', fontSize: 8, color: '#666', margin: [0, 25, 0, 0] }
+                            ], defaultStyle: { font: 'Roboto' }
+                        };
+                    }
+                    pdfMake.createPdf(doc).download(`${type}_${workerName.replace(' ', '_')}.pdf`);
                 }
-                pdfMake.createPdf(doc).download(`${type}_${workerName.replace(' ', '_')}.pdf`);
+            } catch (err) {
+                alert('Chyba při generování PDF: Zkontrolujte, prosím, zda máte vyplněné všechny potřebné údaje (Nastavení). Detail chyby: ' + err.message);
             }
         }
 
@@ -1129,10 +1063,7 @@
             document.getElementById('saved-pdfs-modal').classList.add('active');
         }
         function closeSavedPdfsModal() { document.getElementById('saved-pdfs-modal').classList.remove('active'); }
-        function downloadSavedPdf(id) {
-            const p = savedPdfs.find(x => x.id === id);
-            if(p) generateRealPdf(p.type, p.sigWorker, p.recordIds, p.worker, null, p.sigManager);
-        }
+        function downloadSavedPdf(id) { const p = savedPdfs.find(x => x.id === id); if(p) generateRealPdf(p.type, p.sigWorker, p.recordIds, p.worker, null, p.sigManager); }
         function deleteSavedPdf(id) { if(confirm('Smazat tento výkaz?')) { savedPdfs = savedPdfs.filter(x => x.id !== id); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); openSavedPdfsModal(); } }
         
         function toggleRecordSelection(id, e) { e.stopPropagation(); const idx = selectedRecordIds.indexOf(id); if (idx > -1) selectedRecordIds.splice(idx, 1); else selectedRecordIds.push(id); safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
@@ -1143,7 +1074,6 @@
 
         function renderApp() {
             renderCalendar(); 
-            
             const container = document.getElementById('tree-container'); container.innerHTML = '';
             const workerRecords = zaznamy[currentWorker] || [];
             if (workerRecords.length === 0) { container.innerHTML = '<div style="text-align:center; color:#666; padding: 20px;">Žádné záznamy.</div>'; return; }
