@@ -310,20 +310,23 @@
             <div class="form-group"><label>Bankovní spojení (IBAN)</label><input type="text" id="set-bank" oninput="quietSaveSettings()"></div>
             <div class="form-group"><label>SWIFT / BIC</label><input type="text" id="set-swift" oninput="quietSaveSettings()"></div>
 
-            <div class="section-title">2. Skutečné místo výkonu</div>
-            <div class="form-group"><label>Firma, pro kterou se fakticky pracovalo</label><input type="text" id="set-actualClient" placeholder="např. Název partnerské firmy..." oninput="quietSaveSettings()"></div>
+            <!-- OPRAVENO: 3 pole pro Místo výkonu, jak je požadováno na obrázku -->
+            <div class="section-title">2. SKUTEČNÉ MÍSTO VÝKONU</div>
+            <div class="form-group"><label>Název společnosti</label><input type="text" id="set-actualClientName" placeholder="např. Deutronik Elektronik GmbH" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Adresa společnosti</label><input type="text" id="set-actualClientAddress" placeholder="např. Deutronic-Straße 5, 84166..." oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Číslo projektu</label><input type="text" id="set-actualProjectNum" placeholder="např. PRJ-2026-89" oninput="quietSaveSettings()"></div>
 
-            <div class="section-title">3. Pověřený vedoucí / Schvalovatel</div>
-            <div class="form-group"><label>Jméno a Příjmení vedoucího</label><input type="text" id="set-vedouci" placeholder="Jan Novák..." oninput="quietSaveSettings()"></div>
+            <div class="section-title">3. POVĚŘENÝ VEDOUCÍ / SCHVALOVATEL</div>
+            <div class="form-group"><label>Jméno a Příjmení vedoucího</label><input type="text" id="set-vedouci" placeholder="Benedikt Kalb..." oninput="quietSaveSettings()"></div>
 
-            <div class="section-title">4. Odběratel (Adresář klientů)</div>
+            <div class="section-title">4. ODBĚRATEL (ADRESÁŘ KLIENTŮ)</div>
             <div class="form-group">
                 <label>Vybrat uloženou firmu</label>
                 <select id="client-select" onchange="loadSelectedClient()"></select>
             </div>
-            <div class="form-group"><label>Název firmy odběratele</label><input type="text" id="set-clientName" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Název firmy odběratele</label><input type="text" id="set-clientName" placeholder="Consilium Pro s.r.o..." oninput="quietSaveSettings()"></div>
             <div class="form-group"><label>Geschäftsführer</label><input type="text" id="set-clientRep" oninput="quietSaveSettings()"></div>
-            <div class="form-group"><label>Adresa odběratele</label><input type="text" id="set-clientAddress" oninput="quietSaveSettings()"></div>
+            <div class="form-group"><label>Adresa odběratele</label><input type="text" id="set-clientAddress" placeholder="Piaristická 276/46..." oninput="quietSaveSettings()"></div>
             <div class="form-group"><label>Ust-IdNr. / IČO</label><input type="text" id="set-clientUst" oninput="quietSaveSettings()"></div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn-success" style="flex: 1;" onclick="saveClientToBook()">💾 Uložit odběratele</button>
@@ -348,11 +351,29 @@
         </div>
     </div>
 
-    <!-- MODAL: PODPIS -->
+    <!-- MODAL: PODPIS A MOŽNOSTI ABNAHME -->
     <div class="modal-overlay" id="signature-modal">
         <div class="modal-content">
             <h2 id="signature-title" style="color:var(--primary-orange); margin-bottom: 15px;">Podpis dokumentu</h2>
             
+            <!-- NOVÉ: Nastavení pro Abnahme před samotným podpisem -->
+            <div id="abnahme-options-container" class="hidden" style="background:#121212; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #333;">
+                <label style="color:var(--primary-orange); font-weight:bold; margin-bottom:10px; display:block; font-size:13px; text-transform:uppercase;">Stav předání (Abnahme)</label>
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;">
+                    <input type="radio" name="abnahme_status" value="1" style="accent-color:var(--primary-orange);" onchange="toggleAbnahmeDate()"> Bez zkoušky funkčnosti (ohne Funktionsprüfung)
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;">
+                    <input type="radio" name="abnahme_status" value="2" checked style="accent-color:var(--primary-orange);" onchange="toggleAbnahmeDate()"> Se zkouškou funkčnosti (mit Funktionsprüfung)
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;">
+                    <input type="radio" name="abnahme_status" value="3" style="accent-color:var(--primary-orange);" onchange="toggleAbnahmeDate()"> S vadami (Mängel)
+                </label>
+                <div id="abnahme-date-wrapper" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed #333;">
+                    <label style="font-size:13px; color:#aaa; margin-bottom:5px; display:block;">Závada bude odstraněna do (Datum):</label>
+                    <input type="date" id="abnahme-date-input" style="width:100%; background:#1c1c1e; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;">
+                </div>
+            </div>
+
             <div id="sig-worker-container">
                 <label style="color:var(--text-muted); font-size:13px; margin-bottom:5px; display:block; font-weight:bold;">Podpis pracovníka (<span id="sig-worker-name"></span>)</label>
                 <canvas id="sig-canvas-worker" class="signature-pad"></canvas>
@@ -387,10 +408,15 @@
 
         function safeSetStorage(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 
-        let companySettings = JSON.parse(localStorage.getItem('stundenzettel_company')) || { firma: "ELEKTRO MICHÁLEK", jmeno: "Petr Michálek", ico: "64837530", adresa: "Nám. Prokopa Holého 11, 350 02 Cheb", tel: "606880162", email: "michalek_p@centrum.cz", bank: "LT163250076086088383", swift: "REVOLT21", clientName: "", clientRep: "", clientAddress: "", clientUst: "", vedouci: "", actualClient: "", logoBase64: null, stampBase64: null };
+        // Inicializace nastavení s novými poli
+        let companySettings = JSON.parse(localStorage.getItem('stundenzettel_company')) || { firma: "ELEKTRO MICHÁLEK", jmeno: "Petr Michálek", ico: "64837530", adresa: "Nám. Prokopa Holého 11, 350 02 Cheb", tel: "+420 601 515 360", email: "el.michalekpetr@gmail.com", bank: "LT163250076086088383", swift: "REVOLT21", clientName: "", clientRep: "", clientAddress: "", clientUst: "", vedouci: "", actualClientName: "", actualClientAddress: "", actualProjectNum: "", logoBase64: null, stampBase64: null };
+        
+        // Migrace ze staré verze (pokud uživatel měl actualClient)
+        if (companySettings.actualClient && !companySettings.actualClientName) { companySettings.actualClientName = companySettings.actualClient; }
+
         let clientBook = JSON.parse(localStorage.getItem('stundenzettel_clientbook')) || [];
         let invConfig = JSON.parse(localStorage.getItem('stundenzettel_invconfig')) || { year: new Date().getFullYear(), month: new Date().getMonth() + 1, counter: 1 };
-        let workers = JSON.parse(localStorage.getItem('stundenzettel_workers')) || ["Petr Michálek", "Jan Novák"];
+        let workers = JSON.parse(localStorage.getItem('stundenzettel_workers')) || ["Petr Michálek"];
         
         let rawWorker = localStorage.getItem('stundenzettel_current_worker');
         let currentWorker = workers[0];
@@ -619,13 +645,8 @@
             document.getElementById('ext-doc-number').value = '';
             document.getElementById('ext-doc-amount').value = '';
             document.getElementById('ext-doc-file').value = '';
-            
-            // Nastavení defaultních dat (dnes a splatnost za 14 dnů)
-            const today = new Date();
-            document.getElementById('ext-doc-issue-date').value = today.toISOString().split('T')[0];
-            const due = new Date(); due.setDate(due.getDate() + 14);
-            document.getElementById('ext-doc-due-date').value = due.toISOString().split('T')[0];
-            
+            const today = new Date(); document.getElementById('ext-doc-issue-date').value = today.toISOString().split('T')[0];
+            const due = new Date(); due.setDate(due.getDate() + 14); document.getElementById('ext-doc-due-date').value = due.toISOString().split('T')[0];
             tempExtDocBase64 = null;
             document.getElementById('ext-doc-modal').classList.add('active');
         }
@@ -636,22 +657,11 @@
             const comp = document.getElementById('ext-doc-company').value || "Neznámá společnost";
             const num = document.getElementById('ext-doc-number').value || "EXT-DOC";
             const amt = parseFloat(document.getElementById('ext-doc-amount').value) || 0;
-            
             const iDate = document.getElementById('ext-doc-issue-date').value;
             const dDate = document.getElementById('ext-doc-due-date').value;
 
             const fObj = {
-                id: Date.now(), 
-                isExternal: true, 
-                invNumber: num, 
-                company: comp,
-                issueDate: new Date(iDate).toLocaleDateString('cs-CZ'),
-                dueDate: new Date(dDate).toISOString(),
-                fileData: tempExtDocBase64, 
-                fileType: tempExtDocType, 
-                fileName: tempExtDocName,
-                worker: currentWorker,
-                total: amt, remaining: amt, zaloha: 0
+                id: Date.now(), isExternal: true, invNumber: num, company: comp, issueDate: new Date(iDate).toLocaleDateString('cs-CZ'), dueDate: new Date(dDate).toISOString(), fileData: tempExtDocBase64, fileType: tempExtDocType, fileName: tempExtDocName, worker: currentWorker, total: amt, remaining: amt, zaloha: 0
             };
             
             faktury.push(fObj);
@@ -659,9 +669,7 @@
                 safeSetStorage('stundenzettel_faktury_db', faktury);
                 alert("Externí dokument byl úspěšně uložen do Správy faktur.");
                 closeExternalDocModal(); selectedRecordIds = []; safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp();
-            } catch(e) {
-                alert("Chyba při ukládání: Soubor je pravděpodobně příliš velký pro paměť prohlížeče."); faktury.pop(); 
-            }
+            } catch(e) { alert("Chyba při ukládání: Soubor je pravděpodobně příliš velký pro paměť prohlížeče."); faktury.pop(); }
         }
         
         function downloadExternalDoc(id) {
@@ -679,7 +687,7 @@
             safeSetStorage('stundenzettel_invconfig', invConfig);
             
             let nSet = { logoBase64: tempLogo, stampBase64: tempStamp };
-            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst','vedouci','actualClient'].forEach(k => { if(document.getElementById(`set-${k}`)) nSet[k] = document.getElementById(`set-${k}`).value; });
+            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst','vedouci','actualClientName','actualClientAddress','actualProjectNum'].forEach(k => { if(document.getElementById(`set-${k}`)) nSet[k] = document.getElementById(`set-${k}`).value; });
             companySettings = nSet; safeSetStorage('stundenzettel_company', companySettings);
         }
 
@@ -711,7 +719,7 @@
 
         function openSettingsModal() {
             document.getElementById('set-invYear').value = invConfig.year; document.getElementById('set-invMonth').value = invConfig.month; document.getElementById('set-invCounter').value = invConfig.counter;
-            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst','vedouci','actualClient'].forEach(k => { if(document.getElementById(`set-${k}`)) document.getElementById(`set-${k}`).value = companySettings[k] || ""; });
+            ['firma','jmeno','ico','adresa','tel','email','bank','swift','clientName','clientRep','clientAddress','clientUst','vedouci','actualClientName','actualClientAddress','actualProjectNum'].forEach(k => { if(document.getElementById(`set-${k}`)) document.getElementById(`set-${k}`).value = companySettings[k] || ""; });
             populateClientSelect(); tempLogo = companySettings.logoBase64; tempStamp = companySettings.stampBase64;
             document.getElementById('logo-preview').innerHTML = tempLogo ? `<img src="${tempLogo}" style="max-height:40px;">` : ''; document.getElementById('stamp-preview').innerHTML = tempStamp ? `<img src="${tempStamp}" style="max-height:40px;">` : '';
             document.getElementById('settings-modal').classList.add('active');
@@ -765,8 +773,8 @@
             let totalHours = records.reduce((sum, r) => sum + r.cisteHodiny, 0);
             let avgRate = records.length > 0 ? records[0].sazba : 40;
             
-            let actClient = companySettings.actualClient ? companySettings.actualClient : "...";
-            customInvoiceItems = [{ desc: `Elektromontážní práce pro ${actClient} dle výkazu práce`, qty: totalHours, price: avgRate, isHours: true }];
+            let actClientStr = companySettings.actualClientName || "...";
+            customInvoiceItems = [{ desc: `Elektromontážní práce pro ${actClientStr} dle výkazu práce`, qty: totalHours, price: avgRate, isHours: true }];
             renderInvoiceItemsUI();
             document.getElementById('invoice-items-modal').classList.add('active');
         }
@@ -798,11 +806,7 @@
             
             myInvoices.forEach(f => {
                 let isPaid = f.remaining <= 0;
-                
-                // Fallback pro starší externí faktury, které neměly datum splatnosti
                 let dueDateObj = f.dueDate ? new Date(f.dueDate) : new Date(Date.now() + 14*86400000);
-                
-                // Sjednocený výpočet dnů do splatnosti pro interní i externí faktury
                 let diffDays = Math.ceil((dueDateObj.setHours(0,0,0,0) - dz) / 86400000);
                 if (isNaN(diffDays)) diffDays = 0;
 
@@ -865,15 +869,30 @@
             
             if (type === 'Faktura') {
                 document.getElementById('sig-manager-container').classList.add('hidden');
+                document.getElementById('abnahme-options-container').classList.add('hidden');
                 document.getElementById('sig-worker-name').innerText = companySettings.jmeno || "Firma";
             } else {
                 document.getElementById('sig-manager-container').classList.remove('hidden');
                 document.getElementById('sig-worker-name').innerText = currentWorker;
                 document.getElementById('sig-manager-name').innerText = companySettings.vedouci || "Vedoucí";
+                
+                // Zobrazí se nabídka na Abnahme checkboxy
+                if (type === 'Abnahme') {
+                    document.getElementById('abnahme-options-container').classList.remove('hidden');
+                    document.getElementById('abnahme-date-input').value = '';
+                } else {
+                    document.getElementById('abnahme-options-container').classList.add('hidden');
+                }
             }
 
             document.getElementById('signature-modal').classList.add('active'); 
             setTimeout(initCanvas, 50); 
+        }
+        
+        function toggleAbnahmeDate() {
+            const val = document.querySelector('input[name="abnahme_status"]:checked').value;
+            if (val === '3') document.getElementById('abnahme-date-wrapper').classList.remove('hidden');
+            else document.getElementById('abnahme-date-wrapper').classList.add('hidden');
         }
 
         function setupCanvas(c, ctx) {
@@ -899,6 +918,16 @@
             const sigW = canvasW.toDataURL("image/png"); 
             let sigM = null;
             if (pendingPdfType !== 'Faktura') sigM = canvasM.toDataURL("image/png");
+            
+            let extraData = {};
+            if (pendingPdfType === 'Abnahme') {
+                extraData.status = document.querySelector('input[name="abnahme_status"]:checked').value;
+                if (extraData.status === '3') {
+                    let d = document.getElementById('abnahme-date-input').value;
+                    extraData.date = d ? new Date(d).toLocaleDateString('cs-CZ') : '';
+                }
+            }
+            
             closeSignatureModal();
 
             if (pendingPdfType === 'Faktura') {
@@ -908,15 +937,29 @@
                 let fObj = { id: Date.now(), isExternal: false, invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sigW, useStamp: currentInvoiceSetup.useStamp };
                 faktury.push(fObj); safeSetStorage('stundenzettel_faktury_db', faktury); generateRealPdf('Faktura', sigW, selectedRecordIds, currentWorker, fObj.id);
             } else {
-                let pObj = { id: Date.now(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM };
-                savedPdfs.push(pObj); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM);
+                let pObj = { id: Date.now(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM, extraData: extraData };
+                savedPdfs.push(pObj); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM, extraData);
             }
         }
 
-        function generateRealPdf(type, sigWorker, recordIds, workerName, invoiceId = null, sigManager = null) {
+        // Pomocná fukce na ověření, zda PDF dostane platný obrázek (jinak padá)
+        function isValidBase64(str) { return str && typeof str === 'string' && str.startsWith('data:image/'); }
+
+        function generateRealPdf(type, sigWorker, recordIds, workerName, invoiceId = null, sigManager = null, extraData = null) {
             try {
                 const workerRecords = (zaznamy[workerName] || []).filter(z => recordIds.includes(z.id));
                 let doc = {};
+
+                // Sloučený text pro zobrazení "Skutečného místa výkonu" (Název + Adresa + Projekt)
+                const actName = companySettings.actualClientName || '';
+                const actAddress = companySettings.actualClientAddress || '';
+                const actProj = companySettings.actualProjectNum || '';
+                
+                // Formátování pro levý horní roh (Projekt-Nr.) v Abnahme protokolu podle tvého návrhu
+                const abnahmeProjString = [
+                    actName, 
+                    actAddress
+                ].filter(Boolean).join(', ');
 
                 if (type === 'Faktura') {
                     let fData = faktury.find(f => f.id === invoiceId);
@@ -931,11 +974,11 @@
                                     { text: 'Lieferant', fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] },
                                     { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 }
                                 ]},
-                                companySettings.logoBase64 ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 }
+                                isValidBase64(companySettings.logoBase64) ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 }
                             ] }]]}, layout: 'noBorders' },
                             { table: { widths: ['*', '*', '*'], body: [
                                 [{ text:'KONTONUMMER', bold:true, fontSize:8, color:'#666' }, { text:'VARIABLES SYMBOL', bold:true, fontSize:8, color:'#666' }, { text:'GESAMTZAHLUNGSBETRAG', bold:true, fontSize:8, color:'#666' }],
-                                [{ text: companySettings.bank, fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `€ ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }],
+                                [{ text: companySettings.bank || ' ', fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `€ ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }],
                                 [{ text:'AUSSTELLUNGSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:'FÄLLIGKEITSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }],
                                 [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }]
                             ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
@@ -947,8 +990,8 @@
                                 { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] },
                                 { width: '*', alignment: 'right', stack: [
                                     { text: 'Unterschrift & Stempel', fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
-                                    (fData.useStamp && companySettings.stampBase64) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null,
-                                    { image: sigWorker, width: 140 }
+                                    (fData.useStamp && isValidBase64(companySettings.stampBase64)) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null,
+                                    isValidBase64(sigWorker) ? { image: sigWorker, width: 140 } : null
                                 ].filter(Boolean)}
                             ]}
                         ].filter(Boolean), defaultStyle: { font: 'Roboto' }
@@ -993,8 +1036,8 @@
                                 { text: 'Montagenachweis', fontSize: 18, bold: true, color: '#000', margin: [0, 0, 0, 15] },
                                 { table: { widths: ['*', '*'], body: [
                                     [ { text: [{ text: 'Monteur:\n(Name, Vorname)\n', fontSize: 8, color: '#333' }, { text: workerName || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] }, { text: [{ text: 'Kalenderwoche:\n', fontSize: 8, color: '#333' }, { text: `KW ${getWeekNum(new Date()) || ''}`, fontSize: 11, bold: true }], margin: [4, 4, 4, 4] } ],
-                                    [ { text: [{ text: 'Kunde:\n', fontSize: 8, color: '#333' }, { text: companySettings.clientName || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] }, { text: [{ text: 'Einsatzort:\n', fontSize: 8, color: '#333' }, { text: companySettings.actualClient || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] } ],
-                                    [ { text: [{ text: 'MSW Auftragsnummer:\n', fontSize: 8, color: '#333' }, { text: ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4], colSpan: 2 }, {} ]
+                                    [ { text: [{ text: 'Kunde:\n', fontSize: 8, color: '#333' }, { text: companySettings.clientName || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] }, { text: [{ text: 'Einsatzort:\n', fontSize: 8, color: '#333' }, { text: abnahmeProjString || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4] } ],
+                                    [ { text: [{ text: 'MSW Auftragsnummer:\n', fontSize: 8, color: '#333' }, { text: actProj || ' ', fontSize: 11, bold: true }], margin: [4, 4, 4, 4], colSpan: 2 }, {} ]
                                 ] }, margin: [0, 0, 0, 15] },
                                 { text: 'Bitte alle Felder ausfüllen und wöchentlich zusenden', fontSize: 9, alignment: 'center', italics: true, margin: [0, 0, 0, 10] },
                                 { table: { headerRows: 1, widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', '*'], body: daysRows }, margin: [0, 0, 0, 10] },
@@ -1002,8 +1045,8 @@
                                 { text: '☑ Die Leistungen sind mit / ohne Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 0, 0, 5] },
                                 { text: '☐ Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:', fontSize: 10, margin: [0, 0, 0, 25] },
                                 { columns: [
-                                    { stack: [ { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, { image: sigWorker, width: 120, margin: [0, 0, 0, 5] }, { text: 'Unterschrift Monteur', fontSize: 9, decoration: 'overline' } ], width: '*' },
-                                    { stack: [ { text: 'Mängel werden bis spätestens __________________ behoben.', fontSize: 10, margin: [0, 0, 0, 10] }, { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, sigManager ? { image: sigManager, width: 120, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n\n' }, { text: `Unterschrift Kunde (${companySettings.vedouci || ''})`, fontSize: 9, decoration: 'overline' } ], width: '*' }
+                                    { stack: [ { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, isValidBase64(sigWorker) ? { image: sigWorker, width: 120, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n' }, { text: 'Unterschrift Monteur', fontSize: 9, decoration: 'overline' } ], width: '*' },
+                                    { stack: [ { text: 'Mängel werden bis spätestens __________________ behoben.', fontSize: 10, margin: [0, 0, 0, 10] }, { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, isValidBase64(sigManager) ? { image: sigManager, width: 120, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n' }, { text: `Unterschrift Kunde (${companySettings.vedouci || ''})`, fontSize: 9, decoration: 'overline' } ], width: '*' }
                                 ]}
                             ], defaultStyle: { font: 'Roboto' }
                         };
@@ -1012,24 +1055,31 @@
                         workerRecords.forEach(r => { abnahmeRows.push([ { text: `${r.datum.split('-').reverse().join('.')} - ${r.popis || 'Tätigkeit'}`, fontSize: 10 }, { text: r.cisteHodiny.toString(), alignment: 'center', fontSize: 10 } ]); });
                         abnahmeRows.push([ { text: 'Gesamt', bold: true, alignment: 'right', fontSize: 10, fillColor: '#f9f9f9' }, { text: tH.toFixed(2), bold: true, alignment: 'center', fontSize: 10, fillColor: '#f9f9f9' } ]);
 
+                        // Vytazeni vyberu z modal boxu (defaultni je mit Funktionsprüfung - volba 2)
+                        let abStatus = extraData && extraData.status ? extraData.status : '2';
+                        let abDate = extraData && extraData.date ? extraData.date : '....................................................';
+
                         doc = {
                             content: [
                                 { text: 'ABNAHME- & FORTSCHRITTSPROTOKOLL', fontSize: 18, bold: true, color: '#333', alignment: 'center', margin: [0, 0, 0, 20] },
                                 { table: { widths: ['*', '*'], body: [
-                                    [ { text: `Vorname, Name: ${workerName}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Kunde: ${companySettings.clientName}`, fontSize: 10, margin:[0,2,0,2] } ],
-                                    [ { text: `Projekt-Nr.: ${companySettings.actualClient || '........................'}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Anschrift: ${companySettings.clientAddress}`, fontSize: 10, margin:[0,2,0,2] } ],
-                                    [ { text: `Leistungszeitraum: ${dateRange}`, fontSize: 10, margin:[0,2,0,2] }, { text: `PLZ, Ort: ${companySettings.clientAddress ? companySettings.clientAddress.split(',').pop() : '........................'}`, fontSize: 10, margin:[0,2,0,2] } ]
+                                    [ { text: `Vorname, Name: ${workerName}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Kunde: ${companySettings.clientName || ' '}`, fontSize: 10, margin:[0,2,0,2] } ],
+                                    [ { text: `Projekt-Nr.: ${abnahmeProjString || ' '}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Anschrift: ${companySettings.clientAddress || ' '}`, fontSize: 10, margin:[0,2,0,2] } ],
+                                    [ { text: `Leistungszeitraum: ${dateRange}`, fontSize: 10, margin:[0,2,0,2] }, { text: `PLZ, Ort: ${companySettings.clientAddress ? companySettings.clientAddress.split(',').pop() : ' '}`, fontSize: 10, margin:[0,2,0,2] } ]
                                 ] }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 20] },
                                 { table: { headerRows: 1, widths: ['*', 80], body: abnahmeRows }, margin: [0, 0, 0, 20] },
+                                
                                 { text: 'Bei der Abnahme wurde festgestellt', bold: true, fontSize: 11, margin: [0, 0, 0, 10] },
-                                { text: '☐ die Leistung/en sind ohne Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
-                                { text: '☑ die Leistung/en sind mit Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
-                                { text: '☐ bis auf folgende Mängel bzw. Schäden befindet sich die Leistung/en in vertragsgemäßen Zustand', fontSize: 10, margin: [0, 2, 0, 2] },
-                                { text: 'Mängel werden bis spätestens .................................................... behoben.', fontSize: 10, margin: [0, 15, 0, 25] },
+                                // Dynamické křížkování na základě vybrané radio volby
+                                { text: (abStatus === '1' ? '☑' : '☐') + ' die Leistung/en sind ohne Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
+                                { text: (abStatus === '2' ? '☑' : '☐') + ' die Leistung/en sind mit Funktionsprüfung abgenommen', fontSize: 10, margin: [0, 2, 0, 2] },
+                                { text: (abStatus === '3' ? '☑' : '☐') + ' bis auf folgende Mängel bzw. Schäden befindet sich die Leistung/en in vertragsgemäßen Zustand', fontSize: 10, margin: [0, 2, 0, 2] },
+                                { text: 'Mängel werden bis spätestens ' + abDate + ' behoben.', fontSize: 10, margin: [0, 15, 0, 25] },
+                                
                                 { text: `Tag der Abnahme: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 20] },
                                 { columns: [
-                                    { stack: [ { text: `Name in Druckbuchstaben AG: ${companySettings.vedouci || ''}`, fontSize: 9 }, { image: sigManager || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', width: 140, margin: [0,5,0,5] }, { text: '*Unterschrift Auftraggeber', fontSize: 9, decoration: 'overline' } ], width: '*' },
-                                    { stack: [ { text: `Name in Druckbuchstaben AN: ${workerName}`, fontSize: 9 }, { image: sigWorker, width: 140, margin: [0,5,0,5] }, { text: 'Unterschrift Auftragnehmer', fontSize: 9, decoration: 'overline' } ], width: '*' }
+                                    { stack: [ { text: `Name in Druckbuchstaben AG: ${companySettings.vedouci || ''}`, fontSize: 9 }, isValidBase64(sigManager) ? { image: sigManager, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: '*Unterschrift Auftraggeber', fontSize: 9, decoration: 'overline' } ], width: '*' },
+                                    { stack: [ { text: `Name in Druckbuchstaben AN: ${workerName}`, fontSize: 9 }, isValidBase64(sigWorker) ? { image: sigWorker, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: 'Unterschrift Auftragnehmer', fontSize: 9, decoration: 'overline' } ], width: '*' }
                                 ]},
                                 { text: '* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.', fontSize: 8, color: '#666', margin: [0, 25, 0, 0] }
                             ], defaultStyle: { font: 'Roboto' }
@@ -1038,7 +1088,7 @@
                     pdfMake.createPdf(doc).download(`${type}_${workerName.replace(' ', '_')}.pdf`);
                 }
             } catch (err) {
-                alert('Chyba při generování PDF: Zkontrolujte, prosím, zda máte vyplněné všechny potřebné údaje (Nastavení). Detail chyby: ' + err.message);
+                alert('Chyba při generování PDF: Zkontrolujte, prosím, zda máte vyplněné všechny potřebné údaje (Nastavení). Ochrana odchytila tuto vnitřní chybu: ' + err.message);
             }
         }
 
@@ -1063,7 +1113,7 @@
             document.getElementById('saved-pdfs-modal').classList.add('active');
         }
         function closeSavedPdfsModal() { document.getElementById('saved-pdfs-modal').classList.remove('active'); }
-        function downloadSavedPdf(id) { const p = savedPdfs.find(x => x.id === id); if(p) generateRealPdf(p.type, p.sigWorker, p.recordIds, p.worker, null, p.sigManager); }
+        function downloadSavedPdf(id) { const p = savedPdfs.find(x => x.id === id); if(p) generateRealPdf(p.type, p.sigWorker, p.recordIds, p.worker, null, p.sigManager, p.extraData); }
         function deleteSavedPdf(id) { if(confirm('Smazat tento výkaz?')) { savedPdfs = savedPdfs.filter(x => x.id !== id); safeSetStorage('stundenzettel_saved_pdfs', savedPdfs); openSavedPdfsModal(); } }
         
         function toggleRecordSelection(id, e) { e.stopPropagation(); const idx = selectedRecordIds.indexOf(id); if (idx > -1) selectedRecordIds.splice(idx, 1); else selectedRecordIds.push(id); safeSetStorage('stundenzettel_selected', selectedRecordIds); renderApp(); }
