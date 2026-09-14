@@ -844,94 +844,102 @@ toggleAppMode();
         function getWeekNum(dObj) { const d = new Date(Date.UTC(dObj.getFullYear(), dObj.getMonth(), dObj.getDate())); const dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum); const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return Math.ceil((((d - yearStart) / 86400000) + 1) / 7); }
 
         function renderApp() {
-            renderCalendar(); const container = document.getElementById('tree-container'); container.innerHTML = '';
-            const workerRecords = zaznamy[currentWorker] || [];
-            if (workerRecords.length === 0) { container.innerHTML = '<div style="text-align:center; color:#666; padding: 20px;">Žádné záznamy.</div>'; return; }
-            const groupedByMonth = {}; workerRecords.forEach(r => { const d = new Date(r.datum); const mKey = `${czechMonths[d.getMonth()]} ${d.getFullYear()}`; if (!groupedByMonth[mKey]) groupedByMonth[mKey] = []; groupedByMonth[mKey].push(r); });
+            renderCalendar(); const container = document.getElementById('tree-container'); container.innerHTML = '';
+            const workerRecords = zaznamy[currentWorker] || [];
+            if (workerRecords.length === 0) { container.innerHTML = '<div style="text-align:center; color:#666; padding: 20px;">Žádné záznamy.</div>'; return; }
+            const groupedByMonth = {}; workerRecords.forEach(r => { const d = new Date(r.datum); const mKey = `${czechMonths[d.getMonth()]} ${d.getFullYear()}`; if (!groupedByMonth[mKey]) groupedByMonth[mKey] = []; groupedByMonth[mKey].push(r); });
 
-            for (const [mKey, mRecords] of Object.entries(groupedByMonth)) {
-                let mHours = 0; let mMoney = 0; mRecords.forEach(r => { mHours += r.cisteHodiny; mMoney += (r.cisteHodiny * r.sazba); });
-                const isOpenMonth = openMonths[mKey] !== false;
-                const mCard = document.createElement('div'); mCard.className = 'card month-card'; mCard.onclick = () => toggleMonth(mKey);
-                mCard.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="font-size: 18px; color: var(--text-main); margin: 0;">🗓️ ${mKey}</h3><div style="text-align: right;"><div class="summary-title">Odpracováno</div><div class="summary-value">${mHours.toFixed(1)} h</div></div><div style="text-align: right;"><div class="summary-title">Měsíční výdělek</div><div class="summary-value" style="color: var(--success);">${mMoney.toFixed(2)} EUR</div></div></div>`;
-                container.appendChild(mCard);
-                if (isOpenMonth) {
-                    const mContent = document.createElement('div'); mContent.className = 'month-content';
-                    const groupedByWeek = {}; mRecords.forEach(r => { const d = new Date(r.datum); const wKey = `Týden ${getWeekNum(d)}`; if (!groupedByWeek[wKey]) groupedByWeek[wKey] = []; groupedByWeek[wKey].push(r); });
-                    for (const [wKey, wRecords] of Object.entries(groupedByWeek)) {
-                        const wKeyGlobal = mKey + '_' + wKey; const isOpenWeek = openWeeks[wKeyGlobal] === true;
-                        let wHours = 0; let wMoney = 0; wRecords.forEach(r => { wHours += r.cisteHodiny; wMoney += (r.cisteHodiny * r.sazba); });
-                        const weekIds = wRecords.map(r => r.id); const allSelected = weekIds.every(id => selectedRecordIds.includes(id)); const someSelected = weekIds.some(id => selectedRecordIds.includes(id));
-                      // --- ZÁSAH DO RENDER APP PRO TÝDNY ---
-const weekIds = wRecords.map(r => r.id); 
-const allSelected = weekIds.every(id => selectedRecordIds.includes(id)); 
-const someSelected = weekIds.some(id => selectedRecordIds.includes(id));
+            for (const [mKey, mRecords] of Object.entries(groupedByMonth)) {
+                let mHours = 0; let mMoney = 0; mRecords.forEach(r => { mHours += r.cisteHodiny; mMoney += (r.cisteHodiny * r.sazba); });
+                const isOpenMonth = openMonths[mKey] !== false;
+                const mCard = document.createElement('div'); mCard.className = 'card month-card'; mCard.onclick = () => toggleMonth(mKey);
+                mCard.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="font-size: 18px; color: var(--text-main); margin: 0;">🗓️ ${mKey}</h3><div style="text-align: right;"><div class="summary-title">Odpracováno</div><div class="summary-value">${mHours.toFixed(1)} h</div></div><div style="text-align: right;"><div class="summary-title">Měsíční výdělek</div><div class="summary-value" style="color: var(--success);">${mMoney.toFixed(2)} EUR</div></div></div>`;
+                container.appendChild(mCard);
+                
+                if (isOpenMonth) {
+                    const mContent = document.createElement('div'); mContent.className = 'month-content';
+                    const groupedByWeek = {}; mRecords.forEach(r => { const d = new Date(r.datum); const wKey = `Týden ${getWeekNum(d)}`; if (!groupedByWeek[wKey]) groupedByWeek[wKey] = []; groupedByWeek[wKey].push(r); });
+                    
+                    for (const [wKey, wRecords] of Object.entries(groupedByWeek)) {
+                        const wKeyGlobal = mKey + '_' + wKey; const isOpenWeek = openWeeks[wKeyGlobal] === true;
+                        let wHours = 0; let wMoney = 0; wRecords.forEach(r => { wHours += r.cisteHodiny; wMoney += (r.cisteHodiny * r.sazba); });
+                        
+                        const weekIds = wRecords.map(r => r.id); 
+                        const allSelected = weekIds.every(id => selectedRecordIds.includes(id)); 
+                        const someSelected = weekIds.some(id => selectedRecordIds.includes(id));
 
-// Hledání, zda má tento týden vystavenou fakturu (kontrolujeme průnik ID záznamů)
-let weekInvoice = faktury.find(f => !f.isExternal && f.recordIds && f.recordIds.some(id => weekIds.includes(id)));
-let isPaid = weekInvoice ? (weekInvoice.remaining <= 0) : false;
-let statusColor = weekInvoice ? (isPaid ? 'var(--success)' : 'var(--danger)') : 'var(--success)';
+                        let weekInvoice = faktury.find(f => !f.isExternal && f.recordIds && f.recordIds.some(id => weekIds.includes(id)));
+                        let isPaid = weekInvoice ? (weekInvoice.remaining <= 0) : false;
+                        let statusColor = weekInvoice ? (isPaid ? 'var(--success)' : 'var(--danger)') : 'var(--success)';
 
-const wCard = document.createElement('div'); 
-wCard.className = 'card week-card'; 
-wCard.style.borderLeftColor = weekInvoice ? (isPaid ? 'var(--success)' : 'var(--danger)') : 'var(--primary-orange)';
-wCard.onclick = (e) => toggleWeek(wKeyGlobal, e);
+                        const wCard = document.createElement('div'); 
+                        wCard.className = 'card week-card'; 
+                        wCard.style.borderLeftColor = weekInvoice ? (isPaid ? 'var(--success)' : 'var(--danger)') : 'var(--primary-orange)';
+                        wCard.onclick = (e) => toggleWeek(wKeyGlobal, e);
 
-let invoiceUI = '';
-if (weekInvoice) {
-    let dueDateObj = new Date(weekInvoice.dueDate);
-    let dz = new Date(); dz.setHours(0,0,0,0);
-    let diffDays = Math.ceil((dueDateObj.setHours(0,0,0,0) - dz) / 86400000);
-    let statusText = isPaid ? "ZAPLACENO" : (diffDays < 0 ? `Po splatnosti ${Math.abs(diffDays)} dnů` : `Splatnost za ${diffDays} dnů`);
-    
-    invoiceUI = `
-    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;" onclick="event.stopPropagation()">
-        <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
-            <div>
-                <strong style="color: ${statusColor}; font-size: 14px;">Faktura ${weekInvoice.invNumber}</strong><br>
-                <span style="font-size: 12px; color: #aaa;">${statusText}</span>
-            </div>
-            <div style="text-align: right;">
-                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Zbývá doplatit</span><br>
-                <strong style="color: ${statusColor}; font-size: 15px;">€ ${weekInvoice.remaining.toFixed(2)}</strong>
-            </div>
-        </div>
-        <div style="display: flex; gap: 8px;">
-            ${!isPaid ? `<button class="btn-success" style="flex:1; padding: 8px; font-size: 12px;" onclick="addZaloha(${weekInvoice.id})">+ Úhrada</button>` : ''}
-            ${(!isPaid && diffDays < 0) ? `<button class="btn-danger" style="flex:1; padding: 8px; font-size: 12px;" onclick="alert('Upomínka vygenerována (připravuje se funkce)')">⚠️ Upomínka</button>` : ''}
-            <button class="btn-small" style="flex:1; background: var(--info);" onclick="downloadExternalDoc(${weekInvoice.id})">👁 PDF</button>
-        </div>
-    </div>`;
-}
+                        let invoiceUI = '';
+                        if (weekInvoice) {
+                            let dueDateObj = new Date(weekInvoice.dueDate);
+                            let dz = new Date(); dz.setHours(0,0,0,0);
+                            let diffDays = Math.ceil((dueDateObj.setHours(0,0,0,0) - dz) / 86400000);
+                            let statusText = isPaid ? "ZAPLACENO" : (diffDays < 0 ? `Po splatnosti ${Math.abs(diffDays)} dnů` : `Splatnost za ${diffDays} dnů`);
+                            
+                            invoiceUI = `
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;" onclick="event.stopPropagation()">
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                                    <div>
+                                        <strong style="color: ${statusColor}; font-size: 14px;">Faktura ${weekInvoice.invNumber}</strong><br>
+                                        <span style="font-size: 12px; color: #aaa;">${statusText}</span>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Zbývá doplatit</span><br>
+                                        <strong style="color: ${statusColor}; font-size: 15px;">€ ${weekInvoice.remaining.toFixed(2)}</strong>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    ${!isPaid ? `<button class="btn-success" style="flex:1; padding: 8px; font-size: 12px;" onclick="addZaloha(${weekInvoice.id})">+ Úhrada</button>` : ''}
+                                    ${(!isPaid && diffDays < 0) ? `<button class="btn-danger" style="flex:1; padding: 8px; font-size: 12px;" onclick="alert('Upomínka vygenerována (připravuje se funkce)')">⚠️ Upomínka</button>` : ''}
+                                    <button class="btn-small" style="flex:1; background: var(--info);" onclick="downloadExternalDoc(${weekInvoice.id})">👁 PDF</button>
+                                </div>
+                            </div>`;
+                        }
 
-wCard.innerHTML = `
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <div class="custom-checkbox ${allSelected ? 'checked' : (someSelected ? 'partial' : '')}" style="${someSelected && !allSelected ? 'background:#555; border-color:var(--primary-orange)' : ''}" onclick="toggleSelectAllWeek([${weekIds.join(',')}], event)">${allSelected ? '✓' : (someSelected ? '-' : '')}</div>
-        <h4 style="font-size: 15px; margin: 0; color: #ddd;">${wKey}</h4>
-    </div>
-    <div style="display: flex; gap: 20px;">
-        <div style="text-align: right;">
-            <div class="summary-title">Hodiny</div>
-            <div style="color: #ccc; font-weight: bold; font-size: 14px;">${wHours.toFixed(1)} h</div>
-        </div>
-        <div style="text-align: right;">
-            <div class="summary-title">Výdělek</div>
-            <div style="color: ${statusColor}; font-weight: bold; font-size: 14px;">${wMoney.toFixed(2)} EUR</div>
-        </div>
-    </div>
-</div>
-${invoiceUI}
-`;
-mContent.appendChild(wCard);
-// --- KONEC ZÁSAHU ---
-                            }); mContent.appendChild(wContent);
-                        }
-                    } container.appendChild(mContent);
-                }
-            }
-        }
+                        wCard.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="custom-checkbox ${allSelected ? 'checked' : (someSelected ? 'partial' : '')}" style="${someSelected && !allSelected ? 'background:#555; border-color:var(--primary-orange)' : ''}" onclick="toggleSelectAllWeek([${weekIds.join(',')}], event)">${allSelected ? '✓' : (someSelected ? '-' : '')}</div>
+                                <h4 style="font-size: 15px; margin: 0; color: #ddd;">${wKey}</h4>
+                            </div>
+                            <div style="display: flex; gap: 20px;">
+                                <div style="text-align: right;">
+                                    <div class="summary-title">Hodiny</div>
+                                    <div style="color: #ccc; font-weight: bold; font-size: 14px;">${wHours.toFixed(1)} h</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div class="summary-title">Výdělek</div>
+                                    <div style="color: ${statusColor}; font-weight: bold; font-size: 14px;">${wMoney.toFixed(2)} EUR</div>
+                                </div>
+                            </div>
+                        </div>
+                        ${invoiceUI}
+                        `;
+                        mContent.appendChild(wCard);
 
+                        if (isOpenWeek) {
+                            const wContent = document.createElement('div'); wContent.className = 'week-content';
+                            wRecords.forEach(r => {
+                                const isSelected = selectedRecordIds.includes(r.id);
+                                const rDiv = document.createElement('div'); rDiv.className = 'record-item card'; rDiv.onclick = (e) => toggleRecordSelection(r.id, e);
+                                rDiv.innerHTML = `<div class="custom-checkbox ${isSelected ? 'checked' : ''}">${isSelected ? '✓' : ''}</div><div class="record-info"><div style="font-weight: bold; font-size: 14px; color: #fff;">${r.datum.split('-').reverse().join('.')}</div><div class="record-time">⏱️ ${r.od} - ${r.do} ${r.pauzaOd ? `(Pauza: ${r.pauzaOd}-${r.pauzaDo})` : ''}</div><div class="record-desc">📝 ${r.popis || 'Bez popisu'}</div></div><div class="record-right"><div class="record-hours">${r.cisteHodiny} h</div><div style="color: var(--success); font-size: 12px; font-weight: 600;">${(r.cisteHodiny * r.sazba).toFixed(2)} ${r.mena}</div><div style="display:flex; gap: 5px; margin-top: 5px;"><button class="btn-edit" onclick="editRecord(${r.id}, event)">Upravit</button><button class="btn-danger" onclick="deleteRecord(${r.id}, event)">Smazat</button></div></div>`;
+                                wContent.appendChild(rDiv);
+                            }); 
+                            mContent.appendChild(wContent);
+                        }
+                    } 
+                    container.appendChild(mContent);
+                }
+            }
+        }
         // OPRAVA CHYBY S KURZÍVOU: Kompletní definice fontů pro pdfMake
         pdfMake.fonts = {
             Roboto: {
