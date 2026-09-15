@@ -875,20 +875,20 @@
                             { text: sumTotal.toFixed(2).replace('.', ',') + ' st', bold: true, alignment: 'center', margin: [0, 4, 0, 4] }
                         ]);
 
-                        let abStatus = extraData && extraData.status ? extraData.status : '2';
+                      let abStatus = extraData && extraData.status ? extraData.status : '2';
                         let abDate = extraData && extraData.date ? extraData.date : '........................';
                         let box1 = (abStatus === '1' || abStatus === '2') ? '☑' : '☐';
                         let box2 = (abStatus === '3') ? '☑' : '☐';
-                        let mitOhne = (abStatus === '2') ? 'mit' : (abStatus === '1' ? 'ohne' : 'mit / ohne');
 
                         doc = {
+                            pageOrientation: 'landscape', // TADY JE ZMĚNA NA ŠÍŘKU
                             pageMargins: [40, 40, 40, 40],
                             content: [
                                 { text: 'Montagenachweis', fontSize: 24, bold: true, alignment: 'center', margin: [0, 0, 0, 20] },
                                 {
                                     columns: [
                                         {
-                                            width: '*',
+                                            width: '50%',
                                             stack: [
                                                 { text: 'MSW Montageservice\nGmbH', bold: true, fontSize: 14, margin: [0, 0, 0, 10] },
                                                 { text: [ {text: 'Monteur: ', color: '#555', fontSize: 11}, {text: workerName, bold: true, fontSize: 12} ] },
@@ -897,7 +897,7 @@
                                             ]
                                         },
                                         {
-                                            width: '*',
+                                            width: '50%',
                                             stack: [
                                                 { text: [ {text: 'Kunde: ', color: '#555', fontSize: 11}, {text: actName, bold: true, fontSize: 12} ], margin: [0, 10, 0, 5] },
                                                 { text: [ {text: 'Einsatzort: ', color: '#555', fontSize: 11}, {text: actAddress, bold: true, fontSize: 12} ], margin: [0, 0, 0, 5] },
@@ -909,26 +909,23 @@
                                 },
                                 { text: 'Bitte alle Felder ausfüllen und wöchentlich zusenden', fontSize: 9, italics: true, alignment: 'center', margin: [0, 0, 0, 10] },
                                 { table: { headerRows: 1, widths: ['auto', 'auto', 'auto', 'auto', 'auto', '*', 'auto'], body: mswRows }, margin: [0, 0, 0, 20] },
-                                { text: `${box1} Die Leistungen sind ${mitOhne} Funktionsprüfung abgenommen`, fontSize: 11, margin: [0, 0, 0, 5] },
+                                { text: `${box1} Die Leistungen sind mit / ohne Funktionsprüfung abgenommen`, fontSize: 11, margin: [0, 0, 0, 5] },
                                 { text: `${box2} Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:`, fontSize: 11, margin: [0, 0, 0, 5] },
                                 { text: `Mängel werden bis spätestens  ${abDate}  behoben.`, fontSize: 11, margin: [0, 0, 0, 30] },
                                 {
                                     columns: [
                                         {
-                                            width: '*',
-                                            stack: [
-                                                { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 5] },
-                                                isValidBase64(sigWorker) ? { image: sigWorker, width: 140, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n' },
-                                                { text: 'Unterschrift Monteur', fontSize: 10, decoration: 'overline' }
+                                            width: '50%',
+                                            columns: [
+                                                { width: 100, stack: [ { text: new Date().toLocaleDateString('cs-CZ'), fontSize: 11, margin: [0, 20, 0, 5] }, { text: 'Datum', fontSize: 10, decoration: 'overline' } ] },
+                                                { width: '*', stack: [ isValidBase64(sigWorker) ? { image: sigWorker, width: 120, margin: [0, 0, 0, 5] } : { text: '\n\n\n', margin: [0, 15, 0, 0] }, { text: 'Unterschrift Monteur', fontSize: 10, decoration: 'overline' } ] }
                                             ]
                                         },
                                         {
-                                            width: '*',
-                                            alignment: 'right',
-                                            stack: [
-                                                { text: `Datum: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 5] },
-                                                isValidBase64(sigManager) ? { image: sigManager, width: 140, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n' },
-                                                { text: 'Unterschrift Kunde', fontSize: 10, decoration: 'overline' }
+                                            width: '50%',
+                                            columns: [
+                                                { width: 100, stack: [ { text: new Date().toLocaleDateString('cs-CZ'), fontSize: 11, margin: [0, 20, 0, 5] }, { text: 'Datum', fontSize: 10, decoration: 'overline' } ] },
+                                                { width: '*', stack: [ isValidBase64(sigManager) ? { image: sigManager, width: 120, margin: [0, 0, 0, 5] } : { text: '\n\n\n', margin: [0, 15, 0, 0] }, { text: 'Unterschrift Kunde', fontSize: 10, decoration: 'overline' } ] }
                                             ]
                                         }
                                     ]
