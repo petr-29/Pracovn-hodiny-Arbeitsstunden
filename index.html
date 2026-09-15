@@ -651,7 +651,6 @@
                 document.getElementById('sig-worker-name').innerText = currentWorker;
                 document.getElementById('sig-manager-name').innerText = companySettings.vedouci || "Vedoucí";
                 
-                // TADY JE ZMĚNA: Povolení pro Abnahme i MSW
                 if (type === 'Abnahme' || type === 'MSW') {
                     document.getElementById('abnahme-options-container').classList.remove('hidden');
                     document.getElementById('abnahme-date-input').value = '';
@@ -674,7 +673,6 @@
             if (pendingPdfType !== 'Faktura' && pendingPdfType !== 'Mesicni') sigM = canvasM.toDataURL("image/png");
             let extraData = {};
             
-            // TADY JE ZMĚNA: Ukládání dat z checkboxů i pro MSW
             if (pendingPdfType === 'Abnahme' || pendingPdfType === 'MSW') { 
                 extraData.status = document.querySelector('input[name="abnahme_status"]:checked').value; 
                 if (extraData.status === '3') { 
@@ -813,7 +811,7 @@
                             ], defaultStyle: { font: 'Roboto' }
                         };
 
-                        } else if (type === 'MSW') {
+                    } else if (type === 'MSW') {
                         let targetMonday = recordDates.length > 0 ? getMonday(recordDates[0]) : getMonday(new Date());
                         let weekNum = getWeekNum(targetMonday);
                         let weekDaysStr = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']; 
@@ -938,7 +936,6 @@
                             ],
                             defaultStyle: { font: 'Roboto' }
                         };
-                    }
                     } else if (type === 'Abnahme') {
                         let abnahmeRows = [[ { text:'Leistungsbeschreibung / Tätigkeitsbeschreibung\nGewerkname (Nr.) | Tätigkeit', bold:true, fillColor:'#f0f0f0', fontSize: 10 }, { text:'Dauer [h]', bold:true, fillColor:'#f0f0f0', fontSize: 10, alignment:'center' } ]];
                         workerRecords.forEach(r => { abnahmeRows.push([ { text: `${r.datum.split('-').reverse().join('.')} - ${r.popis || 'Tätigkeit'}`, fontSize: 10 }, { text: r.cisteHodiny.toString(), alignment: 'center', fontSize: 10 } ]); });
