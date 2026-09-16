@@ -238,7 +238,10 @@
     <div class="modal-overlay" id="invoice-items-modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 10px; color: var(--primary-orange);">Generování faktury</h2>
-            <div class="form-group" style="margin-top: 15px;"><label>Splatnost (počet dnů)</label><input type="number" id="inv-due-days" value="14" min="1"></div>
+            <div class="form-row" style="margin-top: 15px;">
+                <div class="form-group"><label>Splatnost (dny)</label><input type="number" id="inv-due-days" value="14" min="1"></div>
+                <div class="form-group"><label>Skonto (%)</label><input type="number" id="inv-skonto" value="0" min="0" max="100" step="0.1"></div>
+            </div>
             <div class="section-title">Položky k fakturaci</div>
             <div id="invoice-items-container" style="margin-bottom: 15px;"></div>
             <button class="btn-small" style="margin-bottom: 15px;" onclick="addExtraInvoiceItemRow()">+ Přidat další položku</button>
@@ -383,7 +386,7 @@
         let pendingPdfType = null;
         let editingRecordId = null;
         let customInvoiceItems = [];
-        let currentInvoiceSetup = { dueDays: 14 };
+        let currentInvoiceSetup = { dueDays: 14, skonto: 0 };
 
         let calCurrentMonth = new Date().getMonth();
         let calCurrentYear = new Date().getFullYear();
@@ -613,7 +616,7 @@
         function closeInvoiceModal() { document.getElementById('invoice-items-modal').classList.remove('active'); }
         function renderInvoiceItemsUI() { const container = document.getElementById('invoice-items-container'); container.innerHTML = ''; customInvoiceItems.forEach((it, i) => { container.innerHTML += `<div class="extra-item-row"><input type="text" value="${it.desc}" onchange="customInvoiceItems[${i}].desc=this.value" style="flex:2; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.qty}" step="0.5" onchange="customInvoiceItems[${i}].qty=parseFloat(this.value)||0" style="flex:0.8; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.price}" step="1" onchange="customInvoiceItems[${i}].price=parseFloat(this.value)||0" style="flex:1; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"></div>`; }); }
         function addExtraInvoiceItemRow() { customInvoiceItems.push({ desc: 'Materiál / Cesta', qty: 1, price: 0, isHours: false }); renderInvoiceItemsUI(); }
-        function proceedToSignatureFromInvoice() { currentInvoiceSetup.dueDays = parseInt(document.getElementById('inv-due-days').value) || 14; currentInvoiceSetup.useStamp = document.getElementById('inv-use-stamp').checked; closeInvoiceModal(); preparePdf('Faktura'); }
+        function proceedToSignatureFromInvoice() { currentInvoiceSetup.dueDays = parseInt(document.getElementById('inv-due-days').value) || 14; currentInvoiceSetup.skonto = parseFloat(document.getElementById('inv-skonto').value) || 0; currentInvoiceSetup.useStamp = document.getElementById('inv-use-stamp').checked; closeInvoiceModal(); preparePdf('Faktura'); }
         function toggleInvoiceDetails(id) { const details = document.getElementById(`inv-details-${id}`); if (details.classList.contains('open')) { details.classList.remove('open'); } else { document.querySelectorAll('.inv-details').forEach(el => el.classList.remove('open')); details.classList.add('open'); } }
 
         function openFakturyManager() {
@@ -683,8 +686,13 @@
             
             closeSignatureModal();
             if (pendingPdfType === 'Faktura') {
-                const invNumber = getInvoiceNumberString(); invConfig.counter++; safeSetStorage('stundenzettel_invconfig', invConfig); let totalSum = customInvoiceItems.reduce((s, i) => s + (i.qty * i.price), 0); let issueDate = new Date(); let dueDateObj = new Date(); dueDateObj.setDate(issueDate.getDate() + currentInvoiceSetup.dueDays);
-                let fObj = { id: Date.now(), isExternal: false, invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sigW, useStamp: currentInvoiceSetup.useStamp };
+                const invNumber = getInvoiceNumberString(); invConfig.counter++; safeSetStorage('stundenzettel_invconfig', invConfig); 
+                let rawTotal = customInvoiceItems.reduce((s, i) => s + (i.qty * i.price), 0); 
+                let skontoPct = currentInvoiceSetup.skonto || 0; 
+                let skontoAmt = (rawTotal * skontoPct) / 100; 
+                let totalSum = rawTotal - skontoAmt; 
+                let issueDate = new Date(); let dueDateObj = new Date(); dueDateObj.setDate(issueDate.getDate() + currentInvoiceSetup.dueDays);
+                let fObj = { id: Date.now(), isExternal: false, invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, rawTotal: rawTotal, skontoPct: skontoPct, skontoAmount: skontoAmt, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sigW, useStamp: currentInvoiceSetup.useStamp };
                 faktury.push(fObj); safeSetStorage('stundenzettel_faktury_db', faktury); generateRealPdf('Faktura', sigW, selectedRecordIds, currentWorker, fObj.id);
             } else {
                 let pObj = { id: Date.now(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM, extraData: extraData };
@@ -715,6 +723,8 @@
                         { table: { widths: ['*', '*', '*'], body: [ [{ text:'KONTONUMMER', bold:true, fontSize:8, color:'#666' }, { text:'VARIABLES SYMBOL', bold:true, fontSize:8, color:'#666' }, { text:'GESAMTZAHLUNGSBETRAG', bold:true, fontSize:8, color:'#666' }], [{ text: companySettings.bank || ' ', fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `€ ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }], [{ text:'AUSSTELLUNGSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:'FÄLLIGKEITSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }], [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }] ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
                         { stack: [{ text:'Abnehmer', bold:true, fontSize:11, color:'#FF8C00' }, { text: `${companySettings.clientName}\nGeschäftsführer: ${companySettings.clientRep}\n${companySettings.clientAddress}\nUst-IdNr.: ${companySettings.clientUst}`, fontSize:10 }], margin: [0, 0, 0, 20] },
                         { table: { headerRows: 1, widths: ['*', 60, 80, 80], body: body }, margin: [0, 0, 0, 15] },
+                        fData.skontoPct > 0 ? { text: `Zwischensumme: € ${(fData.rawTotal||fData.total).toFixed(2)}`, fontSize: 11, alignment: 'right', margin: [0, 0, 0, 2] } : null,
+                        fData.skontoPct > 0 ? { text: `Skonto (${fData.skontoPct}%): - € ${fData.skontoAmount.toFixed(2)}`, fontSize: 11, alignment: 'right', margin: [0, 0, 0, 5], color: '#ff453a' } : null,
                         { text: `Zu zahlen: € ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 10] },
                         { text: 'Gemäß §13b Absatz 2 Nr.4 UStG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer.', fontSize: 10, color: '#555', margin: [0, 15, 0, 20] },
                         { columns: [ { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] }, { width: '*', alignment: 'right', stack: [ { text: 'Unterschrift & Stempel', fontSize: 10, bold: true, margin: [0, 0, 0, 5] }, (fData.useStamp && isValidBase64(companySettings.stampBase64)) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null, isValidBase64(sigWorker) ? { image: sigWorker, width: 140 } : null ].filter(Boolean)} ]}
