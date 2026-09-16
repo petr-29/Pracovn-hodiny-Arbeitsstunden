@@ -875,13 +875,13 @@
                             { text: sumTotal.toFixed(2).replace('.', ',') + ' st', bold: true, alignment: 'center', margin: [0, 4, 0, 4] }
                         ]);
 
-                      let abStatus = extraData && extraData.status ? extraData.status : '2';
+                        let abStatus = extraData && extraData.status ? extraData.status : '2';
                         let abDate = extraData && extraData.date ? extraData.date : '........................';
                         let box1 = (abStatus === '1' || abStatus === '2') ? '☑' : '☐';
                         let box2 = (abStatus === '3') ? '☑' : '☐';
 
                         doc = {
-                            pageOrientation: 'landscape', // TADY JE ZMĚNA NA ŠÍŘKU
+                            pageOrientation: 'landscape',
                             pageMargins: [40, 40, 40, 40],
                             content: [
                                 { text: 'Montagenachweis', fontSize: 24, bold: true, alignment: 'center', margin: [0, 0, 0, 20] },
@@ -908,7 +908,7 @@
                                     margin: [0, 0, 0, 15]
                                 },
                                 { text: 'Bitte alle Felder ausfüllen und wöchentlich zusenden', fontSize: 9, italics: true, alignment: 'center', margin: [0, 0, 0, 10] },
-                                { table: { headerRows: 1, widths: [45, 65, 55, 55, 45, '*', 65], body: mswRows }, margin: [0, 0, 0, 20] }
+                                { table: { headerRows: 1, widths: [45, 65, 55, 55, 45, '*', 65], body: mswRows }, margin: [0, 0, 0, 20] },
                                 { text: `${box1} Die Leistungen sind mit / ohne Funktionsprüfung abgenommen`, fontSize: 11, margin: [0, 0, 0, 5] },
                                 { text: `${box2} Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:`, fontSize: 11, margin: [0, 0, 0, 5] },
                                 { text: `Mängel werden bis spätestens  ${abDate}  behoben.`, fontSize: 11, margin: [0, 0, 0, 30] },
