@@ -641,6 +641,14 @@
                     let targetMonday = recordDates.length > 0 ? getMonday(recordDates[0]) : getMonday(new Date());
                     let weekNum = getWeekNum(targetMonday);
                     let weekDaysNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+                    
+                    let mswLogoDef = { 
+                        svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 60"><g font-family="Arial, sans-serif"><text x="60" y="38" font-size="32" font-weight="900" fill="#5b9bd5">MSW</text><text x="135" y="25" font-size="18" font-weight="bold" fill="#333">Montageservice</text><text x="210" y="42" font-size="12" font-weight="bold" fill="#333">GmbH</text><path d="M40,15 A15,15 0 1,1 15,45" fill="none" stroke="#5b9bd5" stroke-width="8" stroke-dasharray="10 4"/><path d="M10,30 L50,30" stroke="#000" stroke-width="8"/></g></svg>`, 
+                        width: 140, 
+                        alignment: 'right', 
+                        margin: [0, 5, 5, 5], 
+                        border: [false, true, true, true] 
+                    };
 
                     let headerTable = {
                         table: {
@@ -648,7 +656,7 @@
                             body: [
                                 [
                                     { text: 'Montagenachweis', fontSize: 24, bold: true, margin: [5, 10, 0, 10], border: [true, true, false, true] },
-                                    { image: companySettings.logoBase64 && isValidBase64(companySettings.logoBase64) ? companySettings.logoBase64 : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', width: (companySettings.logoBase64 && isValidBase64(companySettings.logoBase64) ? 120 : 1), alignment: 'right', margin: [0, 5, 5, 5], border: [false, true, true, true] }
+                                    mswLogoDef
                                 ],
                                 [
                                     { text: [ {text: 'Monteur:\n', fontSize: 8}, {text: '(Name, Vorname)\n', fontSize: 6, color: '#666'}, {text: workerName, fontSize: 10, bold: true} ], border: [true, false, true, true], margin: [5, 5, 0, 5] },
@@ -707,18 +715,18 @@
                             }
                             let popis = recsForDay.map(r => r.popis).filter(Boolean).join('\n');
                             dataTableBody.push([
-                                { text: dayName, alignment: 'center', bold: true, margin: [0, 5, 0, 5] },
-                                { text: czechDateStr, alignment: 'center', margin: [0, 5, 0, 5] },
-                                { text: od, alignment: 'center', margin: [0, 5, 0, 5] },
-                                { text: doC, alignment: 'center', margin: [0, 5, 0, 5] },
-                                { text: pauzaDecimal > 0 ? pauzaDecimal.toString().replace('.', ',') : '', alignment: 'center', margin: [0, 5, 0, 5] },
-                                { text: dayH.toFixed(2).replace('.', ','), alignment: 'center', margin: [0, 5, 0, 5] },
-                                { text: popis, margin: [5, 5, 5, 5] }
+                                { text: dayName, alignment: 'center', bold: true, margin: [0, 3, 0, 3] },
+                                { text: czechDateStr, alignment: 'center', margin: [0, 3, 0, 3] },
+                                { text: od, alignment: 'center', margin: [0, 3, 0, 3] },
+                                { text: doC, alignment: 'center', margin: [0, 3, 0, 3] },
+                                { text: pauzaDecimal > 0 ? pauzaDecimal.toString().replace('.', ',') : '', alignment: 'center', margin: [0, 3, 0, 3] },
+                                { text: dayH.toFixed(2).replace('.', ','), alignment: 'center', margin: [0, 3, 0, 3] },
+                                { text: popis, margin: [5, 3, 5, 3] }
                             ]);
                         } else {
                             dataTableBody.push([
-                                { text: dayName, alignment: 'center', bold: true, margin: [0, 5, 0, 5] },
-                                { text: czechDateStr, alignment: 'center', margin: [0, 5, 0, 5] },
+                                { text: dayName, alignment: 'center', bold: true, margin: [0, 3, 0, 3] },
+                                { text: czechDateStr, alignment: 'center', margin: [0, 3, 0, 3] },
                                 {}, {}, {}, {}, {}
                             ]);
                         }
@@ -756,36 +764,36 @@
                                                     { text: `Datum\n${new Date().toLocaleDateString('cs-CZ')}`, width: 70, fontSize: 8 },
                                                     {
                                                         stack: [
-                                                            isValidBase64(sigWorker) ? { image: sigWorker, width: 100, alignment: 'center', margin: [0, -15, 0, 0] } : { text: '\n\n', margin: [0, 5, 0, 0] },
+                                                            isValidBase64(sigWorker) ? { image: sigWorker, width: 100, alignment: 'center', margin: [0, -15, 0, 0] } : { text: '\n', margin: [0, 5, 0, 0] },
                                                             { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 170, y2: 0, lineWidth: 1 }] },
                                                             { text: 'Unterschrift Monteur', fontSize: 8, alignment: 'center', margin: [0, 2, 0, 0] }
                                                         ]
                                                     }
                                                 ],
-                                                margin: [5, 15, 5, 10]
+                                                margin: [5, 5, 5, 5]
                                             },
                                             {
                                                 columns: [
                                                     { text: `Datum\n${new Date().toLocaleDateString('cs-CZ')}`, width: 70, fontSize: 8 },
                                                     {
                                                         stack: [
-                                                            isValidBase64(sigManager) ? { image: sigManager, width: 100, alignment: 'center', margin: [0, -15, 0, 0] } : { text: '\n\n', margin: [0, 5, 0, 0] },
+                                                            isValidBase64(sigManager) ? { image: sigManager, width: 100, alignment: 'center', margin: [0, -15, 0, 0] } : { text: '\n', margin: [0, 5, 0, 0] },
                                                             { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 170, y2: 0, lineWidth: 1 }] },
                                                             { text: 'Unterschrift Kunde', fontSize: 8, alignment: 'center', margin: [0, 2, 0, 0] }
                                                         ]
                                                     }
                                                 ],
-                                                margin: [5, 10, 5, 10]
+                                                margin: [5, 5, 5, 5]
                                             }
                                         ],
                                         border: [true, false, true, true]
                                     },
                                     {
                                         stack: [
-                                            { text: [ { text: box1 + ' ', fontSize: 14 }, { text: 'Die Leistungen sind mit / ohne Funktionsprüfung abgenommen', fontSize: 10 } ], margin: [5, 10, 0, 5] },
-                                            { text: [ { text: box2 + ' ', fontSize: 14 }, { text: 'Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:', fontSize: 10 } ], margin: [5, 5, 0, 5] },
-                                            { text: '....................................................................................................................................................', margin: [5, 15, 0, 5], color: '#666' },
-                                            { text: [ { text: 'Mängel werden bis spätestens ' }, { text: abDate, decoration: 'underline' }, { text: ' behoben.' } ], margin: [5, 5, 0, 10] }
+                                            { text: [ { text: box1 + ' ', fontSize: 14 }, { text: 'Die Leistungen sind mit / ohne Funktionsprüfung abgenommen', fontSize: 9 } ], margin: [5, 5, 0, 5] },
+                                            { text: [ { text: box2 + ' ', fontSize: 14 }, { text: 'Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:', fontSize: 9 } ], margin: [5, 5, 0, 2] },
+                                            { text: '....................................................................................................................................................', margin: [5, 5, 0, 2], color: '#666' },
+                                            { text: [ { text: 'Mängel werden bis spätestens ', fontSize: 9 }, { text: abDate, decoration: 'underline', fontSize: 9 }, { text: ' behoben.', fontSize: 9 } ], margin: [5, 5, 0, 5] }
                                         ],
                                         border: [false, false, true, true]
                                     }
@@ -797,7 +805,7 @@
 
                     doc = {
                         pageOrientation: 'landscape',
-                        pageMargins: [20, 20, 20, 20],
+                        pageMargins: [15, 15, 15, 15],
                         content: [ headerTable, dataTable, footerTable ],
                         defaultStyle: { font: 'Roboto', fontSize: 10 }
                     };
@@ -812,13 +820,17 @@
                     doc = { content: [ { columns: [ { text: 'ABNAHME- & FORTSCHRITTSPROTOKOLL', fontSize: 16, bold: true, color: '#333', margin: [0, 10, 0, 20] }, logoBlock ] }, { table: { widths: ['*', '*'], body: [ [ { text: `Vorname, Name: ${workerName}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Kunde: ${actName}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `Projekt-Nr.: ${actProj}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Anschrift: ${actAddress}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `Leistungszeitraum: ${dateRange}`, fontSize: 10, margin:[0,2,0,2] }, { text: `PLZ, Ort: ${actAddress ? actAddress.split(',').pop().trim() : ' '}`, fontSize: 10, margin:[0,2,0,2] } ] ] }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: ['*', 80], body: abnahmeRows }, margin: [0, 0, 0, 20] }, { text: 'Bei der Abnahme wurde festgestellt', bold: true, fontSize: 11, margin: [0, 0, 0, 10] }, { text: [ ...checkFajfka('1', abStatus), { text: ' die Leistung/en sind ohne Funktionsprüfung abgenommen', color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('2', abStatus), { text: ' die Leistung/en sind mit Funktionsprüfung abgenommen', color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('3', abStatus), { text: ' bis auf folgende Mängel bzw. Schäden befindet sich die Leistung/en in vertragsgemäßem Zustand', color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: 'Mängel werden bis spätestens ' + abDate + ' behoben.', fontSize: 10, margin: [0, 15, 0, 25] }, { text: `Tag der Abnahme: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 20] }, { columns: [ { stack: [ { text: `Name in Druckbuchstaben AG: ${companySettings.vedouci || ''}`, fontSize: 9 }, isValidBase64(sigManager) ? { image: sigManager, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: '*Unterschrift Auftraggeber', fontSize: 9, decoration: 'overline' } ], width: '*' }, { stack: [ { text: `Name in Druckbuchstaben AN: ${workerName}`, fontSize: 9 }, isValidBase64(sigWorker) ? { image: sigWorker, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: 'Unterschrift Auftragnehmer', fontSize: 9, decoration: 'overline' } ], width: '*' } ]}, { text: '* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.', fontSize: 8, color: '#666', margin: [0, 25, 0, 0] } ], defaultStyle: { font: 'Roboto' } };
                 }
 
-                if (companySettings.showLogoPdf && type !== 'MSW') {
-                    doc.footer = function(currentPage, pageCount) { 
-                        return { 
-                            svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 40" width="150" height="20"><g transform="translate(0, 5)" font-family="sans-serif"><text x="0" y="15" font-size="20" font-weight="900" fill="#FF8C00">&lt;</text><text x="12" y="15" font-size="20" font-weight="900" fill="#000">PM</text><text x="40" y="15" font-size="20" font-weight="900" fill="#FF8C00">&gt;</text></g><g transform="translate(65, 18)" font-family="sans-serif"><text x="0" y="0" font-size="9" fill="#a0a0a0" letter-spacing="1">VYGENEROVÁNO APLIKACÍ</text><text x="0" y="14" font-size="12" font-weight="bold" fill="#FF8C00" letter-spacing="1">VÝKAZ PRÁCE</text></g></svg>`,
-                            alignment: 'center', 
-                            margin: [0, 10, 0, 0] 
-                        }; 
+                if (companySettings.showLogoPdf) {
+                    doc.footer = function(currentPage, pageCount) {
+                        let leftText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 40" width="150" height="20"><g transform="translate(0, 5)" font-family="sans-serif"><text x="0" y="15" font-size="20" font-weight="900" fill="#FF8C00">&lt;</text><text x="12" y="15" font-size="20" font-weight="900" fill="#000">PM</text><text x="40" y="15" font-size="20" font-weight="900" fill="#FF8C00">&gt;</text></g><g transform="translate(65, 18)" font-family="sans-serif"><text x="0" y="0" font-size="9" fill="#a0a0a0" letter-spacing="1">VYGENEROVÁNO APLIKACÍ</text><text x="0" y="14" font-size="12" font-weight="bold" fill="#FF8C00" letter-spacing="1">VÝKAZ PRÁCE</text></g></svg>`;
+                        let cols = [];
+                        cols.push({ svg: leftText, margin: [20, 10, 0, 0] });
+                        if (type === 'MSW' && companySettings.logoBase64 && isValidBase64(companySettings.logoBase64)) {
+                            cols.push({ image: companySettings.logoBase64, width: 80, alignment: 'right', margin: [0, 0, 20, 0] });
+                        } else {
+                            cols.push({ text: '', width: '*' });
+                        }
+                        return { columns: cols };
                     };
                 }
 
