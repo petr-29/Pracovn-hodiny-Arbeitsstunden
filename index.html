@@ -538,12 +538,22 @@
             
             try {
                 await initIDB();
-                // Pokus o načtení z IDB, pokud nic, migruj z localStorage
+                // Pokus o načtení z IDB, pokud nic, migruj z localStorage (nyní s bezpečným parsováním)
                 const loadOrMigrate = async (key, defaultVal) => {
                     let val = await idbLoad(key);
                     if (val === null) {
                         let lsVal = localStorage.getItem(key);
-                        if (lsVal) { val = JSON.parse(lsVal); await idbSave(key, val); } else { val = defaultVal; }
+                        if (lsVal) { 
+                            try {
+                                val = JSON.parse(lsVal); 
+                            } catch (e) {
+                                // Pokud to není JSON (např. čisté jméno "Petr Michálek"), vezmeme to rovnou
+                                val = lsVal; 
+                            }
+                            await idbSave(key, val); 
+                        } else { 
+                            val = defaultVal; 
+                        }
                     }
                     return val;
                 };
@@ -555,7 +565,7 @@
                 invConfig = await loadOrMigrate('stundenzettel_invconfig', { year: new Date().getFullYear(), month: new Date().getMonth() + 1, counter: 1 });
                 workers = await loadOrMigrate('stundenzettel_workers', ["Petr Michálek"]);
                 currentWorker = await loadOrMigrate('stundenzettel_current_worker', workers[0]);
-                if (currentWorker.startsWith('"')) currentWorker = JSON.parse(currentWorker);
+                if (typeof currentWorker === 'string' && currentWorker.startsWith('"')) currentWorker = JSON.parse(currentWorker);
                 zaznamy = await loadOrMigrate('stundenzettel_zaznamy', {});
                 if (Array.isArray(zaznamy)) { let t = {}; t[currentWorker] = zaznamy; zaznamy = t; await idbSave('stundenzettel_zaznamy', zaznamy); }
                 savedPdfs = await loadOrMigrate('stundenzettel_saved_pdfs', []);
