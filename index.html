@@ -767,8 +767,32 @@
             if(editingRecordId) zaznamy[currentWorker] = zaznamy[currentWorker].map(z => z.id === editingRecordId ? rec : z); else zaznamy[currentWorker].push(rec); 
             asyncSave('stundenzettel_zaznamy', zaznamy); localStorage.removeItem('stundenzettel_manual_draft'); closeManualModal(); renderApp(); 
         }
-        function editRecord(id, e) { e.stopPropagation(); editingRecordId = id; const r = zaznamy[currentWorker].find(z=>z.id===id); if(!r)return; document.getElementById('manual-modal-title').innerText = "Úprava"; document.getElementById('input-datum').value=r.datum; document.getElementById('input-od').value=r.od; document.getElementById('input-do').value=r.do; document.getElementById('input-pauza-od').value=r.pauzaOd||''; document.getElementById('input-pauza-do').value=r.pauzaDo||''; document.getElementById('input-sazba').value=r.sazba||40; document.getElementById('input-mena').value=r.mena||'EUR'; document.getElementById('input-popis').value=r.popis||''; document.getElementById('add-modal').classList.add('active'); }
-        function deleteRecord(id, e) { e.stopPropagation(); if(confirm("Smazat záznam?")) { zaznamy[currentWorker] = zaznamy[currentWorker].filter(z=>z.id!==id); selectedRecordIds=selectedRecordIds.filter(i=>i!==id); asyncSave('stundenzettel_zaznamy', zaznamy); asyncSave('stundenzettel_selected', selectedRecordIds); renderApp(); } }
+        function editRecord(id, e) {
+            e.stopPropagation();
+            editingRecordId = id;
+            const r = zaznamy[currentWorker].find(z => String(z.id) === String(id));
+            if(!r) return;
+            document.getElementById('manual-modal-title').innerText = "Úprava";
+            document.getElementById('input-datum').value=r.datum;
+            document.getElementById('input-od').value=r.od;
+            document.getElementById('input-do').value=r.do;
+            document.getElementById('input-pauza-od').value=r.pauzaOd||'';
+            document.getElementById('input-pauza-do').value=r.pauzaDo||'';
+            document.getElementById('input-sazba').value=r.sazba||40;
+            document.getElementById('input-mena').value=r.mena||'EUR';
+            document.getElementById('input-popis').value=r.popis||'';
+            document.getElementById('add-modal').classList.add('active');
+        }
+        function deleteRecord(id, e) {
+            e.stopPropagation();
+            if(confirm("Smazat záznam?")) {
+                zaznamy[currentWorker] = zaznamy[currentWorker].filter(z => String(z.id) !== String(id));
+                selectedRecordIds = selectedRecordIds.filter(i => String(i) !== String(id));
+                asyncSave('stundenzettel_zaznamy', zaznamy);
+                asyncSave('stundenzettel_selected', selectedRecordIds);
+                renderApp();
+            }
+        }
 
         // --- NASTAVENÍ FIRMY ---
         function quietSaveSettings() {
@@ -808,14 +832,21 @@
         function saveExternalDoc() { if (!tempExtDocBase64) return alert("Vyberte soubor."); const fObj = { id: generateId(), isExternal: true, invNumber: document.getElementById('ext-doc-number').value || "EXT", company: document.getElementById('ext-doc-company').value || "Neznámá", issueDate: new Date(document.getElementById('ext-doc-issue-date').value).toLocaleDateString('cs-CZ'), dueDate: new Date(document.getElementById('ext-doc-due-date').value).toISOString(), fileData: tempExtDocBase64, fileType: tempExtDocType, fileName: tempExtDocName, worker: currentWorker, total: parseFloat(document.getElementById('ext-doc-amount').value) || 0, currency: document.getElementById('ext-doc-currency').value, remaining: parseFloat(document.getElementById('ext-doc-amount').value) || 0, zaloha: 0 }; faktury.push(fObj); asyncSave('stundenzettel_faktury_db', faktury); closeExternalDocModal(); renderApp(); }
         function downloadExternalDoc(id) { let f = faktury.find(x => x.id === id); if (f) { if (f.isExternal && f.fileData) { showInViewer(f.fileData, f.fileName || `Externi_Dokument_${f.invNumber}`); } else if (!f.isExternal) { generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id); } } }
 
-        function openInvoiceModal() { 
-            if (selectedRecordIds.length === 0) return alert('Nejprve vyberte záznamy.'); 
-            document.getElementById('inv-year').value = invConfig.year || new Date().getFullYear(); document.getElementById('inv-month').value = invConfig.month || (new Date().getMonth() + 1); document.getElementById('inv-counter').value = invConfig.counter || 1;
-            const records = (zaznamy[currentWorker] || []).filter(z => selectedRecordIds.includes(z.id)); 
-            let totalHours = records.reduce((sum, r) => sum + r.cisteHodiny, 0); let avgRate = records.length > 0 ? records[0].sazba : 40; let currency = records.length > 0 ? records[0].mena : 'EUR';
-            customInvoiceItems = [{ desc: `Elektromontážní práce pro ${companySettings.actualClientName || "..."}`, qty: totalHours, price: avgRate, isHours: true, currency: currency }]; 
-            renderInvoiceItemsUI(); document.getElementById('invoice-items-modal').classList.add('active'); 
+        function openInvoiceModal() {
+            if (selectedRecordIds.length === 0) return alert('Nejprve vyberte záznamy.');
+            document.getElementById('inv-year').value = invConfig.year || new Date().getFullYear();
+            document.getElementById('inv-month').value = invConfig.month || (new Date().getMonth() + 1);
+            document.getElementById('inv-counter').value = invConfig.counter || 1;
+            
+            const records = (zaznamy[currentWorker] || []).filter(z => selectedRecordIds.includes(z.id));
+            let totalHours = records.reduce((sum, r) => sum + r.cisteHodiny, 0);
+            totalHours = Math.round(totalHours * 100) / 100;
+            
+            let avgRate = records.length > 0 ? records[0].sazba : 40; let currency = records.length > 0 ? records[0].mena : 'EUR';
+            customInvoiceItems = [{ desc: `Elektromontážní práce pro ${companySettings.actualClientName || "..."}`, qty: totalHours, price: avgRate, isHours: true, currency: currency }];
+            renderInvoiceItemsUI(); document.getElementById('invoice-items-modal').classList.add('active');
         }
+        
         function closeInvoiceModal() { document.getElementById('invoice-items-modal').classList.remove('active'); }
         function renderInvoiceItemsUI() { const container = document.getElementById('invoice-items-container'); container.innerHTML = ''; customInvoiceItems.forEach((it, i) => { container.innerHTML += `<div class="extra-item-row"><input type="text" value="${escapeHtml(it.desc)}" onchange="customInvoiceItems[${i}].desc=this.value" style="flex:2; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.qty}" step="0.5" onchange="customInvoiceItems[${i}].qty=parseFloat(this.value)||0" style="flex:0.8; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.price}" step="1" onchange="customInvoiceItems[${i}].price=parseFloat(this.value)||0" style="flex:1; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"></div>`; }); }
         function addExtraInvoiceItemRow() { customInvoiceItems.push({ desc: 'Materiál / Cesta', qty: 1, price: 0, isHours: false, currency: 'EUR' }); renderInvoiceItemsUI(); }
