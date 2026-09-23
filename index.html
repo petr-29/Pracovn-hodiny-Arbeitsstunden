@@ -830,7 +830,14 @@
         function openExternalDocModal() { document.getElementById('ext-doc-company').value = ''; document.getElementById('ext-doc-number').value = ''; document.getElementById('ext-doc-amount').value = ''; document.getElementById('ext-doc-file').value = ''; document.getElementById('ext-doc-issue-date').value = new Date().toISOString().split('T')[0]; const due = new Date(); due.setDate(due.getDate() + 14); document.getElementById('ext-doc-due-date').value = due.toISOString().split('T')[0]; tempExtDocBase64 = null; document.getElementById('ext-doc-modal').classList.add('active'); }
         function closeExternalDocModal() { document.getElementById('ext-doc-modal').classList.remove('active'); }
         function saveExternalDoc() { if (!tempExtDocBase64) return alert("Vyberte soubor."); const fObj = { id: generateId(), isExternal: true, invNumber: document.getElementById('ext-doc-number').value || "EXT", company: document.getElementById('ext-doc-company').value || "Neznámá", issueDate: new Date(document.getElementById('ext-doc-issue-date').value).toLocaleDateString('cs-CZ'), dueDate: new Date(document.getElementById('ext-doc-due-date').value).toISOString(), fileData: tempExtDocBase64, fileType: tempExtDocType, fileName: tempExtDocName, worker: currentWorker, total: parseFloat(document.getElementById('ext-doc-amount').value) || 0, currency: document.getElementById('ext-doc-currency').value, remaining: parseFloat(document.getElementById('ext-doc-amount').value) || 0, zaloha: 0 }; faktury.push(fObj); asyncSave('stundenzettel_faktury_db', faktury); closeExternalDocModal(); renderApp(); }
-        function downloadExternalDoc(id) { let f = faktury.find(x => x.id === id); if (f) { if (f.isExternal && f.fileData) { showInViewer(f.fileData, f.fileName || `Externi_Dokument_${f.invNumber}`); } else if (!f.isExternal) { generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id); } } }
+        
+        function downloadExternalDoc(id) { 
+            let f = faktury.find(x => String(x.id) === String(id)); 
+            if (f) { 
+                if (f.isExternal && f.fileData) { showInViewer(f.fileData, f.fileName || `Externi_Dokument_${f.invNumber}`); } 
+                else if (!f.isExternal) { generateRealPdf('Faktura', f.sigImage, f.recordIds, f.worker, f.id); } 
+            } 
+        }
 
         function openInvoiceModal() {
             if (selectedRecordIds.length === 0) return alert('Nejprve vyberte záznamy.');
@@ -873,9 +880,40 @@
             document.getElementById('faktury-manager-modal').classList.add('active'); 
         }
         function closeFakturyManager() { document.getElementById('faktury-manager-modal').classList.remove('active'); }
-        function addZaloha(id) { let f = faktury.find(x => x.id === id); if(!f) return; let val = prompt(`Zadejte částku zálohy:`, f.remaining); if(val !== null) { let num = parseFloat(val.replace(',','.')); if(!isNaN(num) && num > 0) { f.zaloha += num; f.remaining = f.total - f.zaloha; if(f.remaining < 0) f.remaining = 0; asyncSave('stundenzettel_faktury_db', faktury); openFakturyManager(); } } }
-        function resetZaloha(id) { let f = faktury.find(x => x.id === id); if(f) { f.zaloha = 0; f.remaining = f.total; asyncSave('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
-        function deleteFaktura(id) { if(confirm('Smazat dokument?')) { faktury = faktury.filter(x => x.id !== id); asyncSave('stundenzettel_faktury_db', faktury); openFakturyManager(); } }
+        
+        function addZaloha(id) { 
+            let f = faktury.find(x => String(x.id) === String(id)); 
+            if(!f) return; 
+            let val = prompt(`Zadejte částku zálohy:`, f.remaining); 
+            if(val !== null) { 
+                let num = parseFloat(val.replace(',','.')); 
+                if(!isNaN(num) && num > 0) { 
+                    f.zaloha += num; 
+                    f.remaining = f.total - f.zaloha; 
+                    if(f.remaining < 0) f.remaining = 0; 
+                    asyncSave('stundenzettel_faktury_db', faktury); 
+                    openFakturyManager(); 
+                } 
+            } 
+        }
+        
+        function resetZaloha(id) { 
+            let f = faktury.find(x => String(x.id) === String(id)); 
+            if(f) { 
+                f.zaloha = 0; 
+                f.remaining = f.total; 
+                asyncSave('stundenzettel_faktury_db', faktury); 
+                openFakturyManager(); 
+            } 
+        }
+        
+        function deleteFaktura(id) { 
+            if(confirm('Smazat dokument?')) { 
+                faktury = faktury.filter(x => String(x.id) !== String(id)); 
+                asyncSave('stundenzettel_faktury_db', faktury); 
+                openFakturyManager(); 
+            } 
+        }
 
         // --- PODPISOVÁNÍ ---
         function preparePdf(type) { if (type !== 'Faktura' && selectedRecordIds.length === 0) return alert('Vyberte záznamy ve stromečku.'); pendingPdfType = type; if (type === 'Faktura' || type === 'Mesicni') { document.getElementById('sig-manager-container').classList.add('hidden'); document.getElementById('abnahme-options-container').classList.add('hidden'); document.getElementById('sig-worker-name').innerText = companySettings.jmeno || "Firma"; } else { document.getElementById('sig-manager-container').classList.remove('hidden'); document.getElementById('sig-worker-name').innerText = currentWorker; document.getElementById('sig-manager-name').innerText = companySettings.vedouci || "Vedoucí"; if (type === 'Abnahme' || type === 'MSW') { document.getElementById('abnahme-options-container').classList.remove('hidden'); document.getElementById('abnahme-date-input').value = ''; } else { document.getElementById('abnahme-options-container').classList.add('hidden'); } } document.getElementById('signature-modal').classList.add('active'); setTimeout(initCanvas, 50); }
