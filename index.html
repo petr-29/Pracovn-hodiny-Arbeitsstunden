@@ -133,8 +133,8 @@
     
     <h1 class="app-title">Výkaz práce</h1>
     <p class="app-subtitle">Profesionální databázová verze (PRO) s ukládáním bez limitu.</p>
-    <div id="loading-indicator" class="loader-text">Načítání databáze...</div>
-    <button id="enter-btn" class="btn hidden" style="max-width: 250px;" onclick="enterApp()">Vstoupit</button>
+    <div id="loading-indicator" class="loader-text" data-i18n="ui_loading">Načítání databáze...</div>
+    <button id="enter-btn" class="btn hidden" style="max-width: 250px;" onclick="enterApp()" data-i18n="ui_enter">Vstoupit</button>
 </div>
 
     <div id="main-app" class="hidden">
@@ -143,54 +143,61 @@
         <div class="top-bar">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-                    <span style="font-size: 13px; color: var(--text-muted);">Režim:</span>
+                    <span style="font-size: 13px; color: var(--text-muted);" data-i18n="ui_app_mode">Režim:</span>
                     <select id="app-mode-select" onchange="toggleAppMode()" style="background: #2c2c2e; border: 1px solid #444; color: var(--primary-orange); padding: 6px; border-radius: 6px; font-weight: bold; font-size: 13px;">
-                        <option value="individual">Samostatně</option>
-                        <option value="team">Tým (Skupina)</option>
+                        <option value="individual" data-i18n="ui_mode_ind">Samostatně</option>
+                        <option value="team" data-i18n="ui_mode_team">Tým (Skupina)</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-right: 10px;">
+                    <span style="font-size: 13px; color: var(--text-muted);" data-i18n="ui_lang">Jazyk:</span>
+                    <select id="lang-select" onchange="setLang(this.value)" style="background: #2c2c2e; border: 1px solid #444; color: var(--primary-orange); padding: 6px; border-radius: 6px; font-weight: bold; font-size: 13px;">
+                        <option value="cs">🇨🇿 CS</option>
+                        <option value="de">🇩🇪 DE</option>
                     </select>
                 </div>
                 <button onclick="openSettingsModal()" style="background: #2c2c2e; border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 16px;">⚙️</button>
             </div>
             <div id="worker-select-container" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                <span style="font-size: 13px; color: var(--text-muted);">Aplikaci ovládá:</span>
+                <span style="font-size: 13px; color: var(--text-muted);" data-i18n="ui_worker">Aplikaci ovládá:</span>
                 <select id="worker-select" onchange="changeWorker()" style="background: #1c1c1e; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 8px; font-size: 14px; flex: 1;"></select>
                 <button onclick="deleteCurrentWorker()" style="background: var(--danger); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px;">🗑️</button>
             </div>
         </div>
 
         <div class="pichačky-card">
-            <div style="font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">TÝMOVÉ PÍCHAČKY</div>
+            <div style="font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;" data-i18n="ui_team_pichacky">TÝMOVÉ PÍCHAČKY</div>
             <div class="stopwatch-display" id="stopwatch-time">00:00:00</div>
             <div id="active-workers-list" class="active-workers-list"></div>
             
-            <button class="btn-pichačky-start" id="pichačky-start-btn" onclick="openTeamStartModal()">🟢 Příchod (Tým)</button>
-            <button class="btn-pichačky-stop hidden" id="pichačky-stop-btn" onclick="openTeamStopModal()">🔴 Odchod (Tým)</button>
+            <button class="btn-pichačky-start" id="pichačky-start-btn" onclick="openTeamStartModal()" data-i18n="ui_start_team">🟢 Příchod (Tým)</button>
+            <button class="btn-pichačky-stop hidden" id="pichačky-stop-btn" onclick="openTeamStopModal()" data-i18n="ui_stop_team">🔴 Odchod (Tým)</button>
         </div>
 
         <div id="calendar-widget">
             <div class="cal-header">
-                <div id="cal-title-left" style="font-size: 22px;">Dnes</div>
+                <div id="cal-title-left" style="font-size: 22px;" data-i18n="ui_today">Dnes</div>
                 <div id="cal-title-right" class="cal-month-title">Září 2026</div>
             </div>
             <div class="cal-grid" id="cal-days-header">
-                <div class="cal-day-name">P</div><div class="cal-day-name">Ú</div><div class="cal-day-name">S</div><div class="cal-day-name">Č</div><div class="cal-day-name">P</div><div class="cal-day-name">S</div><div class="cal-day-name">N</div>
+                <!-- Vykreslí se dynamicky přes JS s překladem -->
             </div>
             <div class="cal-grid" id="cal-grid-body"></div>
             <div style="text-align: center; margin-top: 15px;">
-                <button class="btn-small" style="background:#2c2c2e; color:var(--primary-orange);" onclick="changeCalendarMonth(-1)">◀ Předchozí</button>
-                <button class="btn-small" style="background:#2c2c2e; color:var(--primary-orange); margin-left:10px;" onclick="changeCalendarMonth(1)">Další ▶</button>
+                <button class="btn-small" style="background:#2c2c2e; color:var(--primary-orange);" onclick="changeCalendarMonth(-1)" data-i18n="ui_prev">◀ Předchozí</button>
+                <button class="btn-small" style="background:#2c2c2e; color:var(--primary-orange); margin-left:10px;" onclick="changeCalendarMonth(1)" data-i18n="ui_next">Další ▶</button>
             </div>
         </div>
 
-        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; font-weight:bold;">Výkazy z označených dnů:</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; font-weight:bold;" data-i18n="ui_docs_label">Výkazy z označených dnů:</div>
         <div class="pdf-nav" style="display: flex; gap: 10px;">
-            <button class="btn-pichačky-start" style="flex: 1; background: var(--info); color: #fff; font-size: 14px; padding: 12px;" onclick="openMenuVykazy()">📄 Výkazy práce</button>
-            <button class="btn-pichačky-start" style="flex: 1; background: var(--danger); color: #fff; font-size: 14px; padding: 12px;" onclick="openMenuFaktury()">💰 Fakturace</button>
+            <button class="btn-pichačky-start" style="flex: 1; background: var(--info); color: #fff; font-size: 14px; padding: 12px;" onclick="openMenuVykazy()" data-i18n="ui_btn_vykazy">📄 Výkazy práce</button>
+            <button class="btn-pichačky-start" style="flex: 1; background: var(--danger); color: #fff; font-size: 14px; padding: 12px;" onclick="openMenuFaktury()" data-i18n="ui_btn_faktury">💰 Fakturace</button>
         </div>
 
         <div id="tree-container"></div>
-        <button class="btn btn-outline" onclick="openManualModal()">+ Zapsat hodiny ručně</button>
-        <button class="btn btn-outline" style="border-color: #333;" onclick="openAddWorkerPrompt()">+ Přidat osobu do aplikace</button>
+        <button class="btn btn-outline" onclick="openManualModal()" data-i18n="ui_manual_add">+ Zapsat hodiny ručně</button>
+        <button class="btn btn-outline" style="border-color: #333;" onclick="openAddWorkerPrompt()" data-i18n="ui_add_worker">+ Přidat osobu do aplikace</button>
 
         <div style="text-align: center; margin-top: 40px; margin-bottom: 20px; opacity: 0.6; pointer-events: none;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="120" height="120">
@@ -445,6 +452,125 @@
 
     <script>
         // ==========================================
+        // 0. I18N SYSTEM (PŘEKLADY A JAZYKY)
+        // ==========================================
+        let lang = localStorage.getItem('stundenzettel_lang') || 'cs';
+        function setLang(l) { 
+            lang = l; 
+            localStorage.setItem('stundenzettel_lang', l); 
+            location.reload(); 
+        }
+
+        const i18n = {
+            cs: {
+                ui_app_mode: "Režim:", ui_lang: "Jazyk:", ui_mode_ind: "Samostatně", ui_mode_team: "Tým (Skupina)",
+                ui_worker: "Aplikaci ovládá:", ui_team_pichacky: "TÝMOVÉ PÍCHAČKY", ui_start_team: "🟢 Příchod (Tým)",
+                ui_stop_team: "🔴 Odchod (Tým)", ui_today: "Dnes", ui_prev: "◀ Předchozí", ui_next: "Další ▶",
+                ui_docs_label: "Výkazy z označených dnů:", ui_btn_vykazy: "📄 Výkazy práce", ui_btn_faktury: "💰 Fakturace",
+                ui_manual_add: "+ Zapsat hodiny ručně", ui_add_worker: "+ Přidat osobu do aplikace",
+                ui_loading: "Načítání databáze...", ui_enter: "Vstoupit",
+
+                inv_desc: "Popis", inv_qty: "Množ.", inv_price: "Cena/jedn.", inv_total: "Celkem",
+                inv_supplier: "Dodavatel", inv_account: "ČÍSLO ÚČTU", inv_vs: "VARIABILNÍ SYMBOL",
+                inv_sum: "CELKOVÁ ČÁSTKA K ÚHRADĚ", inv_issue: "DATUM VYSTAVENÍ", inv_due: "DATUM SPLATNOSTI",
+                inv_client: "Odběratel", inv_subtotal: "Mezisoučet:", inv_skonto: "Skonto", inv_to_pay: "K úhradě:",
+                inv_tax_note: "Přenesená daňová povinnost dle platných předpisů. Daň odvede zákazník.",
+                inv_sign: "Podpis & Razítko", inv_gesch: "Jednatel:", inv_pcs: "ks",
+
+                msw_title: "Montážní výkaz", msw_monteur: "Montér:\n", msw_name_vorname: "(Příjmení, Jméno)\n",
+                msw_kunde: "Zákazník:\n", msw_kw: "Kalendářní týden:\n", msw_ort: "Místo výkonu:\n",
+                msw_auftrag: "Číslo zakázky:\n", msw_fill: "Prosím vyplňte všechna pole a zašlete týdně",
+                msw_day: "Den", msw_date: "Datum", msw_worktime: "Pracovní doba", msw_pause_h: "Pauza\n(hod.)",
+                msw_hours_net: "Pracovní\nhodiny\n(bez pauzy)", msw_desc: "Provedené práce",
+                msw_von: "od", msw_bis: "do", msw_sum: "Součet",
+                msw_sign1: "Podpis montéra", msw_sign2: "Podpis zákazníka",
+                msw_abnahme1: "Výkony jsou bez / s funkční zkouškou převzaty",
+                msw_abnahme2: "Až na následující vady nebo škody je výkon v souladu se smlouvou:",
+                msw_mangel1: "Vady budou odstraněny nejpozději do ", msw_mangel2: " .",
+
+                abn_desc_col: "Popis výkonu / Popis činnosti\nNázev (Číslo) | Činnost", abn_dur_col: "Doba [h]",
+                abn_total: "Celkem", abn_title: "PŘEDÁVACÍ PROTOKOL",
+                abn_name: "Jméno, Příjmení: ", abn_kunde: "Zákazník: ", abn_proj: "Projekt-č.: ",
+                abn_anschrift: "Adresa: ", abn_period: "Období výkonu: ", abn_plz: "PSČ, Město: ",
+                abn_fest: "Při přejímce bylo zjištěno",
+                abn_f1: " výkony jsou převzaty bez zkoušky funkčnosti",
+                abn_f2: " výkony jsou převzaty se zkouškou funkčnosti",
+                abn_f3: " až na následující vady nebo škody je výkon v řádném stavu",
+                abn_mangel1: "Vady budou odstraněny nejpozději do ", abn_mangel2: " .",
+                abn_tag: "Den převzetí: ", abn_ag: "Jméno hůlkovým písmem Zadavatel: ",
+                abn_an: "Jméno hůlkovým písmem Zhotovitel: ", abn_u_ag: "*Podpis zadavatele",
+                abn_u_an: "Podpis zhotovitele", abn_note: "* Správnost údajů tímto potvrzuje osoba oprávněná k podpisu.",
+
+                pdf_date: "Datum", pdf_from: "Od", pdf_to: "Do", pdf_pause: "Pauza",
+                pdf_net_hours: "Čisté hodiny", pdf_rate: "Sazba", pdf_desc: "Popis",
+                pdf_total: "CELKEM", pdf_nachweis: "VÝKAZ PRÁCE", pdf_period: "Období: ",
+                pdf_client: "Zákazník", pdf_baustelle: "Stavba", pdf_project: "Projekt",
+                pdf_sign_worker: "Podpis pracovníka:", pdf_sign_manager: "Podpis zákazníka:",
+
+                footer_gen: "VYGENEROVÁNO APLIKACÍ", footer_title: "VÝKAZ PRÁCE",
+
+                months: ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"],
+                days: ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"]
+            },
+            de: {
+                ui_app_mode: "Modus:", ui_lang: "Sprache:", ui_mode_ind: "Individuell", ui_mode_team: "Team (Gruppe)",
+                ui_worker: "App gesteuert von:", ui_team_pichacky: "TEAM-ZEITERFASSUNG", ui_start_team: "🟢 Kommen (Team)",
+                ui_stop_team: "🔴 Gehen (Team)", ui_today: "Heute", ui_prev: "◀ Zurück", ui_next: "Weiter ▶",
+                ui_docs_label: "Nachweise der markierten Tage:", ui_btn_vykazy: "📄 Arbeitsnachweise", ui_btn_faktury: "💰 Rechnungen",
+                ui_manual_add: "+ Stunden manuell eintragen", ui_add_worker: "+ Person zur App hinzufügen",
+                ui_loading: "Datenbank wird geladen...", ui_enter: "Eintreten",
+
+                inv_desc: "Beschreibung", inv_qty: "Menge", inv_price: "Preis/Einheit", inv_total: "Gesamt",
+                inv_supplier: "Lieferant", inv_account: "KONTONUMMER", inv_vs: "VARIABLES SYMBOL",
+                inv_sum: "GESAMTZAHLUNGSBETRAG", inv_issue: "AUSSTELLUNGSDATUM", inv_due: "FÄLLIGKEITSDATUM",
+                inv_client: "Abnehmer", inv_subtotal: "Zwischensumme:", inv_skonto: "Skonto", inv_to_pay: "Zu zahlen:",
+                inv_tax_note: "Gemäß §13b Absatz 2 Nr.4 UStG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer.",
+                inv_sign: "Unterschrift & Stempel", inv_gesch: "Geschäftsführer:", inv_pcs: "St",
+
+                msw_title: "Montagenachweis", msw_monteur: "Monteur:\n", msw_name_vorname: "(Name, Vorname)\n",
+                msw_kunde: "Kunde:\n", msw_kw: "Kalenderwoche:\n", msw_ort: "Einsatzort:\n",
+                msw_auftrag: "MSW Auftragsnummer:\n", msw_fill: "Bitte alle Felder ausfüllen und wöchentlich zusenden",
+                msw_day: "Tag", msw_date: "Datum", msw_worktime: "Arbeitszeit", msw_pause_h: "Pause\n(Std.)",
+                msw_hours_net: "Arbeits-\nstunden\n(ohne Pause)", msw_desc: "Ausgeführte Leistungen",
+                msw_von: "von", msw_bis: "bis", msw_sum: "Summe",
+                msw_sign1: "Unterschrift Monteur", msw_sign2: "Unterschrift Kunde",
+                msw_abnahme1: "Die Leistungen sind mit / ohne Funktionsprüfung abgenommen",
+                msw_abnahme2: "Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:",
+                msw_mangel1: "Mängel werden bis spätestens ", msw_mangel2: " behoben.",
+
+                abn_desc_col: "Leistungsbeschreibung / Tätigkeitsbeschreibung\nGewerkname (Nr.) | Tätigkeit", abn_dur_col: "Dauer [h]",
+                abn_total: "Gesamt", abn_title: "ABNAHME- & FORTSCHRITTSPROTOKOLL",
+                abn_name: "Vorname, Name: ", abn_kunde: "Kunde: ", abn_proj: "Projekt-Nr.: ",
+                abn_anschrift: "Anschrift: ", abn_period: "Leistungszeitraum: ", abn_plz: "PLZ, Ort: ",
+                abn_fest: "Bei der Abnahme wurde festgestellt",
+                abn_f1: " die Leistung/en sind ohne Funktionsprüfung abgenommen",
+                abn_f2: " die Leistung/en sind mit Funktionsprüfung abgenommen",
+                abn_f3: " bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand",
+                abn_mangel1: "Mängel werden bis spätestens ", abn_mangel2: " behoben.",
+                abn_tag: "Tag der Abnahme: ", abn_ag: "Name in Druckbuchstaben AG: ",
+                abn_an: "Name in Druckbuchstaben AN: ", abn_u_ag: "*Unterschrift Auftraggeber",
+                abn_u_an: "Unterschrift Auftragnehmer", abn_note: "* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.",
+
+                pdf_date: "Datum", pdf_from: "Von", pdf_to: "Bis", pdf_pause: "Pause",
+                pdf_net_hours: "Stunden", pdf_rate: "Satz", pdf_desc: "Beschreibung",
+                pdf_total: "GESAMT", pdf_nachweis: "TÄTIGKEITSNACHWEIS", pdf_period: "Zeitraum: ",
+                pdf_client: "Auftraggeber", pdf_baustelle: "Baustelle", pdf_project: "Projekt",
+                pdf_sign_worker: "Unterschrift Arbeitnehmer:", pdf_sign_manager: "Unterschrift Arbeitgeber:",
+
+                footer_gen: "GENERIERTE DURCH APP", footer_title: "ARBEITSNACHWEIS",
+
+                months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+                days: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+            }
+        };
+
+        function t(key) {
+            return i18n[lang] && i18n[lang][key] ? i18n[lang][key] : key;
+        }
+
+        const localizedMonths = t('months');
+
+        // ==========================================
         // 1. BEZPEČNOST A POMOCNÉ FUNKCE
         // ==========================================
         function escapeHtml(str) {
@@ -531,29 +657,26 @@
         let tempLogo = null; let tempStamp = null; let tempExtDocBase64 = null; let tempExtDocType = null; let tempExtDocName = null;
         let currentDocDataUrl = null; let currentDocFilename = 'Dokument.pdf'; let currentBlobUrl = null;
         let appMode = 'individual';
-        const czechMonths = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
 
         window.onload = async () => {
             if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) document.getElementById('pwa-prompt').style.display = 'block';
             
+            // Translate UI on load
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.innerHTML = t(el.getAttribute('data-i18n'));
+            });
+            document.getElementById('lang-select').value = lang;
+
             try {
                 await initIDB();
-                // Pokus o načtení z IDB, pokud nic, migruj z localStorage (nyní s bezpečným parsováním)
                 const loadOrMigrate = async (key, defaultVal) => {
                     let val = await idbLoad(key);
                     if (val === null) {
                         let lsVal = localStorage.getItem(key);
                         if (lsVal) { 
-                            try {
-                                val = JSON.parse(lsVal); 
-                            } catch (e) {
-                                // Pokud to není JSON (např. čisté jméno "Petr Michálek"), vezmeme to rovnou
-                                val = lsVal; 
-                            }
+                            try { val = JSON.parse(lsVal); } catch (e) { val = lsVal; }
                             await idbSave(key, val); 
-                        } else { 
-                            val = defaultVal; 
-                        }
+                        } else { val = defaultVal; }
                     }
                     return val;
                 };
@@ -597,7 +720,6 @@
             document.getElementById('input-datum').valueAsDate = new Date(); 
             document.getElementById('app-mode-select').value = appMode;
             initWorkersDropdown(); initStopwatch(); toggleAppMode(); setupImageUploads(); 
-            // Load manual draft from ls is ok since it's temp
             let d = JSON.parse(localStorage.getItem('stundenzettel_manual_draft')); 
             if(d) { ['datum','od','do','sazba','mena','popis'].forEach(k => { if(d[k]) document.getElementById(`input-${k}`).value = d[k]; }); if(d.pod) document.getElementById('input-pauza-od').value = d.pod; if(d.pdo) document.getElementById('input-pauza-do').value = d.pdo; }
         }
@@ -649,9 +771,9 @@
             if (stopwatchInterval) clearInterval(stopwatchInterval);
             const activeNames = Object.keys(teamSessions);
             if (activeNames.length > 0) { 
-                document.getElementById('pichačky-start-btn').innerText = "🟢 Příchod (Další osoba)"; 
+                document.getElementById('pichačky-start-btn').innerText = "🟢 " + (lang==='de'?"Kommen (Andere Person)":"Příchod (Další osoba)"); 
                 document.getElementById('pichačky-stop-btn').classList.remove('hidden'); 
-                document.getElementById('active-workers-list').innerText = "Pracují: " + activeNames.join(', '); 
+                document.getElementById('active-workers-list').innerText = (lang==='de'?"Arbeiten: ":"Pracují: ") + activeNames.join(', '); 
                 stopwatchInterval = setInterval(() => { 
                     let oldest = new Date().getTime(); 
                     Object.keys(teamSessions).forEach(n => { if (teamSessions[n].startTime < oldest) oldest = teamSessions[n].startTime; }); 
@@ -659,7 +781,7 @@
                     document.getElementById('stopwatch-time').innerText = `${String(Math.floor(diff/3600)).padStart(2,'0')}:${String(Math.floor((diff%3600)/60)).padStart(2,'0')}:${String(diff%60).padStart(2,'0')}`; 
                 }, 1000); 
             } else { 
-                document.getElementById('pichačky-start-btn').innerText = "🟢 Příchod (Spustit pro tým)"; 
+                document.getElementById('pichačky-start-btn').innerText = "🟢 " + (lang==='de'?"Kommen (Für Team starten)":"Příchod (Spustit pro tým)"); 
                 document.getElementById('pichačky-stop-btn').classList.add('hidden'); 
                 document.getElementById('active-workers-list').innerText = ""; 
                 document.getElementById('stopwatch-time').innerText = "00:00:00"; 
@@ -710,7 +832,14 @@
         function changeCalendarMonth(dir) { calCurrentMonth += dir; if(calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; } else if(calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; } renderCalendar(); }
         function renderCalendar() { 
             const calGrid = document.getElementById('cal-grid-body'); calGrid.innerHTML = ''; 
-            document.getElementById('cal-title-right').innerText = `${czechMonths[calCurrentMonth]} ${calCurrentYear}`; 
+            const daysHeader = document.getElementById('cal-days-header');
+            
+            // Render translated week days
+            let daysHtml = '';
+            t('days').forEach(d => { daysHtml += `<div class="cal-day-name">${d}</div>`; });
+            daysHeader.innerHTML = daysHtml;
+
+            document.getElementById('cal-title-right').innerText = `${localizedMonths[calCurrentMonth]} ${calCurrentYear}`; 
             const daysInMonth = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate(); 
             const firstDay = new Date(calCurrentYear, calCurrentMonth, 1).getDay(); 
             for(let i=0; i<(firstDay===0?6:firstDay-1); i++) calGrid.innerHTML += `<div></div>`; 
@@ -953,18 +1082,18 @@
 
                 if (type === 'Faktura') {
                     let fData = faktury.find(f => f.id === invoiceId); if(!fData) return; const currencySymbol = fData.currency === 'CZK' ? 'Kč' : '€';
-                    let body = [[ {text:'Beschreibung', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Menge', bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'center'}, {text:`Preis/Einheit (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:`Gesamt (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'} ]];
-                    if (fData.items) fData.items.forEach(i => { body.push([ i.desc, {text:`${i.qty} ${i.isHours?'St':'ks'}`, alignment:'center'}, {text: `${currencySymbol} ${i.price.toFixed(2)}`, alignment:'right'}, {text: `${currencySymbol} ${(i.qty * i.price).toFixed(2)}`, alignment:'right'} ]); });
+                    let body = [[ {text:t('inv_desc'), bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:t('inv_qty'), bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'center'}, {text:`${t('inv_price')} (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:`${t('inv_total')} (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'} ]];
+                    if (fData.items) fData.items.forEach(i => { body.push([ i.desc, {text:`${i.qty} ${i.isHours?t('inv_pcs'):'ks'}`, alignment:'center'}, {text: `${currencySymbol} ${i.price.toFixed(2)}`, alignment:'right'}, {text: `${currencySymbol} ${(i.qty * i.price).toFixed(2)}`, alignment:'right'} ]); });
                     doc = { content: [
-                        { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [ { width: '*', stack: [ { text: `FAKTURA č. ${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] }, { text: 'Lieferant', fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] }, { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 } ]}, showLogo && isValidBase64(companySettings.logoBase64) ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 } ] }]]}, layout: 'noBorders' },
-                        { table: { widths: ['*', '*', '*'], body: [ [{ text:'KONTONUMMER', bold:true, fontSize:8, color:'#666' }, { text:'VARIABLES SYMBOL', bold:true, fontSize:8, color:'#666' }, { text:'GESAMTZAHLUNGSBETRAG', bold:true, fontSize:8, color:'#666' }], [{ text: companySettings.bank || ' ', fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `${currencySymbol} ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }], [{ text:'AUSSTELLUNGSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:'FÄLLIGKEITSDATUM', bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }], [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }] ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
-                        { stack: [{ text:'Abnehmer', bold:true, fontSize:11, color:'#FF8C00' }, { text: `${companySettings.clientName}\nGeschäftsführer: ${companySettings.clientRep}\n${companySettings.clientAddress}\nUst-IdNr.: ${companySettings.clientUst}`, fontSize:10 }], margin: [0, 0, 0, 20] },
+                        { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [ { width: '*', stack: [ { text: `${t('inv_title')} ${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] }, { text: t('inv_supplier'), fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] }, { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 } ]}, showLogo && isValidBase64(companySettings.logoBase64) ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 } ] }]]}, layout: 'noBorders' },
+                        { table: { widths: ['*', '*', '*'], body: [ [{ text:t('inv_account'), bold:true, fontSize:8, color:'#666' }, { text:t('inv_vs'), bold:true, fontSize:8, color:'#666' }, { text:t('inv_sum'), bold:true, fontSize:8, color:'#666' }], [{ text: companySettings.bank || ' ', fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `${currencySymbol} ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }], [{ text:t('inv_issue'), bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:t('inv_due'), bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }], [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }] ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
+                        { stack: [{ text:t('inv_client'), bold:true, fontSize:11, color:'#FF8C00' }, { text: `${companySettings.clientName}\n${t('inv_gesch')} ${companySettings.clientRep}\n${companySettings.clientAddress}\nUst-IdNr.: ${companySettings.clientUst}`, fontSize:10 }], margin: [0, 0, 0, 20] },
                         { table: { headerRows: 1, widths: ['*', 60, 80, 80], body: body }, margin: [0, 0, 0, 15] },
-                        fData.skontoPct > 0 ? { text: `Zwischensumme: ${currencySymbol} ${(fData.rawTotal||fData.total).toFixed(2)}`, fontSize: 11, alignment: 'right', margin: [0, 0, 0, 2] } : null,
-                        fData.skontoPct > 0 ? { text: `Skonto (${fData.skontoPct}%): - ${currencySymbol} ${fData.skontoAmount.toFixed(2)}`, fontSize: 11, alignment: 'right', margin: [0, 0, 0, 5], color: '#ff453a' } : null,
-                        { text: `Zu zahlen: ${currencySymbol} ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 10] },
-                        { text: 'Gemäß §13b Absatz 2 Nr.4 UStG ist der Leistungsempfänger Steuerschuldner. In der Rechnung ist deshalb keine Umsatzsteuer.', fontSize: 10, color: '#555', margin: [0, 15, 0, 20] },
-                        { columns: [ { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] }, { width: '*', alignment: 'right', stack: [ { text: 'Unterschrift & Stempel', fontSize: 10, bold: true, margin: [0, 0, 0, 5] }, (fData.useStamp && showLogo && isValidBase64(companySettings.stampBase64)) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null, isRealSignature(sigWorker) ? { image: sigWorker, width: 140 } : null ].filter(Boolean)} ]}
+                        fData.skontoPct > 0 ? { text: `${t('inv_subtotal')} ${currencySymbol} ${(fData.rawTotal||fData.total).toFixed(2)}`, fontSize: 11, alignment: 'right', margin: [0, 0, 0, 2] } : null,
+                        fData.skontoPct > 0 ? { text: `${t('inv_skonto')} (${fData.skontoPct}%): - ${currencySymbol} ${fData.skontoAmount.toFixed(2)}`, fontSize: 11, alignment: 'right', margin: [0, 0, 0, 5], color: '#ff453a' } : null,
+                        { text: `${t('inv_to_pay')} ${currencySymbol} ${fData.total.toFixed(2)}`, bold: true, fontSize: 14, alignment: 'right', color: '#FF8C00', margin: [0, 0, 0, 10] },
+                        { text: t('inv_tax_note'), fontSize: 10, color: '#555', margin: [0, 15, 0, 20] },
+                        { columns: [ { width: 250, stack: [{ text: companySettings.firma, fontSize: 10, bold: true }, { text: `${companySettings.adresa}\nTel: ${companySettings.tel}`, fontSize: 9, color: '#666' }] }, { width: '*', alignment: 'right', stack: [ { text: t('inv_sign'), fontSize: 10, bold: true, margin: [0, 0, 0, 5] }, (fData.useStamp && showLogo && isValidBase64(companySettings.stampBase64)) ? { image: companySettings.stampBase64, width: 100, margin: [0,0,0,5] } : null, isRealSignature(sigWorker) ? { image: sigWorker, width: 140 } : null ].filter(Boolean)} ]}
                     ].filter(Boolean), defaultStyle: { font: 'Roboto' } };
                 } else if (type === 'Mesicni') {
                     if (workerRecords.length === 0) return; let targetDate = parseLocalDate(workerRecords[0].datum); let targetYear = targetDate.getFullYear(); let targetMonth = targetDate.getMonth();
@@ -974,14 +1103,14 @@
                     let tableBody = [ [ { text: 'Pracovník', bold:true, fillColor:'#f0f0f0', fontSize:11 }, { text: 'Pozice / Číslo', bold:true, fillColor:'#f0f0f0', fontSize:11 }, { text: 'Odpracováno [h]', bold:true, alignment:'center', fillColor:'#f0f0f0', fontSize:11 } ], [ { text: predak.name, bold:true, fontSize:11 }, { text: 'Předák (Mistr)', bold:true, color: 'var(--primary-orange)', fontSize:11 }, { text: predak.hours.toFixed(2), alignment:'center', bold:true, fontSize:11 } ] ];
                     let totalTeamHours = predak.hours; ostatni.forEach((t, i) => { totalTeamHours += t.hours; tableBody.push([ { text: t.name, fontSize:11 }, { text: `č. ${i+1}`, fontSize:11 }, { text: t.hours.toFixed(2), alignment:'center', fontSize:11 } ]); });
                     tableBody.push([ { text: 'Celkem za tým', bold:true, colSpan:2, alignment:'right', fontSize:12, margin:[0,5,0,5] }, {}, { text: totalTeamHours.toFixed(2), bold:true, alignment:'center', fontSize:12, margin:[0,5,0,5] } ]);
-                    doc = { pageMargins: [ 40, 40, 40, 40 ], content: [ { columns: [ { text: 'MĚSÍČNÍ VÝKAZ PRÁCE - TÝM', fontSize: 18, bold: true, margin: [0, 10, 0, 10] }, logoBlock ] }, { text: `${czechMonths[targetMonth].toUpperCase()} ${targetYear}`, fontSize: 14, color: '#666', margin: [0, 0, 0, 20] }, { table: { widths: ['*', '*'], body: [ [ { text: [{ text: 'Pro firmu (Kunde):\n', fontSize: 9, color: '#666' }, { text: actName || ' ', fontSize: 12, bold: true }], margin: [4, 4, 4, 4] }, { text: [{ text: 'Projekt / Číslo (Baustelle):\n', fontSize: 9, color: '#666' }, { text: actProj || ' ', fontSize: 12, bold: true }], margin: [4, 4, 4, 4] } ] ] }, margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: ['*', 'auto', 'auto'], body: tableBody }, margin: [0, 0, 0, 40] }, { columns: [ { width: '*', stack: [ { text: `Vystaveno dne: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, isRealSignature(sigWorker) ? { image: sigWorker, width: 140, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n' }, { text: `Podpis předáka (${currentWorker})`, fontSize: 10, decoration: 'overline' } ] } ] } ], defaultStyle: { font: 'Roboto' } };
+                    doc = { pageMargins: [ 40, 40, 40, 40 ], content: [ { columns: [ { text: 'MĚSÍČNÍ VÝKAZ PRÁCE - TÝM', fontSize: 18, bold: true, margin: [0, 10, 0, 10] }, logoBlock ] }, { text: `${localizedMonths[targetMonth].toUpperCase()} ${targetYear}`, fontSize: 14, color: '#666', margin: [0, 0, 0, 20] }, { table: { widths: ['*', '*'], body: [ [ { text: [{ text: 'Pro firmu (Kunde):\n', fontSize: 9, color: '#666' }, { text: actName || ' ', fontSize: 12, bold: true }], margin: [4, 4, 4, 4] }, { text: [{ text: 'Projekt / Číslo (Baustelle):\n', fontSize: 9, color: '#666' }, { text: actProj || ' ', fontSize: 12, bold: true }], margin: [4, 4, 4, 4] } ] ] }, margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: ['*', 'auto', 'auto'], body: tableBody }, margin: [0, 0, 0, 40] }, { columns: [ { width: '*', stack: [ { text: `Vystaveno dne: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 10] }, isRealSignature(sigWorker) ? { image: sigWorker, width: 140, margin: [0, 0, 0, 5] } : { text: '\n\n\n\n' }, { text: `Podpis předáka (${currentWorker})`, fontSize: 10, decoration: 'overline' } ] } ] } ], defaultStyle: { font: 'Roboto' } };
                 } else if (type === 'MSW') {
                     const recordDates = workerRecords.map(r => parseLocalDate(r.datum));
                     let targetMonday = recordDates.length > 0 ? getMonday(recordDates[0]) : getMonday(new Date()); let weekNum = getWeekNum(targetMonday);
-                    let weekDaysNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+                    let weekDaysNames = t('days');
                     let mswLogoDef = { svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 60"><g font-family="Arial, sans-serif"><path d="M 32 10 C 15 10 5 22 5 35" fill="none" stroke="#5b9bd5" stroke-width="7" stroke-dasharray="8 4" stroke-linecap="round"/><path d="M 5 45 C 10 58 22 62 35 62" fill="none" stroke="#000000" stroke-width="7" stroke-dasharray="8 4" stroke-linecap="round"/><path d="M 45 62 C 65 58 70 42 70 30" fill="none" stroke="#5b9bd5" stroke-width="7" stroke-dasharray="8 4" stroke-linecap="round"/><text x="12" y="44" font-size="30" font-weight="900" fill="#5b9bd5" letter-spacing="-1">M</text><text x="38" y="44" font-size="30" font-weight="900" fill="#000000" letter-spacing="-1">S</text><text x="58" y="44" font-size="30" font-weight="900" fill="#5b9bd5" letter-spacing="-1">W</text><text x="95" y="32" font-size="18" font-weight="bold" fill="#333" letter-spacing="-0.5">Montageservice</text><text x="195" y="46" font-size="10" font-weight="bold" fill="#333">GmbH</text></g></svg>`, width: 120, alignment: 'right', margin: [0, 2, 5, 2], border: [false, true, true, true] };
-                    let headerTable = { table: { widths: ['50%', '50%'], body: [ [ { text: 'Montagenachweis', fontSize: 18, bold: true, margin: [5, 6, 0, 6], border: [true, true, false, true] }, mswLogoDef ], [ { text: [ {text: 'Monteur:\n', fontSize: 6}, {text: '(Name, Vorname)\n', fontSize: 5, color: '#666'}, {text: workerName, fontSize: 8, bold: true} ], border: [true, false, true, true], margin: [3, 2, 0, 2] }, { text: [ {text: 'Kunde:\n', fontSize: 6}, {text: actName, fontSize: 8, bold: true} ], border: [false, false, true, true], margin: [3, 2, 0, 2] } ], [ { text: [ {text: 'Kalenderwoche:\n', fontSize: 6}, {text: weekNum.toString(), fontSize: 8, bold: true} ], border: [true, false, true, true], margin: [3, 2, 0, 2] }, { text: [ {text: 'Einsatzort:\n', fontSize: 6}, {text: actAddress, fontSize: 8, bold: true} ], border: [false, false, true, true], margin: [3, 2, 0, 2] } ], [ { text: [ {text: 'MSW Auftragsnummer:\n', fontSize: 6}, {text: actProj, fontSize: 8, bold: true} ], border: [true, false, false, true], margin: [3, 2, 0, 2] }, { text: 'Bitte alle Felder ausfüllen und wöchentlich zusenden', alignment: 'center', bold: true, color: '#000080', fontSize: 7, margin: [0, 4, 0, 0], border: [false, false, true, true] } ] ] }, margin: [0, 0, 0, 0] };
-                    let dataTableBody = [ [ { text: 'Tag', rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: 'Datum', rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: 'Arbeitszeit', colSpan: 2, bold: true, fontSize: 8, alignment: 'center', fillColor: '#eaeaea' }, {}, { text: 'Pause\n(Std.)', rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: 'Arbeits-\nstunden\n(ohne Pause)', rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: 'Ausgeführte Leistungen', rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' } ], [ {}, {}, { text: 'von', bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, { text: 'bis', bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, {}, {}, {} ] ];
+                    let headerTable = { table: { widths: ['50%', '50%'], body: [ [ { text: t('msw_title'), fontSize: 18, bold: true, margin: [5, 6, 0, 6], border: [true, true, false, true] }, mswLogoDef ], [ { text: [ {text: t('msw_monteur'), fontSize: 6}, {text: t('msw_name_vorname'), fontSize: 5, color: '#666'}, {text: workerName, fontSize: 8, bold: true} ], border: [true, false, true, true], margin: [3, 2, 0, 2] }, { text: [ {text: t('msw_kunde'), fontSize: 6}, {text: actName, fontSize: 8, bold: true} ], border: [false, false, true, true], margin: [3, 2, 0, 2] } ], [ { text: [ {text: t('msw_kw'), fontSize: 6}, {text: weekNum.toString(), fontSize: 8, bold: true} ], border: [true, false, true, true], margin: [3, 2, 0, 2] }, { text: [ {text: t('msw_ort'), fontSize: 6}, {text: actAddress, fontSize: 8, bold: true} ], border: [false, false, true, true], margin: [3, 2, 0, 2] } ], [ { text: [ {text: t('msw_auftrag'), fontSize: 6}, {text: actProj, fontSize: 8, bold: true} ], border: [true, false, false, true], margin: [3, 2, 0, 2] }, { text: t('msw_fill'), alignment: 'center', bold: true, color: '#000080', fontSize: 7, margin: [0, 4, 0, 0], border: [false, false, true, true] } ] ] }, margin: [0, 0, 0, 0] };
+                    let dataTableBody = [ [ { text: t('msw_day'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_date'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_worktime'), colSpan: 2, bold: true, fontSize: 8, alignment: 'center', fillColor: '#eaeaea' }, {}, { text: t('msw_pause_h'), rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_hours_net'), rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_desc'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' } ], [ {}, {}, { text: t('msw_von'), bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, { text: t('msw_bis'), bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, {}, {}, {} ] ];
                     let sumTotal = 0;
                     for (let i = 0; i < 7; i++) {
                         let currDay = new Date(targetMonday); currDay.setDate(targetMonday.getDate() + i); let isoDate = currDay.toISOString().split('T')[0]; let czechDateStr = currDay.toLocaleDateString('cs-CZ'); let dayName = weekDaysNames[i];
@@ -996,33 +1125,33 @@
                             dataTableBody.push([ { text: dayName, alignment: 'center', bold: true, fontSize: 8, margin: [0, 2, 0, 2], color:'#888' }, { text: czechDateStr, alignment: 'center', fontSize: 8, margin: [0, 2, 0, 2], color:'#888' }, {}, {}, {}, {}, {} ]);
                         }
                     }
-                    dataTableBody.push([ { text: 'Summe', bold: true, colSpan: 5, fontSize: 8, margin: [3, 2, 0, 2], fillColor: '#eaeaea' }, {}, {}, {}, {}, { text: sumTotal.toFixed(2).replace('.', ','), bold: true, alignment: 'center', fontSize: 8, margin: [0, 2, 0, 2], fillColor: '#eaeaea' }, { text: '', fillColor: '#eaeaea' } ]);
+                    dataTableBody.push([ { text: t('msw_sum'), bold: true, colSpan: 5, fontSize: 8, margin: [3, 2, 0, 2], fillColor: '#eaeaea' }, {}, {}, {}, {}, { text: sumTotal.toFixed(2).replace('.', ','), bold: true, alignment: 'center', fontSize: 8, margin: [0, 2, 0, 2], fillColor: '#eaeaea' }, { text: '', fillColor: '#eaeaea' } ]);
                     let abStatus = extraData && extraData.status ? extraData.status : '2'; let abDate = extraData && extraData.date ? extraData.date : '........................'; let box1 = (abStatus === '1' || abStatus === '2') ? '☑' : '☐'; let box2 = (abStatus === '3') ? '☑' : '☐';
-                    let footerTable = { table: { widths: ['40%', '60%'], body: [ [ { stack: [ { columns: [ { text: `Datum\n${new Date().toLocaleDateString('cs-CZ')}`, width: 60, fontSize: 7 }, { stack: [ isRealSignature(sigWorker) ? { image: sigWorker, width: 90, alignment: 'center', margin: [0, -12, 0, 0] } : { text: '\n', margin: [0, 3, 0, 0] }, { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] }, { text: 'Unterschrift Monteur', fontSize: 7, alignment: 'center', margin: [0, 1, 0, 0] } ] } ], margin: [4, 3, 4, 3] }, { columns: [ { text: `Datum\n${new Date().toLocaleDateString('cs-CZ')}`, width: 60, fontSize: 7 }, { stack: [ isRealSignature(sigManager) ? { image: sigManager, width: 90, alignment: 'center', margin: [0, -12, 0, 0] } : { text: '\n', margin: [0, 3, 0, 0] }, { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] }, { text: 'Unterschrift Kunde', fontSize: 7, alignment: 'center', margin: [0, 1, 0, 0] } ] } ], margin: [4, 3, 4, 3] } ], border: [true, false, true, true] }, { stack: [ { text: [ { text: box1 + ' ', fontSize: 12 }, { text: 'Die Leistungen sind mit / ohne Funktionsprüfung abgenommen', fontSize: 8 } ], margin: [4, 3, 0, 3] }, { text: [ { text: box2 + ' ', fontSize: 12 }, { text: 'Bis auf folgende Mängel bzw. Schäden befindet sich die Leistung in vertragsgemäßem Zustand:', fontSize: 8 } ], margin: [4, 3, 0, 2] }, { text: '....................................................................................................................................................', margin: [4, 2, 0, 2], color: '#666', fontSize: 8 }, { text: [ { text: 'Mängel werden bis spätestens ', fontSize: 8 }, { text: abDate, decoration: 'underline', fontSize: 8 }, { text: ' behoben.', fontSize: 8 } ], margin: [4, 2, 0, 3] } ], border: [false, false, true, true] } ] ] }, margin: [0, -1, 0, 0] };
+                    let footerTable = { table: { widths: ['40%', '60%'], body: [ [ { stack: [ { columns: [ { text: `${t('msw_date')}\n${new Date().toLocaleDateString('cs-CZ')}`, width: 60, fontSize: 7 }, { stack: [ isRealSignature(sigWorker) ? { image: sigWorker, width: 90, alignment: 'center', margin: [0, -12, 0, 0] } : { text: '\n', margin: [0, 3, 0, 0] }, { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] }, { text: t('msw_sign1'), fontSize: 7, alignment: 'center', margin: [0, 1, 0, 0] } ] } ], margin: [4, 3, 4, 3] }, { columns: [ { text: `${t('msw_date')}\n${new Date().toLocaleDateString('cs-CZ')}`, width: 60, fontSize: 7 }, { stack: [ isRealSignature(sigManager) ? { image: sigManager, width: 90, alignment: 'center', margin: [0, -12, 0, 0] } : { text: '\n', margin: [0, 3, 0, 0] }, { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] }, { text: t('msw_sign2'), fontSize: 7, alignment: 'center', margin: [0, 1, 0, 0] } ] } ], margin: [4, 3, 4, 3] } ], border: [true, false, true, true] }, { stack: [ { text: [ { text: box1 + ' ', fontSize: 12 }, { text: t('msw_abnahme1'), fontSize: 8 } ], margin: [4, 3, 0, 3] }, { text: [ { text: box2 + ' ', fontSize: 12 }, { text: t('msw_abnahme2'), fontSize: 8 } ], margin: [4, 3, 0, 2] }, { text: '....................................................................................................................................................', margin: [4, 2, 0, 2], color: '#666', fontSize: 8 }, { text: [ { text: t('msw_mangel1'), fontSize: 8 }, { text: abDate, decoration: 'underline', fontSize: 8 }, { text: t('msw_mangel2'), fontSize: 8 } ], margin: [4, 2, 0, 3] } ], border: [false, false, true, true] } ] ] }, margin: [0, -1, 0, 0] };
                     doc = { pageOrientation: 'landscape', pageMargins: [15, 15, 15, 15], content: [ headerTable, { table: { widths: [22, 55, 35, 35, 35, 50, '*'], body: dataTableBody }, margin: [0, -1, 0, 0] }, footerTable ], defaultStyle: { font: 'Roboto', fontSize: 8 } };
                 } else if (type === 'Abnahme') {
                     let tH = 0; workerRecords.forEach(r => { tH += r.cisteHodiny; }); const recordDates = workerRecords.map(r => parseLocalDate(r.datum));
                     let minDate = recordDates.length ? new Date(Math.min(...recordDates)).toLocaleDateString('cs-CZ') : ''; let maxDate = recordDates.length ? new Date(Math.max(...recordDates)).toLocaleDateString('cs-CZ') : '';
                     let dateRange = minDate === maxDate ? minDate : `${minDate} - ${maxDate}`;
-                    let abnahmeRows = [[ { text:'Leistungsbeschreibung / Tätigkeitsbeschreibung\nGewerkname (Nr.) | Tätigkeit', bold:true, fillColor:'#f0f0f0', fontSize: 10 }, { text:'Dauer [h]', bold:true, fillColor:'#f0f0f0', fontSize: 10, alignment:'center' } ]];
+                    let abnahmeRows = [[ { text:t('abn_desc_col'), bold:true, fillColor:'#f0f0f0', fontSize: 10 }, { text:t('abn_dur_col'), bold:true, fillColor:'#f0f0f0', fontSize: 10, alignment:'center' } ]];
                     workerRecords.forEach(r => { abnahmeRows.push([ { text: `${r.datum.split('-').reverse().join('.')} - ${r.popis || 'Tätigkeit'}`, fontSize: 10 }, { text: r.cisteHodiny.toString(), alignment: 'center', fontSize: 10 } ]); });
-                    abnahmeRows.push([ { text: 'Gesamt', bold: true, alignment: 'right', fontSize: 10, fillColor: '#f9f9f9' }, { text: tH.toFixed(2), bold: true, alignment: 'center', fontSize: 10, fillColor: '#f9f9f9' } ]);
+                    abnahmeRows.push([ { text: t('abn_total'), bold: true, alignment: 'right', fontSize: 10, fillColor: '#f9f9f9' }, { text: tH.toFixed(2), bold: true, alignment: 'center', fontSize: 10, fillColor: '#f9f9f9' } ]);
                     let abStatus = extraData && extraData.status ? extraData.status : '2'; let abDate = extraData && extraData.date ? extraData.date : '....................................................';
-                    doc = { content: [ { columns: [ { text: 'ABNAHME- & FORTSCHRITTSPROTOKOLL', fontSize: 16, bold: true, color: '#333', margin: [0, 10, 0, 20] }, logoBlock ] }, { table: { widths: ['*', '*'], body: [ [ { text: `Vorname, Name: ${workerName}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Kunde: ${actName}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `Projekt-Nr.: ${actProj}`, fontSize: 10, margin:[0,2,0,2] }, { text: `Anschrift: ${actAddress}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `Leistungszeitraum: ${dateRange}`, fontSize: 10, margin:[0,2,0,2] }, { text: `PLZ, Ort: ${actAddress ? actAddress.split(',').pop().trim() : ' '}`, fontSize: 10, margin:[0,2,0,2] } ] ] }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: ['*', 80], body: abnahmeRows }, margin: [0, 0, 0, 20] }, { text: 'Bei der Abnahme wurde festgestellt', bold: true, fontSize: 11, margin: [0, 0, 0, 10] }, { text: [ ...checkFajfka('1', abStatus), { text: ' die Leistung/en sind ohne Funktionsprüfung abgenommen', color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('2', abStatus), { text: ' die Leistung/en sind mit Funktionsprüfung abgenommen', color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('3', abStatus), { text: ' bis auf folgende Mängel bzw. Schäden befindet sich die Leistung/en in vertragsgemäßem Zustand', color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: 'Mängel werden bis spätestens ' + abDate + ' behoben.', fontSize: 10, margin: [0, 15, 0, 25] }, { text: `Tag der Abnahme: ${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 20] }, { columns: [ { stack: [ { text: `Name in Druckbuchstaben AG: ${companySettings.vedouci || ''}`, fontSize: 9 }, isRealSignature(sigManager) ? { image: sigManager, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: '*Unterschrift Auftraggeber', fontSize: 9, decoration: 'overline' } ], width: '*' }, { stack: [ { text: `Name in Druckbuchstaben AN: ${workerName}`, fontSize: 9 }, isRealSignature(sigWorker) ? { image: sigWorker, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: 'Unterschrift Auftragnehmer', fontSize: 9, decoration: 'overline' } ], width: '*' } ]}, { text: '* Die Richtigkeit der Angaben wird hiermit durch eine unterschriftsberechtigte Person bestätigt.', fontSize: 8, color: '#666', margin: [0, 25, 0, 0] } ], defaultStyle: { font: 'Roboto' } };
+                    doc = { content: [ { columns: [ { text: t('abn_title'), fontSize: 16, bold: true, color: '#333', margin: [0, 10, 0, 20] }, logoBlock ] }, { table: { widths: ['*', '*'], body: [ [ { text: `${t('abn_name')}${workerName}`, fontSize: 10, margin:[0,2,0,2] }, { text: `${t('abn_kunde')}${actName}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `${t('abn_proj')}${actProj}`, fontSize: 10, margin:[0,2,0,2] }, { text: `${t('abn_anschrift')}${actAddress}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `${t('abn_period')}${dateRange}`, fontSize: 10, margin:[0,2,0,2] }, { text: `${t('abn_plz')}${actAddress ? actAddress.split(',').pop().trim() : ' '}`, fontSize: 10, margin:[0,2,0,2] } ] ] }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: ['*', 80], body: abnahmeRows }, margin: [0, 0, 0, 20] }, { text: t('abn_fest'), bold: true, fontSize: 11, margin: [0, 0, 0, 10] }, { text: [ ...checkFajfka('1', abStatus), { text: t('abn_f1'), color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('2', abStatus), { text: t('abn_f2'), color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('3', abStatus), { text: t('abn_f3'), color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: t('abn_mangel1') + abDate + t('abn_mangel2'), fontSize: 10, margin: [0, 15, 0, 25] }, { text: `${t('abn_tag')}${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 20] }, { columns: [ { stack: [ { text: `${t('abn_ag')}${companySettings.vedouci || ''}`, fontSize: 9 }, isRealSignature(sigManager) ? { image: sigManager, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: t('abn_u_ag'), fontSize: 9, decoration: 'overline' } ], width: '*' }, { stack: [ { text: `${t('abn_an')}${workerName}`, fontSize: 9 }, isRealSignature(sigWorker) ? { image: sigWorker, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: t('abn_u_an'), fontSize: 9, decoration: 'overline' } ], width: '*' } ]}, { text: t('abn_note'), fontSize: 8, color: '#666', margin: [0, 25, 0, 0] } ], defaultStyle: { font: 'Roboto' } };
                 } else {
                     let tH = 0; workerRecords.forEach(r => { tH += r.cisteHodiny; }); const recordDates = workerRecords.map(r => parseLocalDate(r.datum));
                     let minDate = recordDates.length ? new Date(Math.min(...recordDates)).toLocaleDateString('cs-CZ') : ''; let maxDate = recordDates.length ? new Date(Math.max(...recordDates)).toLocaleDateString('cs-CZ') : '';
                     let dateRange = minDate === maxDate ? minDate : `${minDate} - ${maxDate}`;
                     const currencySymbol = workerRecords.length > 0 ? (workerRecords[0].mena === 'CZK' ? 'Kč' : '€') : '€';
-                    let tableBody = [[ {text:'Datum', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Od', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Do', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:'Pauza', bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:`Čisté hodiny`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:`Sazba (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:'Popis', bold:true, fillColor:'#FF8C00', color:'#fff'} ]];
+                    let tableBody = [[ {text:t('pdf_date'), bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:t('pdf_from'), bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:t('pdf_to'), bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:t('pdf_pause'), bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:t('pdf_net_hours'), bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:`${t('pdf_rate')} (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:t('pdf_desc'), bold:true, fillColor:'#FF8C00', color:'#fff'} ]];
                     workerRecords.forEach(r => { tableBody.push([ {text: r.datum.split('-').reverse().join('.')}, {text: r.od}, {text: r.do}, {text: (r.pauzaOd && r.pauzaDo) ? `${r.pauzaOd}-${r.pauzaDo}` : '-'}, {text: r.cisteHodiny.toFixed(2), alignment:'right'}, {text: `${currencySymbol} ${r.sazba.toFixed(2)}`, alignment:'right'}, {text: r.popis || '-'} ]); });
-                    tableBody.push([ {text: 'CELKEM', bold:true, colSpan:4, alignment:'right'}, {}, {}, {}, {text: tH.toFixed(2), bold:true, alignment:'right', fontSize:12}, {text: '-', alignment:'right'}, {text: '-'} ]);
-                    doc = { content: [ { columns: [ { text: 'TÄTIGKEITSNACHWEIS', fontSize: 18, bold: true, margin: [0, 10, 0, 10] }, logoBlock ] }, { text: `Období: ${dateRange}`, fontSize: 12, color: '#666', margin: [0, 0, 0, 15] }, { table: { widths: ['*', '*', '*'], body: [ [ { text: 'Auftraggeber', bold:true, fontSize:10, color:'#666' }, { text: 'Baustelle', bold:true, fontSize:10, color:'#666' }, { text: 'Projekt', bold:true, fontSize:10, color:'#666' } ], [ { text: actName || '-', fontSize:11 }, { text: actAddress || '-', fontSize:11 }, { text: actProj || '-', fontSize:11 } ] ]}, margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: [70, 50, 50, 60, 60, 70, '*'], body: tableBody }, margin: [0, 0, 0, 20] }, { columns: [ { width: '*', stack: [ { text: 'Unterschrift Arbeitnehmer:', fontSize: 10, bold: true, margin: [0, 0, 0, 5] }, isRealSignature(sigWorker) ? { image: sigWorker, width: 140 } : { text: '\n\n\n' } ]}, { width: '*', stack: [ { text: 'Unterschrift Arbeitgeber:', fontSize: 10, bold: true, margin: [0, 0, 0, 5] }, isRealSignature(sigManager) ? { image: sigManager, width: 140 } : { text: '\n\n\n' } ]} ]} ], defaultStyle: { font: 'Roboto' } };
+                    tableBody.push([ {text: t('pdf_total'), bold:true, colSpan:4, alignment:'right'}, {}, {}, {}, {text: tH.toFixed(2), bold:true, alignment:'right', fontSize:12}, {text: '-', alignment:'right'}, {text: '-'} ]);
+                    doc = { content: [ { columns: [ { text: t('pdf_nachweis'), fontSize: 18, bold: true, margin: [0, 10, 0, 10] }, logoBlock ] }, { text: `${t('pdf_period')}${dateRange}`, fontSize: 12, color: '#666', margin: [0, 0, 0, 15] }, { table: { widths: ['*', '*', '*'], body: [ [ { text: t('pdf_client'), bold:true, fontSize:10, color:'#666' }, { text: t('pdf_baustelle'), bold:true, fontSize:10, color:'#666' }, { text: t('pdf_project'), bold:true, fontSize:10, color:'#666' } ], [ { text: actName || '-', fontSize:11 }, { text: actAddress || '-', fontSize:11 }, { text: actProj || '-', fontSize:11 } ] ]}, margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: [70, 50, 50, 60, 60, 70, '*'], body: tableBody }, margin: [0, 0, 0, 20] }, { columns: [ { width: '*', stack: [ { text: t('pdf_sign_worker'), fontSize: 10, bold: true, margin: [0, 0, 0, 5] }, isRealSignature(sigWorker) ? { image: sigWorker, width: 140 } : { text: '\n\n\n' } ]}, { width: '*', stack: [ { text: t('pdf_sign_manager'), fontSize: 10, bold: true, margin: [0, 0, 0, 5] }, isRealSignature(sigManager) ? { image: sigManager, width: 140 } : { text: '\n\n\n' } ]} ]} ], defaultStyle: { font: 'Roboto' } };
                 }
 
                 if (companySettings.showLogoPdf) {
                     doc.footer = function(currentPage, pageCount) {
-                        let leftText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 40" width="150" height="20"><g transform="translate(0, 5)" font-family="sans-serif"><text x="0" y="15" font-size="20" font-weight="900" fill="#FF8C00">&lt;</text><text x="12" y="15" font-size="20" font-weight="900" fill="#000">PM</text><text x="40" y="15" font-size="20" font-weight="900" fill="#FF8C00">&gt;</text></g><g transform="translate(65, 18)" font-family="sans-serif"><text x="0" y="0" font-size="9" fill="#a0a0a0" letter-spacing="1">VYGENEROVÁNO APLIKACÍ</text><text x="0" y="14" font-size="12" font-weight="bold" fill="#FF8C00" letter-spacing="1">VÝKAZ PRÁCE</text></g></svg>`;
+                        let leftText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 40" width="150" height="20"><g transform="translate(0, 5)" font-family="sans-serif"><text x="0" y="15" font-size="20" font-weight="900" fill="#FF8C00">&lt;</text><text x="12" y="15" font-size="20" font-weight="900" fill="#000">PM</text><text x="40" y="15" font-size="20" font-weight="900" fill="#FF8C00">&gt;</text></g><g transform="translate(65, 18)" font-family="sans-serif"><text x="0" y="0" font-size="9" fill="#a0a0a0" letter-spacing="1">${t('footer_gen')}</text><text x="0" y="14" font-size="12" font-weight="bold" fill="#FF8C00" letter-spacing="1">${t('footer_title')}</text></g></svg>`;
                         let cols = []; cols.push({ svg: leftText, margin: [20, 10, 0, 0] });
                         if (type === 'MSW' && companySettings.logoBase64 && isValidBase64(companySettings.logoBase64)) cols.push({ image: companySettings.logoBase64, width: 80, alignment: 'right', margin: [0, 0, 20, 0] });
                         else cols.push({ text: '', width: '*' });
@@ -1057,7 +1186,7 @@
             renderCalendar(); const container = document.getElementById('tree-container'); container.innerHTML = '';
             const workerRecords = zaznamy[currentWorker] || [];
             if (workerRecords.length === 0) { container.innerHTML = '<div style="text-align:center; color:#666; padding: 20px;">Žádné záznamy.</div>'; return; }
-            const groupedByMonth = {}; workerRecords.forEach(r => { const d = parseLocalDate(r.datum); const mKey = `${czechMonths[d.getMonth()]} ${d.getFullYear()}`; if (!groupedByMonth[mKey]) groupedByMonth[mKey] = []; groupedByMonth[mKey].push(r); });
+            const groupedByMonth = {}; workerRecords.forEach(r => { const d = parseLocalDate(r.datum); const mKey = `${localizedMonths[d.getMonth()]} ${d.getFullYear()}`; if (!groupedByMonth[mKey]) groupedByMonth[mKey] = []; groupedByMonth[mKey].push(r); });
 
             for (const [mKey, mRecords] of Object.entries(groupedByMonth)) {
                 let mHours = 0; let mMoney = 0; mRecords.forEach(r => { mHours += r.cisteHodiny; mMoney += (r.cisteHodiny * r.sazba); });
