@@ -35,7 +35,7 @@
         .btn-outline { background-color: transparent; color: var(--text-main); border: 2px solid #333; margin-top: 10px; }
         .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; font-weight: bold; cursor: pointer; }
         .btn-success { background-color: var(--success); color: #000; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; font-weight: bold; cursor: pointer; }
-        .btn-edit { background-color: #f39c12; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; cursor: pointer; }
+        .btn-edit { background-color: #f39c12; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; cursor: pointer; font-weight: bold; }
         .btn-small { background-color: #333; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: var(--radius-small); border: none; font-weight: 600; cursor: pointer; }
         
         .btn-pichačky-start { background-color: var(--success); color: #000; font-size: 18px; padding: 16px; border-radius: var(--radius-large); font-weight: bold; border: none; width: 100%; box-shadow: 0 4px 15px rgba(50, 215, 75, 0.2); cursor: pointer; margin-bottom: 10px; }
@@ -179,9 +179,7 @@
                 <div id="cal-title-left" style="font-size: 22px;" data-i18n="ui_today">Dnes</div>
                 <div id="cal-title-right" class="cal-month-title">Září 2026</div>
             </div>
-            <div class="cal-grid" id="cal-days-header">
-                <!-- Vykreslí se dynamicky přes JS s překladem -->
-            </div>
+            <div class="cal-grid" id="cal-days-header"></div>
             <div class="cal-grid" id="cal-grid-body"></div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn-small" style="background:#2c2c2e; color:var(--primary-orange);" onclick="changeCalendarMonth(-1)" data-i18n="ui_prev">◀ Předchozí</button>
@@ -220,7 +218,6 @@
     <div class="modal-overlay" id="templates-modal">
         <div class="modal-content">
             <h2 style="color:var(--primary-orange); margin-bottom:15px;">📋 Šablony výkazů</h2>
-            <p style="color:#aaa; font-size:13px; margin-bottom:15px;">Každá šablona obsahuje pravidla výpočtu hodin a vzhled PDF pro konkrétní firmu.</p>
             <div id="templates-list" style="max-height: 40vh; overflow-y: auto; margin-bottom: 15px;"></div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn btn-outline" style="margin:0;" onclick="closeTemplatesModal()">Zavřít</button>
@@ -318,7 +315,7 @@
     <!-- MODAL: TVORBA FAKTURY -->
     <div class="modal-overlay" id="invoice-items-modal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 10px; color: var(--primary-orange);">Generování faktury</h2>
+            <h2 style="margin-bottom: 10px; color: var(--primary-orange);" id="inv-modal-title">Generování faktury</h2>
             
             <div class="section-title">Číslování faktury</div>
             <div class="form-row">
@@ -334,12 +331,15 @@
             </div>
             
             <div class="section-title">Položky k fakturaci</div>
-            <div id="invoice-items-container" style="margin-bottom: 15px;"></div>
-            <button class="btn-small" style="margin-bottom: 15px;" onclick="addExtraInvoiceItemRow()">+ Přidat další položku</button>
+            <div id="invoice-items-container" style="margin-bottom: 10px;"></div>
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <button class="btn-small" style="flex: 1;" onclick="addExtraInvoiceItemRow()">+ Další položka</button>
+                <button class="btn-small" style="flex: 1; background: #0a84ff;" onclick="translateItemsToGerman()">🇩🇪 Přeložit do DE</button>
+            </div>
             
             <div class="section-title">Vzhled a podpis</div>
             <label style="display:flex; align-items:center; gap:10px; margin-bottom:10px; cursor:pointer;"><input type="checkbox" id="inv-use-stamp" checked style="width:20px; height:20px; accent-color:var(--primary-orange);"><span style="font-size:14px;">Vložit razítko firmy do PDF</span></label>
-            <div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-outline" style="margin:0;" onclick="closeInvoiceModal()">Zrušit</button><button class="btn" style="margin:0;" onclick="proceedToSignatureFromInvoice()">K podpisu PDF</button></div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-outline" style="margin:0;" onclick="closeInvoiceModal()">Zrušit</button><button class="btn" style="margin:0;" onclick="proceedToSignatureFromInvoice()">Uložit a pokračovat</button></div>
         </div>
     </div>
 
@@ -358,7 +358,7 @@
             <h2 id="manual-modal-title">Záznam hodin (Předák)</h2>
             <div class="form-group"><label>Datum</label><input type="date" id="input-datum" oninput="saveManualDraft()"></div>
             <div class="form-row"><div class="form-group"><label>Od</label><input type="time" id="input-od" value="07:00" oninput="saveManualDraft()"></div><div class="form-group"><label>Do</label><input type="time" id="input-do" value="16:00" oninput="saveManualDraft()"></div></div>
-            <div class="form-row"><div class="form-group"><label>Pauza Od</label><input type="time" id="input-pauza-od" value="12:00" oninput="saveManualDraft()"></div><div class="form-group"><label>Pauza Do</label><input type="time" id="input-pauza-do" value="12:30" oninput="saveManualDraft()"></div></div>
+            <div class="form-row"><div class="form-group"><label>Pauza Od</label><input type="time" id="input-pauza-od" value="" oninput="saveManualDraft()"></div><div class="form-group"><label>Pauza Do</label><input type="time" id="input-pauza-do" value="" oninput="saveManualDraft()"></div></div>
             <div class="form-row"><div class="form-group"><label>Sazba</label><input type="number" id="input-sazba" value="40" oninput="saveManualDraft()"></div><div class="form-group"><label>Měna</label><select id="input-mena" onchange="saveManualDraft()"><option value="EUR">€ (EUR)</option><option value="CZK">Kč (CZK)</option></select></div></div>
             <div class="form-group"><label>Popis</label><input type="text" id="input-popis" placeholder="Popis práce..." oninput="saveManualDraft()"></div>
             <button class="btn" onclick="saveManualRecord()">Uložit</button>
@@ -478,6 +478,7 @@
                 ui_manual_add: "+ Zapsat hodiny ručně", ui_add_worker: "+ Přidat osobu do aplikace",
                 ui_loading: "Načítání databáze...", ui_enter: "Vstoupit",
 
+                inv_title: "Faktura č. ",
                 inv_desc: "Popis", inv_qty: "Množ.", inv_price: "Cena/jedn.", inv_total: "Celkem",
                 inv_supplier: "Dodavatel", inv_account: "ČÍSLO ÚČTU", inv_vs: "VARIABILNÍ SYMBOL",
                 inv_sum: "CELKOVÁ ČÁSTKA K ÚHRADĚ", inv_issue: "DATUM VYSTAVENÍ", inv_due: "DATUM SPLATNOSTI",
@@ -528,6 +529,7 @@
                 ui_manual_add: "+ Stunden manuell eintragen", ui_add_worker: "+ Person zur App hinzufügen",
                 ui_loading: "Datenbank wird geladen...", ui_enter: "Eintreten",
 
+                inv_title: "Rechnung Nr. ",
                 inv_desc: "Beschreibung", inv_qty: "Menge", inv_price: "Preis/Einheit", inv_total: "Gesamt",
                 inv_supplier: "Lieferant", inv_account: "KONTONUMMER", inv_vs: "VARIABLES SYMBOL",
                 inv_sum: "GESAMTZAHLUNGSBETRAG", inv_issue: "AUSSTELLUNGSDATUM", inv_due: "FÄLLIGKEITSDATUM",
@@ -674,11 +676,11 @@
         let tempLogo = null; let tempStamp = null; let tempExtDocBase64 = null; let tempExtDocType = null; let tempExtDocName = null;
         let currentDocDataUrl = null; let currentDocFilename = 'Dokument.pdf'; let currentBlobUrl = null;
         let appMode = 'individual';
+        let editingInvoiceId = null; // Proměnná pro ukládání ID aktuálně upravované faktury
 
         window.onload = async () => {
             if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) document.getElementById('pwa-prompt').style.display = 'block';
             
-            // Translate UI on load
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 el.innerHTML = t(el.getAttribute('data-i18n'));
             });
@@ -850,8 +852,6 @@
         function renderCalendar() { 
             const calGrid = document.getElementById('cal-grid-body'); calGrid.innerHTML = ''; 
             const daysHeader = document.getElementById('cal-days-header');
-            
-            // Render translated week days
             let daysHtml = '';
             t('days').forEach(d => { daysHtml += `<div class="cal-day-name">${d}</div>`; });
             daysHeader.innerHTML = daysHtml;
@@ -985,8 +985,39 @@
             } 
         }
 
+        // CHYTRÝ SLOVNÍK PRO PŘEKLADY Z CZ DO DE
+        const czToDeDict = {
+            "elektromontážní práce": "Elektroinstallationsarbeiten",
+            "elektromontazni prace": "Elektroinstallationsarbeiten",
+            "kabel": "Kabel",
+            "lisovací spojovací válečky": "Pressverbinder",
+            "smršťovací bužírky": "Schrumpfschlauch",
+            "drobný instalační materiál": "Kleinmaterial",
+            "cestovné": "Fahrtkosten",
+            "výjezd": "Anfahrt",
+            "materiál": "Material",
+            "cesta": "Fahrtkosten",
+            "práce": "Arbeiten",
+            "hodiny": "Stunden"
+        };
+
+        function translateItemsToGerman() {
+            customInvoiceItems.forEach(item => {
+                let text = item.desc;
+                Object.keys(czToDeDict).forEach(key => {
+                    const regex = new RegExp(key, "gi");
+                    text = text.replace(regex, czToDeDict[key]);
+                });
+                item.desc = text;
+            });
+            renderInvoiceItemsUI();
+        }
+
         function openInvoiceModal() {
-            if (selectedRecordIds.length === 0) return alert('Nejprve vyberte záznamy.');
+            editingInvoiceId = null; // Vyčistit před vytvořením nové faktury
+            if (selectedRecordIds.length === 0) return alert('Nejprve vyberte záznamy ze stromu.');
+            
+            document.getElementById('inv-modal-title').innerText = "Generování faktury";
             document.getElementById('inv-year').value = invConfig.year || new Date().getFullYear();
             document.getElementById('inv-month').value = invConfig.month || (new Date().getMonth() + 1);
             document.getElementById('inv-counter').value = invConfig.counter || 1;
@@ -996,19 +1027,59 @@
             totalHours = Math.round(totalHours * 100) / 100;
             
             let avgRate = records.length > 0 ? records[0].sazba : 40; let currency = records.length > 0 ? records[0].mena : 'EUR';
-            customInvoiceItems = [{ desc: `Elektromontážní práce pro ${companySettings.actualClientName || "..."}`, qty: totalHours, price: avgRate, isHours: true, currency: currency }];
+            let workDesc = lang === 'de' ? `Elektroinstallationsarbeiten für ${companySettings.actualClientName || "..."}` : `Elektromontážní práce pro ${companySettings.actualClientName || "..."}`;
+            
+            customInvoiceItems = [{ desc: workDesc, qty: totalHours, price: avgRate, isHours: true, currency: currency }];
             renderInvoiceItemsUI(); document.getElementById('invoice-items-modal').classList.add('active');
+        }
+
+        // Tlačítko UPRAVIT otevře tuto funkci
+        function editFaktura(id) {
+            let f = faktury.find(x => String(x.id) === String(id));
+            if(!f || f.isExternal) return;
+            
+            editingInvoiceId = id;
+            document.getElementById('inv-modal-title').innerText = "Úprava faktury " + f.invNumber;
+            
+            let match = f.invNumber.match(/(\d{4})\/(\d{2})-(\d{3})/);
+            if(match) {
+                document.getElementById('inv-year').value = parseInt(match[1]);
+                document.getElementById('inv-month').value = parseInt(match[2]);
+                document.getElementById('inv-counter').value = parseInt(match[3]);
+            }
+            
+            document.getElementById('inv-skonto').value = f.skontoPct || 0;
+            document.getElementById('inv-use-stamp').checked = f.useStamp !== false;
+            
+            customInvoiceItems = JSON.parse(JSON.stringify(f.items));
+            renderInvoiceItemsUI();
+            closeFakturyManager();
+            document.getElementById('invoice-items-modal').classList.add('active');
         }
         
         function closeInvoiceModal() { document.getElementById('invoice-items-modal').classList.remove('active'); }
-        function renderInvoiceItemsUI() { const container = document.getElementById('invoice-items-container'); container.innerHTML = ''; customInvoiceItems.forEach((it, i) => { container.innerHTML += `<div class="extra-item-row"><input type="text" value="${escapeHtml(it.desc)}" onchange="customInvoiceItems[${i}].desc=this.value" style="flex:2; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.qty}" step="0.5" onchange="customInvoiceItems[${i}].qty=parseFloat(this.value)||0" style="flex:0.8; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.price}" step="1" onchange="customInvoiceItems[${i}].price=parseFloat(this.value)||0" style="flex:1; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"></div>`; }); }
-        function addExtraInvoiceItemRow() { customInvoiceItems.push({ desc: 'Materiál / Cesta', qty: 1, price: 0, isHours: false, currency: 'EUR' }); renderInvoiceItemsUI(); }
-        function proceedToSignatureFromInvoice() { 
-            invConfig.year = parseInt(document.getElementById('inv-year').value) || new Date().getFullYear(); invConfig.month = parseInt(document.getElementById('inv-month').value) || (new Date().getMonth() + 1); invConfig.counter = parseInt(document.getElementById('inv-counter').value) || 1;
-            asyncSave('stundenzettel_invconfig', invConfig);
-            currentInvoiceSetup.dueDays = parseInt(document.getElementById('inv-due-days').value) || 14; currentInvoiceSetup.skonto = parseFloat(document.getElementById('inv-skonto').value) || 0; currentInvoiceSetup.useStamp = document.getElementById('inv-use-stamp').checked; 
-            closeInvoiceModal(); preparePdf('Faktura'); 
+        
+        function renderInvoiceItemsUI() { 
+            const container = document.getElementById('invoice-items-container'); container.innerHTML = ''; 
+            customInvoiceItems.forEach((it, i) => { 
+                container.innerHTML += `<div class="extra-item-row"><input type="text" value="${escapeHtml(it.desc)}" onchange="customInvoiceItems[${i}].desc=this.value" style="flex:2; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.qty}" step="0.5" onchange="customInvoiceItems[${i}].qty=parseFloat(this.value)||0" style="flex:0.8; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"><input type="number" value="${it.price}" step="1" onchange="customInvoiceItems[${i}].price=parseFloat(this.value)||0" style="flex:1; background:#121212; border:1px solid #3a3a3c; color:#fff; padding:10px; border-radius:8px;"></div>`; 
+            }); 
         }
+        function addExtraInvoiceItemRow() { customInvoiceItems.push({ desc: 'Materiál / Cesta', qty: 1, price: 0, isHours: false, currency: 'EUR' }); renderInvoiceItemsUI(); }
+        
+        function proceedToSignatureFromInvoice() { 
+            invConfig.year = parseInt(document.getElementById('inv-year').value) || new Date().getFullYear(); 
+            invConfig.month = parseInt(document.getElementById('inv-month').value) || (new Date().getMonth() + 1); 
+            invConfig.counter = parseInt(document.getElementById('inv-counter').value) || 1;
+            
+            currentInvoiceSetup.dueDays = parseInt(document.getElementById('inv-due-days').value) || 14; 
+            currentInvoiceSetup.skonto = parseFloat(document.getElementById('inv-skonto').value) || 0; 
+            currentInvoiceSetup.useStamp = document.getElementById('inv-use-stamp').checked; 
+            
+            closeInvoiceModal(); 
+            preparePdf('Faktura'); 
+        }
+        
         function toggleInvoiceDetails(id) { const details = document.getElementById(`inv-details-${id}`); if (details.classList.contains('open')) { details.classList.remove('open'); } else { document.querySelectorAll('.inv-details').forEach(el => el.classList.remove('open')); details.classList.add('open'); } }
 
         function openFakturyManager() { 
@@ -1021,7 +1092,7 @@
                 let diffDays = Math.ceil((dueDateObj.setHours(0,0,0,0) - dz) / 86400000); if (isNaN(diffDays)) diffDays = 0; 
                 let statusText = isPaid ? "ZAPLACENO" : (diffDays < 0 ? `Po splatnosti ${Math.abs(diffDays)} dnů` : `Splatnost za ${diffDays} dnů`); 
                 let statusColor = isPaid ? "var(--success)" : (diffDays < 0 ? "var(--danger)" : "#f39c12"); 
-                list.innerHTML += `<div class="pdf-history-item" style="border-left: 4px solid ${f.isExternal ? '#32d74b' : 'var(--primary-orange)'};"><div class="invoice-header" onclick="toggleInvoiceDetails('${f.id}')"><div><strong style="color:${f.isExternal ? '#32d74b' : 'var(--primary-orange)'}; font-size:16px;">${f.isExternal ? 'Externí' : 'Faktura'} ${escapeHtml(f.invNumber)}</strong><br><span style="font-size:12px; color:#aaa;">Vystaveno: ${escapeHtml(f.issueDate)}</span></div><div style="display:flex; align-items:center; gap: 12px; text-align: right;"><span style="font-size:15px; font-weight:bold; color:#fff;">${currencySymbol(f.currency || 'EUR')} ${f.total.toFixed(2)}</span><div class="${isPaid ? 'half-moon-green' : 'half-moon-red'}"></div></div></div><div id="inv-details-${f.id}" class="inv-details" onclick="event.stopPropagation()"><div style="display:flex; justify-content:space-between; margin-bottom: 12px; font-size: 13px;"><div><span style="color:${statusColor}; font-weight:bold;">${escapeHtml(statusText)}</span><br>Zbývá: <span style="color:#fff; font-weight:bold;">${currencySymbol(f.currency || 'EUR')} ${f.remaining.toFixed(2)}</span>${f.isExternal ? `<br><span style="color:#aaa; display:block; margin-top:4px;">Společnost: ${escapeHtml(f.company)}</span>` : ''}</div>${f.zaloha > 0 ? `<div style="text-align:right; color:var(--success);">Záloha: ${currencySymbol(f.currency || 'EUR')} ${f.zaloha.toFixed(2)}</div>` : ''}</div><div style="display:flex; gap:8px;">${f.remaining > 0 ? `<button class="btn-success" onclick="addZaloha('${f.id}')">+ Přidat úhradu</button>` : `<button class="btn-outline" style="margin:0; padding:6px; flex:1;" onclick="resetZaloha('${f.id}')">Zrušit platbu</button>`}<button class="btn-small" style="flex:1; background:var(--info); color:#fff;" onclick="downloadExternalDoc('${f.id}')">👁 Zobrazit</button><button class="btn-danger" onclick="deleteFaktura('${f.id}')">Smazat</button></div></div></div>`; 
+                list.innerHTML += `<div class="pdf-history-item" style="border-left: 4px solid ${f.isExternal ? '#32d74b' : 'var(--primary-orange)'};"><div class="invoice-header" onclick="toggleInvoiceDetails('${f.id}')"><div><strong style="color:${f.isExternal ? '#32d74b' : 'var(--primary-orange)'}; font-size:16px;">${f.isExternal ? 'Externí' : 'Faktura'} ${escapeHtml(f.invNumber)}</strong><br><span style="font-size:12px; color:#aaa;">Vystaveno: ${escapeHtml(f.issueDate)}</span></div><div style="display:flex; align-items:center; gap: 12px; text-align: right;"><span style="font-size:15px; font-weight:bold; color:#fff;">${currencySymbol(f.currency || 'EUR')} ${f.total.toFixed(2)}</span><div class="${isPaid ? 'half-moon-green' : 'half-moon-red'}"></div></div></div><div id="inv-details-${f.id}" class="inv-details" onclick="event.stopPropagation()"><div style="display:flex; justify-content:space-between; margin-bottom: 12px; font-size: 13px;"><div><span style="color:${statusColor}; font-weight:bold;">${escapeHtml(statusText)}</span><br>Zbývá: <span style="color:#fff; font-weight:bold;">${currencySymbol(f.currency || 'EUR')} ${f.remaining.toFixed(2)}</span>${f.isExternal ? `<br><span style="color:#aaa; display:block; margin-top:4px;">Společnost: ${escapeHtml(f.company)}</span>` : ''}</div>${f.zaloha > 0 ? `<div style="text-align:right; color:var(--success);">Záloha: ${currencySymbol(f.currency || 'EUR')} ${f.zaloha.toFixed(2)}</div>` : ''}</div><div style="display:flex; gap:8px;">${f.remaining > 0 ? `<button class="btn-success" onclick="addZaloha('${f.id}')">+ Přidat úhradu</button>` : `<button class="btn-outline" style="margin:0; padding:6px; flex:1;" onclick="resetZaloha('${f.id}')">Zrušit platbu</button>`}<button class="btn-small" style="flex:1; background:var(--info); color:#fff;" onclick="downloadExternalDoc('${f.id}')">👁 Zobrazit</button>${!f.isExternal ? `<button class="btn-edit" style="flex:1;" onclick="editFaktura('${f.id}')">✏️ Upravit</button>` : ''}<button class="btn-danger" onclick="deleteFaktura('${f.id}')">Smazat</button></div></div></div>`; 
             }); 
             document.getElementById('faktury-manager-modal').classList.add('active'); 
         }
@@ -1054,7 +1125,7 @@
         }
         
         function deleteFaktura(id) { 
-            if(confirm('Smazat dokument?')) { 
+            if(confirm('Opravdu smazat dokument?')) { 
                 faktury = faktury.filter(x => String(x.id) !== String(id)); 
                 asyncSave('stundenzettel_faktury_db', faktury); 
                 openFakturyManager(); 
@@ -1075,12 +1146,41 @@
             let extraData = {};
             if (pendingPdfType === 'Abnahme' || pendingPdfType === 'MSW') { extraData.status = document.querySelector('input[name="abnahme_status"]:checked').value; if (extraData.status === '3') { let d = document.getElementById('abnahme-date-input').value; extraData.date = d ? new Date(d).toLocaleDateString('cs-CZ') : ''; } }
             closeSignatureModal();
+            
             if (pendingPdfType === 'Faktura') {
-                const invNumber = `${invConfig.year}/${String(invConfig.month).padStart(2,'0')}-${String(invConfig.counter).padStart(3,'0')}`; invConfig.counter++; asyncSave('stundenzettel_invconfig', invConfig); 
-                let rawTotal = customInvoiceItems.reduce((s, i) => s + (i.qty * i.price), 0); let skontoPct = currentInvoiceSetup.skonto || 0; let skontoAmt = (rawTotal * skontoPct) / 100; let totalSum = rawTotal - skontoAmt; 
-                let issueDate = new Date(); let dueDateObj = new Date(); dueDateObj.setDate(issueDate.getDate() + currentInvoiceSetup.dueDays);
-                let fObj = { id: generateId(), isExternal: false, invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, rawTotal: rawTotal, skontoPct: skontoPct, skontoAmount: skontoAmt, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sigW, useStamp: currentInvoiceSetup.useStamp, currency: customInvoiceItems[0]?.currency || 'EUR' };
-                faktury.push(fObj); asyncSave('stundenzettel_faktury_db', faktury); generateRealPdf('Faktura', sigW, selectedRecordIds, currentWorker, fObj.id);
+                const invNumber = `${invConfig.year}/${String(invConfig.month).padStart(2,'0')}-${String(invConfig.counter).padStart(3,'0')}`; 
+                
+                let rawTotal = customInvoiceItems.reduce((s, i) => s + (i.qty * i.price), 0); 
+                let skontoPct = currentInvoiceSetup.skonto || 0; 
+                let skontoAmt = (rawTotal * skontoPct) / 100; 
+                let totalSum = rawTotal - skontoAmt; 
+                
+                let fObj;
+                if (editingInvoiceId) {
+                    fObj = faktury.find(f => f.id === editingInvoiceId);
+                    if (fObj) {
+                        fObj.invNumber = invNumber;
+                        fObj.total = totalSum;
+                        fObj.rawTotal = rawTotal;
+                        fObj.skontoPct = skontoPct;
+                        fObj.skontoAmount = skontoAmt;
+                        fObj.items = JSON.parse(JSON.stringify(customInvoiceItems));
+                        fObj.sigImage = sigW;
+                        fObj.useStamp = currentInvoiceSetup.useStamp;
+                        fObj.currency = customInvoiceItems[0]?.currency || 'EUR';
+                        fObj.remaining = totalSum - (fObj.zaloha || 0);
+                    }
+                    editingInvoiceId = null; // Vyčištění stavu úprav
+                } else {
+                    invConfig.counter++; asyncSave('stundenzettel_invconfig', invConfig);
+                    let issueDate = new Date(); let dueDateObj = new Date(); dueDateObj.setDate(issueDate.getDate() + currentInvoiceSetup.dueDays);
+                    fObj = { id: generateId(), isExternal: false, invNumber: invNumber, issueDate: issueDate.toLocaleDateString('cs-CZ'), dueDate: dueDateObj.toISOString(), total: totalSum, rawTotal: rawTotal, skontoPct: skontoPct, skontoAmount: skontoAmt, zaloha: 0, remaining: totalSum, worker: currentWorker, items: JSON.parse(JSON.stringify(customInvoiceItems)), recordIds: [...selectedRecordIds], sigImage: sigW, useStamp: currentInvoiceSetup.useStamp, currency: customInvoiceItems[0]?.currency || 'EUR' };
+                    faktury.push(fObj); 
+                }
+                
+                asyncSave('stundenzettel_faktury_db', faktury); 
+                generateRealPdf('Faktura', sigW, selectedRecordIds, currentWorker, fObj.id);
+                
             } else {
                 let pObj = { id: generateId(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM, extraData: extraData };
                 savedPdfs.push(pObj); asyncSave('stundenzettel_saved_pdfs', savedPdfs); generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM, extraData);
@@ -1102,7 +1202,7 @@
                     let body = [[ {text:t('inv_desc'), bold:true, fillColor:'#FF8C00', color:'#fff'}, {text:t('inv_qty'), bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'center'}, {text:`${t('inv_price')} (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'}, {text:`${t('inv_total')} (${currencySymbol})`, bold:true, fillColor:'#FF8C00', color:'#fff', alignment:'right'} ]];
                     if (fData.items) fData.items.forEach(i => { body.push([ i.desc, {text:`${i.qty} ${i.isHours?t('inv_pcs'):'ks'}`, alignment:'center'}, {text: `${currencySymbol} ${i.price.toFixed(2)}`, alignment:'right'}, {text: `${currencySymbol} ${(i.qty * i.price).toFixed(2)}`, alignment:'right'} ]); });
                     doc = { content: [
-                        { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [ { width: '*', stack: [ { text: `${t('inv_title')} ${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] }, { text: t('inv_supplier'), fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] }, { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 } ]}, showLogo && isValidBase64(companySettings.logoBase64) ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 } ] }]]}, layout: 'noBorders' },
+                        { margin: [0, 0, 0, 15], table: { widths: ['*'], body: [[ { fillColor: '#FF8C00', margin: [10, 15, 10, 15], layout: 'noBorders', columns: [ { width: '*', stack: [ { text: `${t('inv_title')}${fData.invNumber}`, fontSize: 24, bold: true, color: '#ffffff', margin: [0,0,0,10] }, { text: t('inv_supplier'), fontSize: 11, bold: true, color: '#ffffff', margin: [0, 4, 0, 2] }, { text: `${companySettings.firma}\n${companySettings.adresa}\nId. Nr.: ${companySettings.ico}\nIBAN: ${companySettings.bank}\nSWIFT/BIC: ${companySettings.swift}`, fontSize: 10, color: '#ffffff', lineHeight: 1.2 } ]}, showLogo && isValidBase64(companySettings.logoBase64) ? { image: companySettings.logoBase64, width: 90, alignment: 'right' } : { text: '', width: 80 } ] }]]}, layout: 'noBorders' },
                         { table: { widths: ['*', '*', '*'], body: [ [{ text:t('inv_account'), bold:true, fontSize:8, color:'#666' }, { text:t('inv_vs'), bold:true, fontSize:8, color:'#666' }, { text:t('inv_sum'), bold:true, fontSize:8, color:'#666' }], [{ text: companySettings.bank || ' ', fontSize:10 }, { text: fData.invNumber.replace(/[^0-9]/g, ''), fontSize:10 }, { text: `${currencySymbol} ${fData.total.toFixed(2)}`, bold:true, fontSize:11, color:'#FF8C00' }], [{ text:t('inv_issue'), bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text:t('inv_due'), bold:true, fontSize:8, color:'#666', margin:[0,10,0,0] }, { text: '', margin:[0,10,0,0] }], [{ text: fData.issueDate, fontSize:10 }, { text: new Date(fData.dueDate).toLocaleDateString('cs-CZ'), fontSize:10 }, { text: '' }] ]}, layout: 'lightHorizontalLines', margin: [0, 0, 0, 15] },
                         { stack: [
                             { text:t('inv_client'), bold:true, fontSize:11, color:'#FF8C00', margin:[0,0,0,4] }, 
