@@ -377,7 +377,7 @@
             <div class="section-title">Záloha a obnova dat (JSON)</div>
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn-small" style="flex: 1; padding: 10px; font-size: 14px;" onclick="exportJsonData()">⬇️ Stáhnout data</button>
-                <div style="flex: 1; position: relative;"><button class="btn-small" style="width: 100%; padding: 10px; font-size: 14px; background: #E67E22; pointer-events: none;">⬆️ Nahrát data</button><input type="file" accept=".json" onchange="importJsonData(event)" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer;"></div>
+                <div style="flex: 1; position: relative;"><button class="btn-small" style="width: 100%; padding: 10px; font-size: 14px; background: #E67E22; pointer-events: none;">⬆️ Nahrát data</button><input type="file" accept=".json" onclick="this.value=null" onchange="importJsonData(event)" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer;"></div>
             </div>
             
             <div class="section-title">1. Dodavatel (Moje firma)</div>
@@ -676,7 +676,7 @@
         let tempLogo = null; let tempStamp = null; let tempExtDocBase64 = null; let tempExtDocType = null; let tempExtDocName = null;
         let currentDocDataUrl = null; let currentDocFilename = 'Dokument.pdf'; let currentBlobUrl = null;
         let appMode = 'individual';
-        let editingInvoiceId = null; // Proměnná pro ukládání ID aktuálně upravované faktury
+        let editingInvoiceId = null;
 
         window.onload = async () => {
             if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) document.getElementById('pwa-prompt').style.display = 'block';
@@ -959,7 +959,34 @@
 
         // --- SOUBORY A SDÍLENÍ ---
         function exportJsonData() { const data = {}; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith('st_') || key.startsWith('stundenzettel_')) data[key] = localStorage.getItem(key); } const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); fallbackDownload(url, `stundenzettel_zaloha_${new Date().toISOString().split('T')[0]}.json`); }
-        function importJsonData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); for (const key in data) { localStorage.setItem(key, data[key]); asyncSave(key, JSON.parse(data[key])); } alert('Data nahrána! Aplikace se obnoví.'); location.reload(); } catch (err) { alert('Chyba při čtení.'); } }; reader.readAsText(file); }
+        
+        // OPRAVENÁ FUNKCE PRO IMPORT
+        function importJsonData(event) { 
+            const file = event.target.files[0]; 
+            if (!file) return; 
+            const reader = new FileReader(); 
+            reader.onload = function(e) { 
+                try { 
+                    const data = JSON.parse(e.target.result); 
+                    for (const key in data) { 
+                        localStorage.setItem(key, data[key]); 
+                        let pVal; 
+                        try { 
+                            pVal = JSON.parse(data[key]); 
+                        } catch(er) { 
+                            pVal = data[key]; 
+                        } 
+                        asyncSave(key, pVal); 
+                    } 
+                    alert('Data nahrána! Aplikace se obnoví.'); 
+                    location.reload(); 
+                } catch (err) { 
+                    alert('Chyba při čtení záložního souboru: ' + err.message); 
+                } 
+            }; 
+            reader.readAsText(file); 
+        }
+        
         function dataURItoBlob(dataURI) { const byteString = atob(dataURI.split(',')[1]); const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]; const ab = new ArrayBuffer(byteString.length); const ia = new Uint8Array(ab); for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); } return new Blob([ab], { type: mimeString }); }
         function showInViewer(dataUrl, filename) { currentDocDataUrl = dataUrl; currentDocFilename = filename || 'Dokument.pdf'; const viewerContainer = document.getElementById('doc-viewer-container'); try { if(currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); const blob = dataURItoBlob(dataUrl); currentBlobUrl = URL.createObjectURL(blob); viewerContainer.innerHTML = `<iframe src="${currentBlobUrl}" style="width: 1px; min-width: 100%; height: 100%; border: none;"></iframe>`; } catch(e) { viewerContainer.innerHTML = `<iframe src="${dataUrl}" style="width: 1px; min-width: 100%; height: 100%; border: none;"></iframe>`; } document.getElementById('doc-viewer-modal').classList.add('active'); }
         function closeDocViewer() { document.getElementById('doc-viewer-modal').classList.remove('active'); document.getElementById('doc-viewer-container').innerHTML = ''; }
