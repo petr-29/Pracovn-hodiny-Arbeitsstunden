@@ -961,31 +961,34 @@
         function exportJsonData() { const data = {}; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith('st_') || key.startsWith('stundenzettel_')) data[key] = localStorage.getItem(key); } const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); fallbackDownload(url, `stundenzettel_zaloha_${new Date().toISOString().split('T')[0]}.json`); }
         
         // OPRAVENÁ FUNKCE PRO IMPORT
-        function importJsonData(event) { 
-            const file = event.target.files[0]; 
-            if (!file) return; 
-            const reader = new FileReader(); 
-            reader.onload = function(e) { 
+function importJsonData(event) { 
+    const file = event.target.files[0]; 
+    if (!file) return; 
+    const reader = new FileReader(); 
+    
+    // Přidáno slovo 'async'
+    reader.onload = async function(e) { 
+        try { 
+            const data = JSON.parse(e.target.result); 
+            for (const key in data) { 
+                localStorage.setItem(key, data[key]); 
+                let pVal; 
                 try { 
-                    const data = JSON.parse(e.target.result); 
-                    for (const key in data) { 
-                        localStorage.setItem(key, data[key]); 
-                        let pVal; 
-                        try { 
-                            pVal = JSON.parse(data[key]); 
-                        } catch(er) { 
-                            pVal = data[key]; 
-                        } 
-                        asyncSave(key, pVal); 
-                    } 
-                    alert('Data nahrána! Aplikace se obnoví.'); 
-                    location.reload(); 
-                } catch (err) { 
-                    alert('Chyba při čtení záložního souboru: ' + err.message); 
+                    pVal = JSON.parse(data[key]); 
+                } catch(er) { 
+                    pVal = data[key]; 
                 } 
-            }; 
-            reader.readAsText(file); 
-        }
+                // Nahrazeno asyncSave přímým čekáním přes await idbSave
+                await idbSave(key, pVal); 
+            } 
+            alert('Data nahrána! Aplikace se obnoví.'); 
+            location.reload(); 
+        } catch (err) { 
+            alert('Chyba při čtení záložního souboru: ' + err.message); 
+        } 
+    }; 
+    reader.readAsText(file); 
+}
         
         function dataURItoBlob(dataURI) { const byteString = atob(dataURI.split(',')[1]); const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]; const ab = new ArrayBuffer(byteString.length); const ia = new Uint8Array(ab); for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); } return new Blob([ab], { type: mimeString }); }
         function showInViewer(dataUrl, filename) { currentDocDataUrl = dataUrl; currentDocFilename = filename || 'Dokument.pdf'; const viewerContainer = document.getElementById('doc-viewer-container'); try { if(currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); const blob = dataURItoBlob(dataUrl); currentBlobUrl = URL.createObjectURL(blob); viewerContainer.innerHTML = `<iframe src="${currentBlobUrl}" style="width: 1px; min-width: 100%; height: 100%; border: none;"></iframe>`; } catch(e) { viewerContainer.innerHTML = `<iframe src="${dataUrl}" style="width: 1px; min-width: 100%; height: 100%; border: none;"></iframe>`; } document.getElementById('doc-viewer-modal').classList.add('active'); }
