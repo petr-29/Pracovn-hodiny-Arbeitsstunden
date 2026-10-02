@@ -958,8 +958,43 @@
         function saveSettings() { quietSaveSettings(); document.getElementById('settings-modal').classList.remove('active'); }
 
         // --- SOUBORY A SDÍLENÍ ---
-        function exportJsonData() { const data = {}; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith('st_') || key.startsWith('stundenzettel_')) data[key] = localStorage.getItem(key); } const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); fallbackDownload(url, `stundenzettel_zaloha_${new Date().toISOString().split('T')[0]}.json`); }
+async function exportJsonData() { 
+    try {
+        const data = {};
         
+        // 1. Získání všech dat z hlavní neomezené databáze (IndexedDB)
+        if (idbInstance) {
+            const keys = await new Promise((resolve) => {
+                const req = idbInstance.transaction("vykonData", "readonly").objectStore("vykonData").getAllKeys();
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve([]);
+            });
+            
+            for (let key of keys) {
+                const val = await idbLoad(key);
+                // Data převedeme na text, aby byl formát zálohy stejný jako dřív
+                data[key] = typeof val === 'object' ? JSON.stringify(val) : String(val);
+            }
+        }
+
+        // 2. Doplnění případných zbytků nastavení z localStorage
+        for (let i = 0; i < localStorage.length; i++) { 
+            const key = localStorage.key(i); 
+            if (key.startsWith('st_') || key.startsWith('stundenzettel_')) {
+                if (data[key] === undefined) {
+                    data[key] = localStorage.getItem(key); 
+                }
+            }
+        } 
+        
+        // 3. Vytvoření a stažení JSON souboru
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); 
+        const url = URL.createObjectURL(blob); 
+        fallbackDownload(url, `stundenzettel_zaloha_${new Date().toISOString().split('T')[0]}.json`); 
+    } catch (err) {
+        alert("Chyba při vytváření zálohy: " + err.message);
+    }
+}        
         // OPRAVENÁ FUNKCE PRO IMPORT
 function importJsonData(event) { 
     const file = event.target.files[0]; 
