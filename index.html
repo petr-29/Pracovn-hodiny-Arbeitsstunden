@@ -1295,7 +1295,7 @@
                     let dataTableBody = [ [ { text: t('msw_day'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_date'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_worktime'), colSpan: 2, bold: true, fontSize: 8, alignment: 'center', fillColor: '#eaeaea' }, {}, { text: t('msw_pause_h'), rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_hours_net'), rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_desc'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' } ], [ {}, {}, { text: t('msw_von'), bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, { text: t('msw_bis'), bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, {}, {}, {} ] ];
                     let sumTotal = 0;
                     for (let i = 0; i < 7; i++) {
-                        let currDay = new Date(targetMonday); currDay.setDate(targetMonday.getDate() + i); let isoDate = currDay.toISOString().split('T')[0]; let czechDateStr = currDay.toLocaleDateString('cs-CZ'); let dayName = weekDaysNames[i];
+                        let currDay = new Date(targetMonday); currDay.setDate(targetMonday.getDate() + i); let isoDate = currDay.getFullYear() + '-' + String(currDay.getMonth() + 1).padStart(2, '0') + '-' + String(currDay.getDate()).padStart(2, '0'); let czechDateStr = currDay.toLocaleDateString('cs-CZ'); let dayName = weekDaysNames[i];
                         let recsForDay = workerRecords.filter(r => r.datum === isoDate);
                         if (recsForDay.length > 0) {
                             let od = recsForDay[0].od; let doC = recsForDay[recsForDay.length - 1].do; let dayH = recsForDay.reduce((s, r) => s + r.cisteHodiny, 0); sumTotal += dayH;
@@ -1366,7 +1366,7 @@
                     for (let i = 0; i < 7; i++) {
                         let currDay = new Date(targetMonday); 
                         currDay.setDate(targetMonday.getDate() + i); 
-                        let isoDate = currDay.toISOString().split('T')[0]; 
+                        let isoDate = currDay.getFullYear() + '-' + String(currDay.getMonth() + 1).padStart(2, '0') + '-' + String(currDay.getDate()).padStart(2, '0'); 
                         let czechDateStr = currDay.toLocaleDateString('cs-CZ'); 
                         let dayName = weekDaysDe[i];
                         
