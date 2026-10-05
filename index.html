@@ -95,7 +95,6 @@
         .form-group input[type="date"], .form-group input[type="time"] { font-size: 14px; padding: 12px; }
         .section-title { font-size: 13px; color: var(--primary-orange); margin-bottom: 10px; margin-top: 20px; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; font-weight: bold; }
 
-        /* ZVĚTŠENÍ PLÁTNA Z 120 NA 250px */
         canvas.signature-pad { background: transparent; border: 1px dashed #555; border-radius: var(--radius-small); width: 100%; height: 250px; touch-action: none; cursor: crosshair; }
         
         .pdf-history-item { background: #121212; padding: 16px; border: 1px solid #2c2c2e; border-radius: var(--radius-medium); margin-bottom: 10px; }
@@ -677,8 +676,10 @@
         let calCurrentMonth = new Date().getMonth(); let calCurrentYear = new Date().getFullYear();
         let tempLogo = null; let tempStamp = null; let tempExtDocBase64 = null; let tempExtDocType = null; let tempExtDocName = null;
         let currentDocDataUrl = null; let currentDocFilename = 'Dokument.pdf'; let currentBlobUrl = null;
+        
         let appMode = 'individual';
         let editingInvoiceId = null;
+        let editingSavedPdfId = null; // Zpětné podepisování
 
         window.onload = async () => {
             if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) document.getElementById('pwa-prompt').style.display = 'block';
@@ -1044,7 +1045,6 @@
             } 
         }
 
-        // CHYTRÝ SLOVNÍK PRO PŘEKLADY Z CZ DO DE
         const czToDeDict = {
             "elektromontážní práce": "Elektroinstallationsarbeiten",
             "elektromontazni prace": "Elektroinstallationsarbeiten",
@@ -1073,7 +1073,7 @@
         }
 
         function openInvoiceModal() {
-            editingInvoiceId = null; // Vyčistit před vytvořením nové faktury
+            editingInvoiceId = null; 
             if (selectedRecordIds.length === 0) return alert('Nejprve vyberte záznamy ze stromu.');
             
             document.getElementById('inv-modal-title').innerText = "Generování faktury";
@@ -1092,7 +1092,6 @@
             renderInvoiceItemsUI(); document.getElementById('invoice-items-modal').classList.add('active');
         }
 
-        // Tlačítko UPRAVIT otevře tuto funkci
         function editFaktura(id) {
             let f = faktury.find(x => String(x.id) === String(id));
             if(!f || f.isExternal) return;
@@ -1197,7 +1196,10 @@
         function setupCanvas(c, ctx) { c.width = c.offsetWidth; c.height = 250; ctx.clearRect(0, 0, c.width, c.height); ctx.strokeStyle = "#0000FF"; ctx.lineWidth = 2.5; let isD = false; c.onmousedown=e=>{isD=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY);}; c.onmousemove=e=>{if(isD){ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke();}}; c.onmouseup=()=>isD=false; c.ontouchstart=e=>{isD=true; let r=c.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); e.preventDefault();}; c.ontouchmove=e=>{if(isD){let r=c.getBoundingClientRect(); ctx.lineTo(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); ctx.stroke();} e.preventDefault();}; c.ontouchend=()=>isD=false; }
         function initCanvas() { canvasW = document.getElementById('sig-canvas-worker'); ctxW = canvasW.getContext('2d'); setupCanvas(canvasW, ctxW); if (pendingPdfType !== 'Faktura' && pendingPdfType !== 'Mesicni') { canvasM = document.getElementById('sig-canvas-manager'); ctxM = canvasM.getContext('2d'); setupCanvas(canvasM, ctxM); } }
         function clearSignature() { ctxW.clearRect(0, 0, canvasW.width, canvasW.height); if (pendingPdfType !== 'Faktura' && pendingPdfType !== 'Mesicni') { ctxM.clearRect(0, 0, canvasM.width, canvasM.height); } }
-        function closeSignatureModal() { document.getElementById('signature-modal').classList.remove('active'); }
+        function closeSignatureModal() { 
+            document.getElementById('signature-modal').classList.remove('active'); 
+            editingSavedPdfId = null; 
+        }
         
         function confirmSignature() {
             const sigW = canvasW.toDataURL("image/png"); let sigM = null;
@@ -1229,7 +1231,7 @@
                         fObj.currency = customInvoiceItems[0]?.currency || 'EUR';
                         fObj.remaining = totalSum - (fObj.zaloha || 0);
                     }
-                    editingInvoiceId = null; // Vyčištění stavu úprav
+                    editingInvoiceId = null;
                 } else {
                     invConfig.counter++; asyncSave('stundenzettel_invconfig', invConfig);
                     let issueDate = new Date(); let dueDateObj = new Date(); dueDateObj.setDate(issueDate.getDate() + currentInvoiceSetup.dueDays);
@@ -1241,8 +1243,22 @@
                 generateRealPdf('Faktura', sigW, selectedRecordIds, currentWorker, fObj.id);
                 
             } else {
-                let pObj = { id: generateId(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM, extraData: extraData };
-                savedPdfs.push(pObj); asyncSave('stundenzettel_saved_pdfs', savedPdfs); generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM, extraData);
+                if (editingSavedPdfId) {
+                    let pObj = savedPdfs.find(x => String(x.id) === String(editingSavedPdfId));
+                    if (pObj) {
+                        pObj.sigWorker = sigW;
+                        pObj.sigManager = sigM;
+                        pObj.extraData = extraData;
+                        asyncSave('stundenzettel_saved_pdfs', savedPdfs); 
+                        generateRealPdf(pObj.type, sigW, pObj.recordIds, pObj.worker, null, sigM, extraData);
+                    }
+                    editingSavedPdfId = null;
+                } else {
+                    let pObj = { id: generateId(), timestamp: new Date().toLocaleString('cs-CZ'), type: pendingPdfType, worker: currentWorker, recordIds: [...selectedRecordIds], sigWorker: sigW, sigManager: sigM, extraData: extraData };
+                    savedPdfs.push(pObj); 
+                    asyncSave('stundenzettel_saved_pdfs', savedPdfs); 
+                    generateRealPdf(pendingPdfType, sigW, selectedRecordIds, currentWorker, null, sigM, extraData);
+                }
             }
         }
 
@@ -1295,7 +1311,9 @@
                     let dataTableBody = [ [ { text: t('msw_day'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_date'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_worktime'), colSpan: 2, bold: true, fontSize: 8, alignment: 'center', fillColor: '#eaeaea' }, {}, { text: t('msw_pause_h'), rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_hours_net'), rowSpan: 2, bold: true, fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0], fillColor: '#eaeaea' }, { text: t('msw_desc'), rowSpan: 2, bold: true, fontSize: 8, alignment: 'center', margin: [0, 6, 0, 0], fillColor: '#eaeaea' } ], [ {}, {}, { text: t('msw_von'), bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, { text: t('msw_bis'), bold: true, alignment: 'center', fontSize: 7, fillColor: '#eaeaea' }, {}, {}, {} ] ];
                     let sumTotal = 0;
                     for (let i = 0; i < 7; i++) {
-                        let currDay = new Date(targetMonday); currDay.setDate(targetMonday.getDate() + i); let isoDate = currDay.getFullYear() + '-' + String(currDay.getMonth() + 1).padStart(2, '0') + '-' + String(currDay.getDate()).padStart(2, '0'); let czechDateStr = currDay.toLocaleDateString('cs-CZ'); let dayName = weekDaysNames[i];
+                        let currDay = new Date(targetMonday); currDay.setDate(targetMonday.getDate() + i); 
+                        let isoDate = currDay.getFullYear() + '-' + String(currDay.getMonth() + 1).padStart(2, '0') + '-' + String(currDay.getDate()).padStart(2, '0');
+                        let czechDateStr = currDay.toLocaleDateString('cs-CZ'); let dayName = weekDaysNames[i];
                         let recsForDay = workerRecords.filter(r => r.datum === isoDate);
                         if (recsForDay.length > 0) {
                             let od = recsForDay[0].od; let doC = recsForDay[recsForDay.length - 1].do; let dayH = recsForDay.reduce((s, r) => s + r.cisteHodiny, 0); sumTotal += dayH;
@@ -1324,7 +1342,6 @@
                     let abStatus = extraData && extraData.status ? extraData.status : '2'; let abDate = extraData && extraData.date ? extraData.date : '....................................................';
                     doc = { content: [ { columns: [ { text: t('abn_title'), fontSize: 16, bold: true, color: '#333', margin: [0, 10, 0, 20] }, logoBlock ] }, { table: { widths: ['*', '*'], body: [ [ { text: `${t('abn_name')}${workerName}`, fontSize: 10, margin:[0,2,0,2] }, { text: `${t('abn_kunde')}${actName}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `${t('abn_proj')}${actProj}`, fontSize: 10, margin:[0,2,0,2] }, { text: `${t('abn_anschrift')}${actAddress}`, fontSize: 10, margin:[0,2,0,2] } ], [ { text: `${t('abn_period')}${dateRange}`, fontSize: 10, margin:[0,2,0,2] }, { text: `${t('abn_plz')}${actAddress ? actAddress.split(',').pop().trim() : ' '}`, fontSize: 10, margin:[0,2,0,2] } ] ] }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 20] }, { table: { headerRows: 1, widths: ['*', 80], body: abnahmeRows }, margin: [0, 0, 0, 20] }, { text: t('abn_fest'), bold: true, fontSize: 11, margin: [0, 0, 0, 10] }, { text: [ ...checkFajfka('1', abStatus), { text: t('abn_f1'), color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('2', abStatus), { text: t('abn_f2'), color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: [ ...checkFajfka('3', abStatus), { text: t('abn_f3'), color: '#000' } ], fontSize: 10, margin: [0, 2, 0, 2] }, { text: t('abn_mangel1') + abDate + t('abn_mangel2'), fontSize: 10, margin: [0, 15, 0, 25] }, { text: `${t('abn_tag')}${new Date().toLocaleDateString('cs-CZ')}`, fontSize: 10, margin: [0, 0, 0, 20] }, { columns: [ { stack: [ { text: `${t('abn_ag')}${companySettings.vedouci || ''}`, fontSize: 9 }, isRealSignature(sigManager) ? { image: sigManager, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: t('abn_u_ag'), fontSize: 9, decoration: 'overline' } ], width: '*' }, { stack: [ { text: `${t('abn_an')}${workerName}`, fontSize: 9 }, isRealSignature(sigWorker) ? { image: sigWorker, width: 140, margin: [0,5,0,5] } : { text: '\n\n\n\n' }, { text: t('abn_u_an'), fontSize: 9, decoration: 'overline' } ], width: '*' } ]}, { text: t('abn_note'), fontSize: 8, color: '#666', margin: [0, 25, 0, 0] } ], defaultStyle: { font: 'Roboto' } };
                 } else {
-                    // Zpracování pro TÄTIGKEITSNACHWEIS (Standard) přesně podle vzoru
                     let tH = 0; 
                     workerRecords.forEach(r => { tH += r.cisteHodiny; }); 
                     const recordDates = workerRecords.map(r => parseLocalDate(r.datum));
@@ -1366,7 +1383,7 @@
                     for (let i = 0; i < 7; i++) {
                         let currDay = new Date(targetMonday); 
                         currDay.setDate(targetMonday.getDate() + i); 
-                        let isoDate = currDay.getFullYear() + '-' + String(currDay.getMonth() + 1).padStart(2, '0') + '-' + String(currDay.getDate()).padStart(2, '0'); 
+                        let isoDate = currDay.getFullYear() + '-' + String(currDay.getMonth() + 1).padStart(2, '0') + '-' + String(currDay.getDate()).padStart(2, '0');
                         let czechDateStr = currDay.toLocaleDateString('cs-CZ'); 
                         let dayName = weekDaysDe[i];
                         
@@ -1520,13 +1537,51 @@
             const workerPdfs = savedPdfs.filter(p => p.worker === currentWorker).reverse(); 
             if (workerPdfs.length === 0) list.innerHTML = '<p style="color:#aaa; text-align:center;">Žádné uložené výkazy.</p>'; 
             workerPdfs.forEach(p => { 
-                list.innerHTML += `<div class="pdf-history-item" style="display:flex; flex-direction:column; gap:10px;"><div><strong style="color:var(--primary-orange); font-size:16px;">${p.type.toUpperCase()} VÝKAZ</strong><br><span style="font-size:12px; color:#aaa;">Vytvořeno: ${p.timestamp} | Záznamů: ${p.recordIds.length}</span></div><div style="display:flex; gap:8px;"><button class="btn-small" style="flex:1; background:var(--info);" onclick="downloadSavedPdf('${p.id}')">👁 Otevřít / Sdílet</button><button class="btn-danger" onclick="deleteSavedPdf('${p.id}')">Smazat</button></div></div>`; 
+                list.innerHTML += `<div class="pdf-history-item" style="display:flex; flex-direction:column; gap:10px;"><div><strong style="color:var(--primary-orange); font-size:16px;">${p.type.toUpperCase()} VÝKAZ</strong><br><span style="font-size:12px; color:#aaa;">Vytvořeno: ${p.timestamp} | Záznamů: ${p.recordIds.length}</span></div><div style="display:flex; gap:8px;"><button class="btn-small" style="flex:1; background:var(--info);" onclick="downloadSavedPdf('${p.id}')">👁 Otevřít</button><button class="btn-small" style="flex:1; background:#f39c12; color:#fff;" onclick="reSignSavedPdf('${p.id}')">✍️ Podepsat</button><button class="btn-danger" onclick="deleteSavedPdf('${p.id}')">Smazat</button></div></div>`; 
             }); 
             document.getElementById('saved-pdfs-modal').classList.add('active'); 
         }
         function closeSavedPdfsModal() { document.getElementById('saved-pdfs-modal').classList.remove('active'); }
         function downloadSavedPdf(id) { const p = savedPdfs.find(x => x.id === id || x.id.toString() === id.toString()); if(p) generateRealPdf(p.type, p.sigWorker, p.recordIds, p.worker, null, p.sigManager, p.extraData); }
         function deleteSavedPdf(id) { if(confirm('Smazat tento výkaz?')) { savedPdfs = savedPdfs.filter(x => x.id !== id && x.id.toString() !== id.toString()); asyncSave('stundenzettel_saved_pdfs', savedPdfs); openSavedPdfsModal(); } }
+
+        function reSignSavedPdf(id) {
+            const p = savedPdfs.find(x => String(x.id) === String(id));
+            if (!p) return;
+            
+            editingSavedPdfId = p.id;
+            pendingPdfType = p.type;
+            
+            document.getElementById('sig-manager-container').classList.remove('hidden');
+            document.getElementById('sig-worker-name').innerText = p.worker;
+            document.getElementById('sig-manager-name').innerText = companySettings.vedouci || "Vedoucí";
+            
+            if (p.type === 'Abnahme' || p.type === 'MSW') {
+                document.getElementById('abnahme-options-container').classList.remove('hidden');
+                let abnStatus = (p.extraData && p.extraData.status) ? p.extraData.status : '2';
+                const radio = document.querySelector(`input[name="abnahme_status"][value="${abnStatus}"]`);
+                if(radio) radio.checked = true;
+                
+                if (abnStatus === '3') {
+                    document.getElementById('abnahme-date-wrapper').classList.remove('hidden');
+                    if (p.extraData && p.extraData.date) {
+                        let dParts = p.extraData.date.split('.');
+                        if(dParts.length === 3) {
+                            document.getElementById('abnahme-date-input').value = `${dParts[2]}-${dParts[1].trim().padStart(2,'0')}-${dParts[0].trim().padStart(2,'0')}`;
+                        }
+                    }
+                } else {
+                    document.getElementById('abnahme-date-wrapper').classList.add('hidden');
+                    document.getElementById('abnahme-date-input').value = '';
+                }
+            } else {
+                document.getElementById('abnahme-options-container').classList.add('hidden');
+            }
+            
+            closeSavedPdfsModal();
+            document.getElementById('signature-modal').classList.add('active');
+            setTimeout(initCanvas, 50);
+        }
 
         // --- VYKRESLOVÁNÍ STROMEČKU (DOM) ---
         function toggleRecordSelection(id, e) { if(e) e.stopPropagation(); const idx = selectedRecordIds.indexOf(id); if (idx > -1) selectedRecordIds.splice(idx, 1); else selectedRecordIds.push(id); asyncSave('stundenzettel_selected', selectedRecordIds); renderApp(); }
